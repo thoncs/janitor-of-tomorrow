@@ -19,10 +19,23 @@ The graphics engine "escalates" per level — NES-style pixels → notebook dood
 
 ## Screenshots
 
+**The boards**
+
 | | |
 |---|---|
-| ![CH.1](screenshots/03-ch1-mop-and-destroy.png) | ![Ascent](screenshots/05-ch3-custard-ascent.png) |
-| ![Boss](screenshots/07-kevin-boss-arena.png) | ![Tabletop](screenshots/11-tabletop-round5.png) |
+| ![CH.1](screenshots/03-ch1-mop-and-destroy.png) | ![CH.2](screenshots/04-ch2-escalator-to-hell.png) |
+| *CH.1 — Mop & Destroy* | *CH.2 — Escalator to Hell* |
+| ![CH.3](screenshots/05-ch3-custard-ascent.png) | ![Shred](screenshots/06-shred-mayhem.png) |
+| *CH.3 — Custard Ascent* | *Directional weapons: DOUBLE-NECK SHRED* |
+
+**The bosses**
+
+| | |
+|---|---|
+| ![Boss](screenshots/07-kevin-boss-arena.png) | ![Enraged](screenshots/07b-kevin-enraged.png) |
+| *K.E.V.I.N. in the vat* | *Enraged below half health* |
+| ![Death](screenshots/08-kevin-death-flash.png) | ![Tabletop](screenshots/11-tabletop-round5.png) |
+| *...and down* | *Final form: K.E.V.I.N. PRIME, on graph paper* |
 
 ## Run locally
 
