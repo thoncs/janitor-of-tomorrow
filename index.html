@@ -112,7 +112,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 /* ---------- touch pads ---------- */
 #pads{position:absolute;inset:0;z-index:46;display:none;pointer-events:none}
 #pads.on{display:block}
-.pad{position:absolute;bottom:calc(14px + var(--sab));width:138px;height:104px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;letter-spacing:.1em;color:var(--ink);background:rgba(36,22,70,.5);box-shadow:inset 0 0 0 2px rgba(122,90,205,.5);backdrop-filter:blur(3px);touch-action:none;pointer-events:auto}
+.pad{position:absolute;bottom:calc(18px + var(--sab));width:152px;height:112px;border-radius:26px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;letter-spacing:.1em;color:var(--ink);background:rgba(36,22,70,.5);box-shadow:inset 0 0 0 2px rgba(122,90,205,.5);backdrop-filter:blur(3px);touch-action:none;pointer-events:auto}
 #padJ{left:calc(16px + var(--sal))}
 #padF{right:calc(16px + var(--sar))}
 /* floating flight stick zone (top-scroller only) */
@@ -991,6 +991,9 @@ function startStage(i){const st=STAGES[i];MODE='action';G.inBattle=false;
   $('padJ').style.display=st.top?'none':'';
   G.energy=100;
   hudOn(true);showScreen('');updateHearts();
+  // device safe-areas (notch) shift the JUMP pad right — keep Doug clear of it
+  if(!st.top){const pj=$('padJ').getBoundingClientRect();
+    S.p.x=Math.max(S.p.x,pj.right+70);}
   $('pbar').classList.toggle('boss',!!st.boss);}
 
 function spawnFoe(type){const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:W+50,t:0,hitT:0};
