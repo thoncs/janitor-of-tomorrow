@@ -10,9 +10,13 @@ Doug Pickles — night janitor, world #1 ranked player of GRIME WAR 2099, owner 
 
 - 3 branching story scenes with consequences, 2 companion trust meters, 1 timeline stability meter
 - **CH.1–2**: side-scroller shooter boards
+- **CH.2.5**: 🏁 **TAQUITO GRAND PRIX** — a Pole Position-style pseudo-3D race across the wasteland
 - **CH.3**: vertical shmup ascent with a flying taco truck and directional weapon pickups
+- **OPERATION: FLOOR PLAN** — 🗺️ a Risk-style, dice-driven territory war for the vat floor
+- **VS GLAZE** — 🍩 an MK-style 1v1 against the Forbidden Donut, ending in **MOPTALITY**
 - Boss fight against **K.E.V.I.N.** (Kinetic Enzyme Vat, Infinitely Networked)
-- Final form: a **turn-based, d20-rolling tabletop battle** with your full party
+- Final form: a **turn-based, d20-rolling tabletop battle** — limit breaks, magic + MP, a once-per-battle
+  **SUMMON: FREIGHT ELEVATOR**, and a phase-two **K.E.V.I.N. OMEGA** with a second health bar
 - 3 endings, snacks as health, hair metal as a weapon system
 - Combo announcer, flying-hat physics, CHONKY BOY, and 🌮 TAQUITO TIME — big dumb fun is a design pillar
 
@@ -35,8 +39,12 @@ The graphics engine "escalates" per level — NES-style pixels → notebook dood
 |---|---|
 | ![CH.1](screenshots/03-ch1-mop-and-destroy.png) | ![CH.2](screenshots/04-ch2-escalator-to-hell.png) |
 | *CH.1 — Mop & Destroy* | *CH.2 — Escalator to Hell* |
+| ![Race](screenshots/04b-taquito-grand-prix.png) | ![War](screenshots/05b-war-room.png) |
+| *CH.2.5 — Taquito Grand Prix* | *Operation: Floor Plan* |
 | ![CH.3](screenshots/05-ch3-custard-ascent.png) | ![Shred](screenshots/06-shred-mayhem.png) |
 | *CH.3 — Custard Ascent* | *Directional weapons: DOUBLE-NECK SHRED* |
+| ![Glaze](screenshots/06b-vs-glaze.png) | ![Omega](screenshots/11b-kevin-omega.png) |
+| *VS GLAZE — the Forbidden Donut* | *K.E.V.I.N. OMEGA — the Last Custard* |
 
 **The bosses**
 
