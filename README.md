@@ -20,7 +20,7 @@ Doug Pickles — night janitor, world #1 ranked player of GRIME WAR 2099, owner 
 - 3 endings, snacks as health, hair metal as a weapon system
 - Combo announcer, flying-hat physics, CHONKY BOY, and 🌮 TAQUITO TIME — big dumb fun is a design pillar
 
-The graphics engine "escalates" per level — NES-style pixels → notebook doodles → 64-bit gradients → graph paper and real rendered dice. This is canon.
+The graphics engine "escalates" per level — NES-style pixels → notebook doodles → 64-bit gradients → graph paper and a glowing d20. This is canon.
 
 ## Screenshots
 
@@ -70,11 +70,8 @@ Open `index.html` in a browser. That's it.
 
 ## Art credits
 
-Guest art from [OpenGameArt.org](https://opengameart.org):
+Every sprite is original, authored in-engine at ≥64px source resolution by the studio the future deserves:
 
-- [Classic Hero](https://opengameart.org/content/classic-hero) & [Classic hero and baddies pack](https://opengameart.org/content/classic-hero-and-baddies-pack) by **GrafxKid** — CC0
-- [Scribble Platformer](https://opengameart.org/content/scribble-platformer) & [Space Shooter Redux](https://opengameart.org/content/space-shooter-redux) by **[Kenney.nl](https://kenney.nl)** — CC0
-- [D20 rolling animations](https://opengameart.org/content/d20-rolling-animations) by **lukems-br** — CC0
+> **art: PUDD-CO Graphics Division** *(a wholly-owned subsidiary of the evil pudding conglomerate)*
 
-Everything else (code, writing, remaining pixel/vector art — including K.E.V.I.N.'s vat form) is original.
-All remaining guest art is CC0; no attribution-required assets remain. An original parody — no real timelines were harmed.
+Code, writing, and music are original too. An original parody — no real timelines were harmed.
