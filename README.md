@@ -39,8 +39,10 @@ The graphics engine "escalates" per level — NES-style pixels → notebook dood
 |---|---|
 | ![CH.1](screenshots/03-ch1-mop-and-destroy.png) | ![CH.2](screenshots/04-ch2-escalator-to-hell.png) |
 | *CH.1 — Mop & Destroy* | *CH.2 — Escalator to Hell* |
-| ![Race](screenshots/04b-taquito-grand-prix.png) | ![War](screenshots/05b-war-room.png) |
-| *CH.2.5 — Taquito Grand Prix* | *Operation: Floor Plan* |
+| ![Race](screenshots/04b-taquito-grand-prix.png) | ![Chonky](screenshots/04c-chonky-crossing.png) |
+| *CH.2.5 — Taquito Grand Prix* | *Local wildlife* |
+| ![War](screenshots/05b-war-room.png) | ![Moptality](screenshots/06c-moptality.png) |
+| *Operation: Floor Plan* | *M O P T A L I T Y* |
 | ![CH.3](screenshots/05-ch3-custard-ascent.png) | ![Shred](screenshots/06-shred-mayhem.png) |
 | *CH.3 — Custard Ascent* | *Directional weapons: DOUBLE-NECK SHRED* |
 | ![Glaze](screenshots/06b-vs-glaze.png) | ![Omega](screenshots/11b-kevin-omega.png) |
