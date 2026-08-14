@@ -14,10 +14,20 @@ Doug Pickles — night janitor, world #1 ranked player of GRIME WAR 2099, owner 
 - Boss fight against **K.E.V.I.N.** (Kinetic Enzyme Vat, Infinitely Networked)
 - Final form: a **turn-based, d20-rolling tabletop battle** with your full party
 - 3 endings, snacks as health, hair metal as a weapon system
+- Combo announcer, flying-hat physics, CHONKY BOY, and 🌮 TAQUITO TIME — big dumb fun is a design pillar
 
 The graphics engine "escalates" per level — NES-style pixels → notebook doodles → 64-bit gradients → graph paper and real rendered dice. This is canon.
 
 ## Screenshots
+
+**Title & story**
+
+| | |
+|---|---|
+| ![Title](screenshots/01-title.png) | ![Story](screenshots/02-story-act1.png) |
+| *Insert courage to begin* | *Act 1 — the supply closet explodes* |
+| ![Consequence](screenshots/02b-consequence.png) | ![Big dumb fun](screenshots/03b-taquito-time.png) |
+| *Choices have consequences (and chips)* | *TAQUITO TIME meets CHONKY BOY* |
 
 **The boards**
 
@@ -32,10 +42,12 @@ The graphics engine "escalates" per level — NES-style pixels → notebook dood
 
 | | |
 |---|---|
-| ![Boss](screenshots/07-kevin-boss-arena.png) | ![Enraged](screenshots/07b-kevin-enraged.png) |
-| *K.E.V.I.N. in the vat* | *Enraged below half health* |
-| ![Death](screenshots/08-kevin-death-flash.png) | ![Tabletop](screenshots/11-tabletop-round5.png) |
-| *...and down* | *Final form: K.E.V.I.N. PRIME, on graph paper* |
+| ![VS](screenshots/07a-vs-card.png) | ![Boss](screenshots/07-kevin-boss-arena.png) |
+| *Pay-per-view energy* | *K.E.V.I.N. in the vat* |
+| ![Enraged](screenshots/07b-kevin-enraged.png) | ![Death](screenshots/08-kevin-death-flash.png) |
+| *Enraged below half health* | *...and down* |
+| ![Tabletop](screenshots/10-tabletop-setup.png) | ![Round5](screenshots/11-tabletop-round5.png) |
+| *TABLETOP PROTOCOL engages* | *Final form: K.E.V.I.N. PRIME, on graph paper* |
 
 ## Run locally
 
