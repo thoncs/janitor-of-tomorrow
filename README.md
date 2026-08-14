@@ -59,6 +59,11 @@ The graphics engine "escalates" per level — NES-style pixels → notebook dood
 | ![Tabletop](screenshots/10-tabletop-setup.png) | ![Round5](screenshots/11-tabletop-round5.png) |
 | *TABLETOP PROTOCOL engages* | *Final form: K.E.V.I.N. PRIME, on graph paper* |
 
+## Asset catalog
+
+Want to reskin it? **[assets.html](https://thoncs.github.io/janitor-of-tomorrow/assets.html)** is a generated
+catalog of every sprite and drawn entity — code hooks, native sizes, usage, and one-line swap instructions.
+
 ## Run locally
 
 Open `index.html` in a browser. That's it.
