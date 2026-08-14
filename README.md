@@ -74,7 +74,7 @@ Guest art from [OpenGameArt.org](https://opengameart.org):
 
 - [Classic Hero](https://opengameart.org/content/classic-hero) & [Classic hero and baddies pack](https://opengameart.org/content/classic-hero-and-baddies-pack) by **GrafxKid** — CC0
 - [Scribble Platformer](https://opengameart.org/content/scribble-platformer) & [Space Shooter Redux](https://opengameart.org/content/space-shooter-redux) by **[Kenney.nl](https://kenney.nl)** — CC0
-- [Chocolate Monster Sprite Sheets](https://opengameart.org/content/chocolate-monster-sprite-sheets) by **[bevouliin.com](https://bevouliin.com)** — [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/)
 - [D20 rolling animations](https://opengameart.org/content/d20-rolling-animations) by **lukems-br** — CC0
 
-Everything else (code, writing, remaining pixel/vector art) is original. An original parody — no real timelines were harmed.
+Everything else (code, writing, remaining pixel/vector art — including K.E.V.I.N.'s vat form) is original.
+All remaining guest art is CC0; no attribution-required assets remain. An original parody — no real timelines were harmed.
