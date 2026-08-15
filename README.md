@@ -70,8 +70,9 @@ Open `index.html` in a browser. That's it.
 
 ## Art credits
 
-Every sprite is original, authored in-engine at ≥64px source resolution by the studio the future deserves:
-
 > **art: PUDD-CO Graphics Division** *(a wholly-owned subsidiary of the evil pudding conglomerate)*
 
-Code, writing, and music are original too. An original parody — no real timelines were harmed.
+The cast — Doug, the goo critters, CHONKY BOY, the sentinel, and the story portraits — are AI-generated
+with [PixelLab](https://pixellab.ai) from PUDD-CO's character bible, after honest player feedback that
+nobody could tell what the characters were. Every other sprite is original, authored in-engine at ≥64px.
+Code, writing, and music are original. An original parody — no real timelines were harmed.
