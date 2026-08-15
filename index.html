@@ -247,7 +247,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
   <div class="btnrow"><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
   <p class="small dim blink">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
-  <p class="small dim" style="margin-top:8px">v0.2 (No Range Inputs Test)</p>
+  <p class="small dim" style="margin-top:8px">v0.3 (No Touchstart Listener)</p>
 </div>
 
 <div class="screen" id="story">
@@ -634,8 +634,7 @@ const AU={c:null,on:true,
    // Mobile browsers often suspend audio context until user interaction
    if(this.c){const handleSuspend=()=>{if(this.c.state==='suspended')this.c.resume().catch(()=>{});};
      this.c.addEventListener('suspend',handleSuspend);
-     document.addEventListener('click',handleSuspend,{once:true});
-     document.addEventListener('touchstart',handleSuspend,{once:true});}},
+     document.addEventListener('click',handleSuspend,{once:true});}},
  setMasterVolume(v){if(this.g)this.g.gain.value=v;},
  t(f,d,type,v,slide){if(!this.on||!this.c)return;const t0=this.c.currentTime,o=this.c.createOscillator(),g=this.c.createGain();
    o.type=type||'square';o.frequency.setValueAtTime(f,t0);
@@ -1384,10 +1383,6 @@ function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
   else if(st.dungeon)envType='goo';
   else if(st.top)envType='warp';
   updateAudioEnvironment(envType);
-  // Apply visual effects based on environment
-  CanvasFilters.flicker.enabled=st.top;
-  CanvasFilters.gooTaint.enabled=st.dungeon;
-  CanvasFilters.timeWarp.enabled=st.boss;
   MUS.play(st.boss?'boss':st.top?'drive':st.race?'race':st.fight?'fight':st.dungeon?'dnd':['chip','punk'][i]);
   S={st,stIdx:i,t:0,scroll:0,shake:0,done:false,paused:false,
      p:{x:210,y:groundY,vy:0,onG:true,jumps:0,inv:1.4,fireT:0},
@@ -2617,13 +2612,11 @@ function bossDraw(){const p=S.p,bs=S.boss;
 /* ================= RENDER ================= */
 const seed=i=>{const r=Math.sin(i*127.1)*43758.5453;return r-Math.floor(r);};
 function draw(){const st=S.st,p=S.p,hue=st.hue;
-  // Phase 0: Apply canvas filters based on environment
-  CanvasFilters.apply(cx);
-  if(st.race){raceDraw();CanvasFilters.clear(cx);return;}
-  if(st.fight){fightDraw();CanvasFilters.clear(cx);return;}
-  if(st.top){topDraw();CanvasFilters.clear(cx);return;}
-  if(st.boss){bossDraw();CanvasFilters.clear(cx);return;}
-  if(st.dungeon){dungeonDraw();CanvasFilters.clear(cx);return;}
+  if(st.race){raceDraw();return;}
+  if(st.fight){fightDraw();return;}
+  if(st.top){topDraw();return;}
+  if(st.boss){bossDraw();return;}
+  if(st.dungeon){dungeonDraw();return;}
   cx.clearRect(0,0,W,H);cx.save();
   cx.imageSmoothingEnabled=false;
   if(S.shake>0)cx.translate(rr(-5,5)*S.shake,rr(-4,4)*S.shake);
