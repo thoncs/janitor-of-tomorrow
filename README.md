@@ -13,6 +13,8 @@ Doug Pickles — night janitor, world #1 ranked player of GRIME WAR 2099, owner 
 - **CH.2.5**: 🏁 **TAQUITO GRAND PRIX** — a Pole Position-style pseudo-3D race across the wasteland
 - **CH.3**: vertical shmup ascent with a flying taco truck and directional weapon pickups
 - **OPERATION: FLOOR PLAN** — 🗺️ a Risk-style, dice-driven territory war for the vat floor
+- **BONUS: SUPPLY DUNGEON** — 🪠 a Zelda-style top-down crawl under the core: 8-direction Doug,
+  goo chasers, taquito crates, and the GOLDEN PLUNGER (+1 max ♥)
 - **VS GLAZE** — 🍩 an MK-style 1v1 against the Forbidden Donut, ending in **MOPTALITY**
 - Boss fight against **K.E.V.I.N.** (Kinetic Enzyme Vat, Infinitely Networked)
 - Final form: a **turn-based, d20-rolling tabletop battle** — limit breaks, magic + MP, a once-per-battle
@@ -41,8 +43,10 @@ The graphics engine "escalates" per level — NES-style pixels → notebook dood
 | *CH.1 — Mop & Destroy* | *CH.2 — Escalator to Hell* |
 | ![Race](screenshots/04b-taquito-grand-prix.png) | ![Chonky](screenshots/04c-chonky-crossing.png) |
 | *CH.2.5 — Taquito Grand Prix* | *Local wildlife* |
-| ![War](screenshots/05b-war-room.png) | ![Moptality](screenshots/06c-moptality.png) |
-| *Operation: Floor Plan* | *M O P T A L I T Y* |
+| ![War](screenshots/05b-war-room.png) | ![Dungeon](screenshots/05c-supply-dungeon.png) |
+| *Operation: Floor Plan* | *BONUS — Supply Dungeon, suddenly a Zelda-like* |
+| ![Moptality](screenshots/06c-moptality.png) | |
+| *M O P T A L I T Y* | |
 | ![CH.3](screenshots/05-ch3-custard-ascent.png) | ![Shred](screenshots/06-shred-mayhem.png) |
 | *CH.3 — Custard Ascent* | *Directional weapons: DOUBLE-NECK SHRED* |
 | ![Glaze](screenshots/06b-vs-glaze.png) | ![Omega](screenshots/11b-kevin-omega.png) |
