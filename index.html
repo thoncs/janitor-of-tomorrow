@@ -64,6 +64,23 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 
 /* ---------- story / consequence ---------- */
 #story{justify-content:flex-start;gap:8px}
+/* Title grew a CONTINUE row and an erase button, which overflowed a 390px-tall landscape phone and
+   clipped the pill off the top. A centred flex column inside overflow:hidden is unreachable at BOTH
+   ends when it overflows, so centre with auto margins instead of justify-content: it still centres
+   when there is room, and scrolls to reveal everything when there isn't. */
+#title{justify-content:flex-start;overflow-y:auto;overscroll-behavior:contain}
+#title>:first-child{margin-top:auto}
+#title>:last-child{margin-bottom:auto}
+/* Landscape phone is ~390px tall and the title now carries two more rows. Tighten it so it FITS
+   rather than relying on the scroll backstop above — a title screen should never need scrolling.
+   The art credits stay; the savings come from spacing, the needless .sub wrap, and slightly smaller art. */
+@media (max-height:460px){
+  #title{gap:5px}
+  #title .sub{max-width:none;font-size:14px}
+  #title .glitch{font-size:clamp(24px,9vh,38px)}
+  #title #cast{gap:10px}
+  #title #cast .port{width:44px;height:44px}
+}
 #sbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;width:100%;max-width:900px;padding-right:54px}
 #sbar .pill{white-space:nowrap}
 #srow{display:flex;gap:10px;width:100%;max-width:900px;flex:1;min-height:0}
@@ -247,9 +264,9 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
   <div id="cast"></div>
   <div class="btnrow"><button class="btn" id="bCont" style="display:none">⏱ CONTINUE</button><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
   <p class="small dim" id="contline" style="display:none"></p>
-  <p class="small dim blink">— insert courage to begin —</p>
+  <p class="small dim blink" id="courage">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
-  <p class="small dim" style="margin-top:8px">v0.5 · <button class="btn ghost sm" id="bErase" style="display:none">🧽 erase save</button></p>
+  <p class="small dim" style="margin-top:8px">v0.5<button class="btn ghost sm" id="bErase" style="display:none;margin-left:10px">🧽 erase save</button></p>
 </div>
 
 <div class="screen" id="story">
@@ -853,9 +870,10 @@ $('bStart').addEventListener('click',()=>{AU.ui();
 function refreshContinue(){const b=$('bCont'),l=$('contline'),r=PROF.run;
   const hasData=!!(r||PROF.taquitos||PROF.items.length||Object.keys(PROF.best).length);
   $('bErase').style.display=hasData?'':'none';eraseArmed=false;$('bErase').textContent='🧽 erase save';
-  if(!r||!r.g){b.style.display='none';l.style.display='none';l.textContent='';return;}
+  if(!r||!r.g){b.style.display='none';l.style.display='none';l.textContent='';$('courage').style.display='';return;}
   const where=r.at==='stage'?(STAGES[r.idx]&&STAGES[r.idx].name):('CHAPTER '+((r.idx|0)+1));
   b.style.display='';l.style.display='';
+  $('courage').style.display='none'; // the resume line takes this slot; "insert courage" reads wrong on a return visit
   l.textContent='resume: '+(where||'in progress')+' · 🌮 '+PROF.taquitos;}
 
 // Erasing is destructive, so it takes two taps.
