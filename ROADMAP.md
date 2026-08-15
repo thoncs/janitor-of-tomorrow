@@ -1,264 +1,356 @@
 # ROADMAP: Janitor of Tomorrow
 
-Improvement plan for gameplay polish and story depth expansion. Organized by phase and priority.
+The game that ships today is **complete**: 8 boards, 3 endings, a tabletop finale, and big dumb fun. Nothing
+below is needed to make it good. The dominant risk to this project is no longer missing features — it is
+**regression**. Read the verification gate before you read anything else.
+
+This document was rewritten on 2026-08-15 after an outage postmortem. The previous version was written without
+reading `index.html`, so it specified rebuilding systems that already worked. Three phases of code were written
+against it, shipped broken, and reverted. See [Tracking](#tracking) for the full account.
 
 ---
 
-## Phase 0: Audio-Visual Polish (Foundation)
-**Goal:** Elevate production values first so all new content builds on a solid presentation foundation.
+## Verification gate
 
-### Dynamic Audio
-| Layer | Trigger | Implementation |
-|-------|---------|----------------|
-| **Ambient Base** | Always | Facility hum, distant machinery |
-| **Combat Drums** | In battle | Adds intensity layer |
-| **Goo Theme** | Goo zones | Slightly detuned, eerie |
-| **Time Warp** | Timeline stability low | Pitch-shifted, glitchy |
+**Run this before every commit. It is not optional, and it is not slow.**
 
-### Visual Effects
-| Effect | Trigger | Implementation |
-|--------|---------|----------------|
-| **Parallax Map** | Map screen | Facility blueprint with depth |
-| **Flickering Lights** | Low timeline stability | Canvas filter modulation |
-| **Goo Taint** | Goo zones | Green color overlay |
-| **Screen Shake** | Explosions, heavy attacks | CSS transform |
-| **Particles** | Hits, pickups | Canvas-based emitters |
+```bash
+node tools/check.mjs index.html && node tools/smoke.mjs "$PWD/index.html"
+```
 
-### Technical Approach
-- **Audio:** Base64-encoded WAV/MP3, Web Audio API for mixing
-- **Visuals:** Canvas layers, CSS filters, sprite sheets
-- **Compression:** LZMA for assets, runtime decompression
+`tools/install-hooks.sh` wires this into `pre-commit` and `pre-push`. Re-run it after a fresh clone — git never
+tracks `.git/hooks/`.
 
----
+### Why this comes first
 
-## Phase 1: World Map & Exploration System (Foundation)
-**Goal:** Transform Operation: Floor Plan into a persistent world map/hub for non-linear navigation between all action boards. Enable backtracking to find missed collectibles and choose challenge order.
+All of the game's JavaScript lives in **one** `<script>` block, starting at `index.html:350`. A SyntaxError
+anywhere in it means **zero JavaScript executes**. But the HTML and CSS title screen still paints — so the page
+looks perfectly loaded, and every tap does nothing. It presents as broken touch input, not as a parse error.
 
-### Core Components
-| Component | Implementation | Benefit |
-|-----------|---------------|---------|
-| **Facility Map UI** | Canvas-based overhead view of the vat facility with connected nodes | Visual navigation, clear progression |
-| **Node System** | 8-10 navigable nodes: Core Vat (hub), CH.1-3, Taquito Grand Prix, Supply Dungeon, Upgrade Terminal, Boss Gates, Time Anomalies | Non-linear progression |
-| **Backtracking** | Revisit cleared boards to find missed taquitos, weapons, lore notes; dynamic changes (new platforms, dialogue) | Replay value, completionist appeal |
-| **Item Gating** | Keycards, Taco Truck, Golden Plunger unlock new connections | Progression depth |
-| **Map State** | Fog of war, node status (locked/in progress/complete), objective waypoints | Player clarity |
-| **Fast Travel** | Unlocks after 3 boards cleared; costs 5 taquitos (free to adjacent) | Quality of life |
+On 2026-08-15 a single missing comma did exactly that, survived **eleven consecutive commits**, and consumed an
+eight-commit bisection that was hunting an iPhone touch bug that never existed. The syntax gate flags all
+eleven in milliseconds.
 
-### Integration Points
-| System | Map Effect |
-|--------|------------|
-| **Trust Meters** | Glaze high trust: reveals hidden caches; low trust: contaminates nodes with random enemies |
-| **Timeline Stability** | >80%: all paths open; 50-80%: random "time quakes" shuffle connections; <50%: some nodes inaccessible |
-| **Collectibles** | Taquitos (currency), Lore Notes (20), Weapon Schematics (8), Keycards (5), Golden Taquitos (3) |
+### Testing notes
 
-### New Content
-| Node | Type | Unlock | Reward |
-|------|------|--------|--------|
-| Ventilation Shafts | Stealth platformer | Access panel in CH.2 | Hair Metal Guitar weapon |
-| Custard Storage | Puzzle rooms | Beat CH.3 | Max health +1 |
-| Time Warp Zone | CH.1 remix | Timeline stability 100% | Secret ending hint |
+| Surface | How |
+|---|---|
+| **Primary target** | Landscape iPhone, Safari, on the deployed URL. The last outage was only ever seen on a phone. |
+| **Secondary** | Desktop Chrome. |
+| **Local** | `.claude/launch.json` serves the `game` config on `:4173`. |
+| **Deploy** | GitHub Pages serves `main:/` directly. **A push is a release.** There is no staging. |
 
-### Technical Notes
-- State: `localStorage` for map progress, collected items
-- Data: JSON structure for nodes, connections, unlock conditions
-- Rendering: Canvas-based with pathfinding visualization
+The in-app Browser pane reports `document.hidden === true`, and the main loop is gated on it
+(`index.html:2597`). A working game looks frozen there. Drive `update(dt)` / `draw()` synchronously to test
+gameplay in that pane rather than waiting on `requestAnimationFrame`.
 
 ---
 
-## Phase 2: Core Gameplay Refinement (High Impact, Low Effort)
-**Goal:** Polish existing mechanics before adding new ones.
+## Already built (verified at HEAD)
 
-| Area | Action | Benefit |
-|------|--------|---------|
-| **Difficulty Curve** | Rebalance CH.1–3 boards with graduated challenge; add checkpoints mid-board | Smoother progression, less frustration |
-| **Weapon Feedback** | Add screen shake, hit-stop, and particle effects to directional weapons (DOUBLE-NECK SHRED, etc.) | More satisfying combat |
-| **Trust System** | Make companion trust meters affect gameplay (e.g., Glaze gives weapon buffs at high trust, sabotages at low) | Deeper integration of story and mechanics |
-| **Score Attack** | Add leaderboard for Taquito Grand Prix and Custard Ascent | Replay incentive |
+**Read this before specifying anything.** Roughly 80% of the old Phase 0 and 60% of the old Phase 2 were
+already shipped and working. Specifying them again is what produced a `ParticleEmitter` that was never
+instantiated sitting next to four functioning particle pools.
 
----
+### Audio — a complete procedural engine, zero audio asset bytes
 
-## Phase 3: Expanded Player Agency
-**Goal:** Make choices matter more across the entire experience.
+| What | Where |
+|---|---|
+| `AU` — AudioContext with `webkitAudioContext` fallback, gain bus, 10 named SFX | `:569`, SFX at `:584-589` |
+| `SONGS` — **10** sequenced tracks (title, chip, punk, drive, boss, dnd, race, war, fight, end) | `:594-654` |
+| `MUS` — sequencer with a 90ms lookahead scheduler | `:655`, `_tick` at `:669` |
+| **7** procedural ambient beds (lab, engine, crowd, mall, shaft, vat, table) — `shaft` is LFO-modulated | `_ambStart` `:668`, kinds `:715-724` |
+| 3-voice drum kit (kick / snare / hat) | `_drum` `:692` |
+| Per-stage track selection, already automatic | `startStage` |
+| Per-note ADSR, optional lowpass, detuned second oscillator (`tr.det`) | `_note` |
 
-| Feature | Implementation | Story Impact |
-|---------|---------------|--------------|
-| **Branching Chapters** | Add 2–3 new story forks in CH.2 based on CH.1 choices (e.g., spare/destroy goo critters) | Creates divergent narratives |
-| **Consequence Preview** | Show "Last seen: [location]" for companions when trust is low | Reinforces narrative weight |
-| **Timeline Stability Events** | Random "time quake" events that force player to choose: fix stability or push forward | Risk/reward depth |
-| **Item Carryover** | Let snacks and weapons persist between some chapters | Strategic planning |
+New music = **a `SONGS` entry**. New ambience = **an `_ambStart` branch**. No new capability is needed.
 
----
+> ⚠️ **Never set `bpm:0`.** `spb = 60/bpm/4` becomes `Infinity`, `_note` computes an infinite duration, and
+> `exponentialRampToValueAtTime` throws — silently killing the sequencer. The reverted Phase 0 shipped two
+> tracks with `bpm:0`. For a drone, use a real bpm with long note `len` values.
 
-## Phase 4: Story Depth Expansion
-**Goal:** Richer world-building and character arcs.
+### Visual juice — already in every mode
 
-| Addition | Details | Integration |
-|----------|---------|-------------|
-| **Companion Dialogue Trees** | Glaze and K.E.V.I.N. (pre-betrayal) comment on environments and choices | 10–15 new lines each, triggered by locations/actions |
-| **Environmental Lore** | Add scavenged notes/terminals in Supply Dungeon and war room | Optional; rewards exploration |
-| **K.E.V.I.N. Lore Drops** | During boss fight, expose backstory between phases | "I was built to... [REDACTED]" style |
-| **Ending Variants** | Split 3 endings into 6: trust levels + key choices create nuanced outcomes | "True" ending requires specific path |
-| **Character Bios** | Unlockable dossiers in pause menu after meeting characters | World-building without gameplay interruption |
+| What | Where |
+|---|---|
+| Screen shake, canvas-space, in **all 5 update and 6 draw paths** | `S.shake`, set at 6 sites |
+| Particle pool with gravity and alpha falloff | `boom()` `:1282` |
+| Shock rings, drawn additively | `S.rings` `:1288` |
+| Hit-stop, applied to every mode | `S.freeze` `:1287` |
+| White-flash hit silhouettes, pre-baked per sprite | `mkArt` `:526`, `source-in` at `:529` |
+| Hand-rolled multi-layer parallax | in `topDraw` and `draw` |
+| Score + combo with up-to-×10 multiplier, `comboBest` | `:557`, `:822` |
+| Vignette + scanline DOM overlays (z 54 / z 56), GPU-composited | `#vig`, `#fx` at `:346` |
 
----
+### Systems
 
-## Phase 5: New Gameplay Systems
-**Goal:** Add depth without scope creep.
+| What | Where |
+|---|---|
+| `WMAP` — a 7-node adjacency graph with dice combat, its own music and win/lose exits | `:827`, `renderWar` `:847` |
+| Trust already affects gameplay: `G.vex` is a d20 modifier; trust scales the tabletop companion | `:877`, `:1106` |
+| Ending selection — a one-line ternary plus an independent companion axis | `:808` |
+| `TUNING` centralised knobs / `WEAPONS` / `STAGES` / `ENDINGS` / `ART` | `:353` / `:354` / `:371` / `:440` / `:470` |
+| Safe-area vars `--sat/--sar/--sab/--sal`, consumed by every screen and pad | `:19-20` |
+| Pointer-event input with `setPointerCapture`; **no touch-event handlers anywhere** | `bindPad` `:1203` |
 
-| System | Description | Story Tie-in |
-|--------|-------------|--------------|
-| **Upgrade Shop** | Spend collected taquitos between chapters on: max health (+♥), weapon unlocks, timeline buffer | "Future tech black market" framing |
-| **Time Anomalies** | Optional side areas in each chapter with unique challenges and lore | Expands world, optional for completionists |
-| **Companion Abilities** | At high trust, companions trigger special moves (Glaze: donut shield, K.E.V.I.N. fragment: EMP burst) | Reinforces relationships |
-| **New Game+** | Carry over upgrades, unlock secret dialogue and harder enemy variants | Rewards mastery |
+### What genuinely does NOT exist yet
 
----
-
-## Phase 6: Polish & Quality of Life
-**Goal:** Professional-grade feel.
-
-- **Save System:** Browser localStorage with 3 slots
-- **Tutorial Hints:** Optional toggles for controls, "Did you know?" tips
-- **Audio Logs:** Collectible voice lines from future soldiers
-- **Visual Novella Mode:** Skip to story scenes for lore-focused players
-- **Accessibility:** Remappable controls, colorblind modes, text scaling
+Persistence of any kind (no `localStorage`, `sessionStorage`, or `indexedDB` at HEAD) · a taquito currency
+(taquitos are a per-stage pickup, not a ledger) · an inventory · a pause menu · a settings screen · a hub /
+world map · difficulty tiers · stat counters.
 
 ---
 
-## Phase 7: NPC System & Side Quests
-**Goal:** Populate the facility with characters and optional objectives.
+## Platform constraints
 
-### NPC Roster
-| NPC | Role | Location | Quests |
-|-----|------|----------|--------|
-| **Marge** | Head Janitor | Core Vat | Clean 3 goo spills | +1 max ♥, Keycard upgrade |
-| **Dr. Quark** | Scientist | CH.2 area | Retrieve 5 data pads | Unlocks Custard Storage early |
-| **Rusty the Bot** | Maintenance | Supply Dungeon | Repair 3 terminals | Taco Truck fuel upgrade |
-| **Goo King** | Faction Leader | Goo zones | Spare 10 critters | Goo allies in combat |
-| **Sarge** | Future Soldier | War Room | Clear Time Anomalies | Timeline decay slower |
+- **Design target: ~844×390 CSS px**, landscape phone. Portrait is gated by the `#rot` overlay at z 90, so no
+  screen beneath it is reachable in portrait.
+- **44px minimum touch target.** The reverted settings screen used 4px-tall range inputs.
+- **Nothing may depend on `:hover`.** The reverted map used `:hover` scaling as its only affordance.
+- **No fixed pixel heights on screens.** `.screen` centres inside `overflow:hidden` ancestors with no scroll
+  container, so an overflowing panel is clipped at *both* ends with no way to reach it. The reverted map used a
+  fixed `height:500px` inside a 390px viewport. Use `min(…, Nvh)` and aspect ratios.
+- **Reuse the safe-area vars** (`:19-20`) rather than reinventing padding.
+- DPR is capped at 2 in `fit()` (`:1197`).
 
-### Quest System
-- **Journal:** Track active/completed quests with waypoints on map
-- **Rewards:** Taquitos, weapons, permanent upgrades, faction reputation
-- **Branching:** Some quests have multiple solutions (violent vs. diplomatic)
+## Size budget
 
----
+`index.html` is **623,069 bytes / 2,607 lines**, of which **468,369 bytes (75.3%)** is already-compressed
+base64 PNG/WebP across 52 `data:` URIs. GitHub Pages gzips it to **400,533 bytes** automatically.
 
-## Phase 8: Crafting & Inventory
-**Goal:** Deepen progression with item combination and management.
+**No change may grow the file by more than 50 KB without a written case.** For reference, the three reverted
+phases added ~31 KB combined. If image bytes ever need cutting, re-encode the remaining PNGs to WebP — that is
+the only lever with real headroom.
 
-### Crafting Stations
-| Station | Location | Unlock Condition |
-|---------|----------|------------------|
-| **Janitor's Workbench** | Supply Closet | Start |
-| **Future Forge** | CH.3 area | Beat CH.2 |
-| **Goo Lab** | Supply Dungeon | Find Goo King |
-
-### Recipe Examples
-| Recipe | Ingredients | Result |
-|--------|-------------|--------|
-| CHONKY SMASHER | Mop + Hair Metal | AoE weapon |
-| DOUBLE-BARREL SHRED | Taco Truck + Shred Schematic | Upgraded directional weapon |
-| GOLDEN PLUNGER+ | 5 Goo Samples + Plunger | Pierces armor |
-
-### Inventory System
-- **10 slots** (expandable to 20 via upgrades)
-- **Item persistence** across boards via world map
-- **Puzzle integration:** Some doors/obstacles require specific items
+> **Two ideas from the old roadmap are permanently rejected, on measurement:**
+>
+> - ~~*"Audio: Base64-encoded WAV/MP3"*~~ — the game synthesises **all** audio procedurally with zero asset
+>   bytes. One 30-second 128 kbps MP3 as base64 is ~625 KiB, **larger than the entire current file**. The four
+>   layers the old table wanted would push it past 3 MiB. Extend `SONGS` instead.
+> - ~~*"Compression: LZMA for assets, runtime decompression"*~~ — LZMA over the payload yields **98.7% of
+>   original**, because the bytes are already PNG/WebP. Pages already gzips for free. It would also force the
+>   synchronous `mkArt` boot (`:526`) to become async for no gain, and add a decompressor to a
+>   zero-dependency project.
 
 ---
 
-## Phase 9: Dynamic World & Faction Reputation
-**Goal:** Make the world feel alive with random events and deeper social systems.
+## Phases
 
-### Dynamic Events (15% chance per map visit)
-| Event | Condition | Effect |
-|-------|-----------|--------|
-| **Goo Outbreak** | Any goo zone | Extra enemies, bonus taquitos |
-| **Time Rift** | Timeline stability <60% | Teleport to random cleared node |
-| **Soldier Patrol** | Trust with Sarge >50% | Combat, drops Keycard |
-| **Taquito Rain** | Trust with Glaze >75% | Free currency |
-| **Vat Leak** | CH.2 cleared | New hazard zone, hidden boss |
+Ordered by dependency and payoff, not by ambition. Each phase is its own commit series, each behind the gate.
+Hours assume a solo hobbyist at ~5 productive hours/week.
 
-### Faction Reputation System
-| Faction | Gain Reputation | Max Reward | Min Penalty |
-|---------|----------------|------------|-------------|
-| **Future Soldiers** | Story missions, Time Anomalies | Sarge joins final battle | Soldiers attack on sight |
-| **Goo Critters** | Spare goos, avoid spills | Goo allies in fights | Goos turn hostile |
-| **Janitorial Union** | Clean spills, collect trash | +2 max ♥, faster mop | No cleaning bonuses |
-| **K.E.V.I.N. Loyalists** | High trust pre-betrayal | Secret weapon | Early boss trigger |
+### Phase A — Persistence & the ledger · ~10–14h · depends on: nothing
+
+The keystone. Seven later phases need it, and the old roadmap had it at position six — which is why the
+reverted code improvised three separate storage schemes and an ad-hoc inventory.
+
+- **One** `localStorage` key. Plain JSON only — **no `Set` or `Map` in the payload**. The reverted Phase 1
+  stored `new Set()` through `JSON.stringify`, which yields `{}`; nothing was ever saved and every load threw.
+  Hydrate arrays into Sets *after* parsing.
+- A `ver` integer with an explicit migration `switch`.
+- **Every** read and write in `try/catch`, returning a default on failure — and **never called at top-level
+  script scope**. In a single-`<script>` page a top-level throw is nearly as fatal as a SyntaxError: it kills
+  every listener registered after it. The reverted Phase 0 called `loadSettings()` at top level on line 959
+  while the touch pads bound at 1394 and the loop started at 2800, so one throw on an iPhone with "Block All
+  Cookies" produced the *same* dead-tap symptom as the comma.
+- Define once here, since four phases spend them: **`G.taquitos`** as a real ledger separate from `G.score`,
+  with earn/spend helpers and a HUD readout; an **inventory array** with `hasItem`/`addItem`; a
+  **`bumpStat(key)`** counter called alongside each existing `G.score +=` site; **per-board personal bests**.
+- Add a **Continue** button that actually routes to the restored screen.
+
+*Done when:* clear a board, reload the page, and your taquitos, unlocks and best score are still there — and
+the game still boots with storage disabled in Safari settings.
+
+### Phase B — Gameplay refinement · ~8–12h · depends on: A
+
+The old Phase 2, labelled "High Impact, Low Effort" and then scheduled tenth. Most of it already exists; this
+is about finishing and exposing it.
+
+| Item | Reality |
+|---|---|
+| **Difficulty tiers** | Genuinely new. Add a real picker. Scale *enemy* damage, never the player's own bullets — the reverted version multiplied player damage, so `easy` made the pistol do `Math.floor(1×0.8) = 0`. And note `G.spawnMul` scales the *interval*, so a larger value means **fewer** enemies; the reverted tiers had it backwards. |
+| **Mid-board checkpoints** | Genuinely new, and the best frustration fix available. |
+| **Weapon feedback** | ~90% exists (shake, hit-stop, particles, white flash). Remaining work: promote the scattered magic numbers into `TUNING`. |
+| **Trust affects gameplay** | Two hooks already live (`:877`, `:1106`). Extend rather than rebuild. Meters are 0–10, **not** 0–100 — the reverted code compared against 75 and 25, so one branch could never fire and the other always did. |
+| **Score attack** | Renamed to **personal bests** and delivered in Phase A. A leaderboard needs a backend this project does not have. |
+
+### Phase C — Pause & menu shell · ~4–6h · depends on: A
+
+Small, and it unblocks three later phases that all assume a menu that does not exist. An in-action pause that
+sets `S.paused`, with tabs for settings, character bios, and later achievements.
+
+### Phase D — Audio/visual settings & real mixing · ~6–8h · depends on: C
+
+The one genuinely-new piece of the old Phase 0.
+
+- Do the routing change **once**: a single master `GainNode`, with `AU.g`, `MUS.g` and `MUS.ag` rerouted into
+  it, then expose master/music/ambient/sfx over that graph. The reverted version created an sfx bus, connected
+  it to the destination, gave it a slider — and never routed a single source into it, so three of four sliders
+  were silent no-ops.
+- **Verify each slider by ear before committing.**
+- Stage settings must not clobber user preferences: gate the stage decision on the preference
+  (`enabled = !!st.top && prefs.flicker`), don't overwrite it.
+- Make `prefs` the single source of truth and render the UI from it — **never** read state back out of a
+  button's `textContent`.
+
+### Phase E — Story depth · ~10–16h · depends on: A
+
+Highest narrative payoff per hour, because the engine work is nearly nil.
+
+- **Endings 3 → 6**: the selector is one ternary at `:808` plus an existing independent companion axis. This is
+  rows and prose, not engine work.
+- Companion dialogue for Glaze and K.E.V.I.N. keyed to locations and choices.
+- K.E.V.I.N. backstory drops between boss phases.
+- Environmental lore notes (persisted via Phase A). **Six good ones beat twenty filler ones.**
+- Character bios in the Phase C menu.
+
+### Phase F — Quality of life & accessibility · ~8–12h · depends on: A, C
+
+- **Adjustable pad size and position** — a few CSS custom properties, and the accessibility win that actually
+  matters on the target device.
+- Colourblind-safe palette options, text scaling.
+- Move the tutorial gate out of `pickChoice` into `startStage`, keyed on the stage's mode flag. Today the race,
+  kumite and dungeon control schemes are **never explained**, because only three story scenes can reach a
+  tutorial card.
+- *Remappable controls* needs a prerequisite: analog movement is read straight out of the raw `KEYS` map inside
+  three separate update functions rather than through `IN`. Normalise input through `IN` first, as its own
+  change with an identical-behaviour invariant, then remap on top.
+
+### Phase G — The hub screen · ~25–40h · depends on: A, F
+
+**The highest-risk item in this document.** It rewrites the navigation spine, and it is the change most likely
+to break everything. Do it once the safety net is mature, not before.
+
+- It is a **new** screen. **Do not** transform Operation: Floor Plan into it — that is a finished set piece the
+  README advertises, with its own d20 mechanics, its own `war` track and its own win/lose exits. Floor Plan
+  becomes **one node on the hub**.
+- Reuse `WMAP` (`:827`) and `renderWar` (`:847`) as the pattern to copy: percentage-positioned nodes, SVG
+  connector lines, per-node state classes.
+- **Address boards by string id, never by `STAGES` array index.** The reverted version stored numeric
+  `stageIndex` in each node, so any reorder of `STAGES` silently reroutes the map to the wrong board.
+- Ship it behind a `?hub=1` flag so a half-built hub cannot break the normal path.
+- Gate nodes on prerequisites the player can actually earn. The reverted version gated all three new boards
+  behind the item each board itself awarded — unreachable by construction.
+- Set `MODE` back on every exit path. The reverted version left a live keydown handler bound over the title
+  screen.
+- Fog of war: paint the fog `source-over`, *then* punch holes with `destination-out`. The reverted version had
+  it inverted and erased the entire map.
+- Canvas needs explicit `width`/`height` attributes — the reverted map drew an 800×500 coordinate space into a
+  default 300×150 backing store.
+
+*Done when:* every one of the existing 8 boards is reachable from the hub, on a landscape iPhone, and the
+linear path still works with the flag off.
+
+### Phase H — New boards · ~12–20h each · depends on: G
+
+Ventilation Shafts (stealth), Custard Storage (puzzle), Time Warp Zone (CH.1 remix). **One board per commit
+series.** A stealth mode and a puzzle mode are new mechanics, not navigation — which is why bundling them into
+a "foundation" phase hid their real cost. Each new stage needs an explicit `st.music`; the track selector falls
+back to a two-element array indexed by stage number, so stage 8 gets `undefined` and crashes.
 
 ---
 
-## Phase 10: Achievement & Challenge System
-**Goal:** Reward mastery and completionism.
+## Cut line — maybe never
 
-### Achievement Categories
-| Category | Count | Examples |
-|----------|-------|----------|
-| **Completion** | 10 | Clear all boards, 100% collectibles |
-| **Speed** | 8 | CH.1 under 2 min, any no-hit |
-| **Pacifist** | 5 | Beat boards without killing |
-| **Hoarder** | 6 | Collect 50/100/200 taquitos |
-| **Secret** | 12 | Hidden rooms, dev references |
-| **Faction** | 10 | Max reputation with all factions |
+Everything below is **recorded as an idea, not planned**. Each is of the same order of scope as the entire
+existing game: an NPC quest system, crafting with three stations, four faction reputations with tiered
+outcomes, 51 achievements and 4 challenge modes. Together they are roughly 8 months of evenings, and they pull
+directly against "big dumb fun."
 
-**Rewards:** Golden Taquitos, permanent upgrades, New Game+ modes, cosmetic skins
+If one survives, pick **one**, and scope it to a single concrete deliverable — e.g. one NPC in the Supply
+Dungeon with one three-step quest — rather than a systemic layer.
 
-### Challenge Modes
-- **Iron Janitor:** No deaths, no continues
-- **Minimalist:** Beat game with only starting weapon
-- **Pacifist Run:** No kills (stuns only)
-- **Speedrun:** Individual board and full game timers
+- **NPCs & side quests** — Marge, Dr. Quark, Rusty, Goo King, Sarge; journal with waypoints.
+- **Crafting & inventory** — Janitor's Workbench, Future Forge, Goo Lab; recipes like CHONKY SMASHER.
+- **Dynamic world & faction reputation** — random map events, four factions.
+- **Achievements & challenge modes** — Iron Janitor, Minimalist, Pacifist, Speedrun.
+
+Note: "goo zones" are referenced by several of these ideas but **do not exist**. At HEAD, "goo" means goo
+critter enemies. Either create the location or rewrite the references.
 
 ---
 
+## Design principles
 
-
-## Prioritized Roadmap (Next 3 Months)
-
-| Timeline | Focus | Deliverables |
-|----------|-------|--------------|
-| **Week 1–2** | Phase 0 | Dynamic audio layers, visual effects, Web Audio API setup |
-| **Week 3–4** | Phase 0 | Parallax map, particles, canvas filters, compression optimization |
-| **Week 5–6** | Phase 1 | Map UI, node system, basic navigation |
-| **Week 7–8** | Phase 1 | Backtracking system, collectible persistence, fast travel |
-| **Week 9–10** | Phase 1 | Item gating, trust/stability map effects, new boards |
-| **Week 11–12** | Phase 2 | Difficulty rebalance, weapon feedback, trust gameplay integration |
-| **Week 13–14** | Phase 3 | Branching chapters, trust consequences, timeline stability events |
-| **Week 15–16** | Phase 4 | Companion dialogue, lore collectibles, K.E.V.I.N. backstory |
-| **Week 17–18** | Phase 5 | Upgrade shop, time anomalies, companion abilities |
-| **Week 19–20** | Phase 6 | Core QOL: save system, tutorial, accessibility |
-| **Week 21–22** | Phase 7 | NPC system, side quests, journal with waypoints |
-| **Week 23–24** | Phase 8 | Crafting stations, inventory system, item persistence |
-| **Week 25–26** | Phase 9 | Dynamic events, faction reputation, social consequences |
-| **Week 27–28** | Phase 10 | Achievement system, challenge modes, rewards |
-
----
-
-## Design Principles
-
-1. **Tone:** "Big dumb fun" stays central; depth enhances, doesn't replace
-2. **Constraint:** All additions must work within single HTML file structure
-3. **Scope:** Each feature should be completable in 1–2 week sprints
-4. **Testing:** Balance changes need player feedback loops
-5. **Modular:** Features should be independently testable
+1. **Tone:** "Big dumb fun" stays central. Depth enhances; it never replaces.
+2. **Constraint:** one HTML file, one `<script>` block of ~598K chars. **Consequence:** any SyntaxError or
+   top-level throw is a *total* outage that still paints the title screen — so it looks like the game loaded
+   and reads as an input bug. Therefore: gate every commit; never do risky work at top-level scope; wrap every
+   storage access in `try/catch`.
+3. **Scope:** if a phase is not plausibly a 1–2 week slice, decompose it until it is.
+4. **Verify before you commit.** Every phase has a "done when" written as an observable outcome, and no phase is
+   done until it has been seen working on a landscape iPhone.
+5. **Read the code before planning against it.** This document's predecessor did not, and that cost three
+   phases.
+6. **Modular:** features should be independently testable, and shippable behind a flag when risky.
 
 ---
 
 ## Tracking
 
-- [ ] Phase 0: Audio-Visual Polish
-- [ ] Phase 1: World Map & Exploration System
-- [ ] Phase 2: Core Gameplay Refinement
-- [ ] Phase 3: Expanded Player Agency  
-- [ ] Phase 4: Story Depth Expansion
-- [ ] Phase 5: New Gameplay Systems
-- [ ] Phase 6: Polish & Quality of Life
-- [ ] Phase 7: NPC System & Side Quests
-- [ ] Phase 8: Crafting & Inventory
-- [ ] Phase 9: Dynamic World & Faction Reputation
-- [ ] Phase 10: Achievement & Challenge System
+| Phase | Status | Notes |
+|---|---|---|
+| Verification gate | ✅ **Done** `72ec6cd` | `tools/check.mjs` + `tools/smoke.mjs` + hooks. Verified against known-good and known-broken commits. |
+| HEAD defect fixes | ✅ **Done** `d75d25f` | Non-negative `dt` clamp; sequencer no longer schedules notes in the past after a throttle stall. |
+| A — Persistence & ledger | ⬜ Not started | |
+| B — Gameplay refinement | ⬜ Not started | |
+| C — Pause & menu shell | ⬜ Not started | |
+| D — AV settings & mixing | ⬜ Not started | |
+| E — Story depth | ⬜ Not started | |
+| F — QOL & accessibility | ⬜ Not started | |
+| G — Hub screen | ⬜ Not started | Highest risk. Behind `?hub=1`. |
+| H — New boards | ⬜ Not started | |
+| Old Phases 7–10 | ✂️ Below cut line | Recorded as ideas, not planned. |
+
+### Postmortem: Phases 0–2 (2026-08-15) — ATTEMPTED, REVERTED
+
+**Attempted:** `731c338` (Phase 0), `9ffb146` (Phase 1), `fe196b1` (Phase 2). **Reverted:** `ecc598f`.
+
+**Root cause — a single missing comma.** In the `CanvasFilters` object literal, `apply(ctx){…}` was not
+followed by a comma before `clear(ctx){…}`. Because the file has exactly one `<script>`, that SyntaxError meant
+**zero JavaScript executed** in all eleven commits from `731c338` through `3d1d313`, while the HTML/CSS title
+screen kept painting. Every tap did nothing, so it was diagnosed as an iPhone touch bug and chased through an
+eight-commit bisection — but the comma survived every test commit, so no test could ever pass. The `v0.2`/`v0.4`
+version indicators confirmed fresh content was loading, which reinforced the wrong conclusion. The
+`touchstart` listener removed at `3d1d313` could never have mattered: the game uses Pointer Events exclusively.
+
+> ### ⛔ The reverted commits are DESIGN SKETCHES CONTAINING KNOWN-BROKEN CODE
+>
+> ~1200 lines are sitting in git history looking like completed work. **Do not revive them on the assumption
+> that only the comma was wrong.** An audit confirmed **7 blockers and 30 major defects** beyond it. If you
+> want an idea from there, re-implement it small and verify it. Confirmed defects included:
+>
+> **Phase 0** — every one of the three `ctx.filter` effects was dead code three ways over: a dangling `else`
+> bound to the `timeWarp` `if` unconditionally erased the flicker filter set two lines above; the JS referenced
+> `url(#timeWarpFilter)` while the SVG filter's id was `timeWarpSvg`; and `intensity`/`distortion` were never
+> assigned a nonzero value · the goo tint was painted *before* every draw path's `clearRect`, so it was erased
+> on the same frame · `ParticleEmitter` was never instantiated (and `Math.floor(rate × dt)` with `rate:10` at
+> 60fps is `0` **every frame**, with no fractional accumulator — it could never emit) · `ParallaxBg` was never
+> init'd, never given a layer, never drawn · the sfx gain bus had nothing routed into it, so three of four
+> volume sliders were silent · `crossfade()` ramped music to zero and never restored it · two `SONGS` entries
+> had `bpm:0` → `Infinity` → a throw ~11×/second · two `_ambStart` branches called `setValueAtTime` with the
+> required `startTime` argument missing · `AU.init()` ran on *every* pointerdown, leaking a listener each time,
+> and listened for a `suspend` event that AudioContext does not have · unguarded top-level `localStorage` +
+> `JSON.parse` (a second, independent cause of the identical dead-tap symptom) · the settings screen overflowed
+> every landscape phone with no way to scroll and no way back.
+>
+> **Phase 1** — `MAP_STATE` used `Set`s persisted via `JSON.stringify`, so nothing ever saved and every load
+> threw · unlock rules read `G` keys nothing ever wrote · all three new boards were gated behind the item each
+> awarded itself · fog of war was inverted and erased the map · the map canvas had no `width`/`height` · `BOSS`
+> and `SECRET` nodes had no dispatch branch, so GLAZE and K.E.V.I.N. were inert · new stages got no music ·
+> `MODE` was never restored on exit · `openShop` played a nonexistent track · fast travel referenced
+> `G.taquitos` and `updateHUD()`, neither of which existed.
+>
+> **Phase 2** — save was write-only (`loadGame` had no caller and there was no Continue button) · the
+> difficulty system was unreachable and always resolved to `normal` · `damageMul` was applied to the *player's*
+> bullets, so `easy` made the pistol do zero damage · `spawnMul` was inverted, so `hell` spawned fewer enemies ·
+> the weapon emitter burst in the shmup but was only drawn in the kumite, so the feedback was invisible.
+
+**Process changes made as a result:** the verification gate at the top of this document; the "Already built"
+inventory; a stated size budget; platform constraints; and this table, which can now express failure instead of
+only silence. The old checklist showed Phases 0–2 unchecked while all three had been written, deployed broken,
+and reverted.
 
 ---
 
