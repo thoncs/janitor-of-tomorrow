@@ -668,6 +668,9 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,amb:[],vol:.
    this.t0=AU.c.currentTime+.06;this._ambStart(SONGS[name].amb);
    this.timer=setInterval(()=>this._tick(),90);this._tick();},
  _tick(){if(!AU.c||!this.cur)return;const song=SONGS[this.cur],spb=60/song.bpm/4;
+   // this 90ms interval is throttled to >=1s while hidden, but currentTime keeps advancing;
+   // without this the cursor falls behind and the loop below fires every missed step as one chord
+   if(this.t0<AU.c.currentTime)this.t0=AU.c.currentTime+.05;
    const ahead=AU.c.currentTime+.22;
    while(this.t0<ahead){const s2=this.step%song.len;
      for(const tr of song.tracks){const v=tr.pat[s2];
@@ -2590,7 +2593,7 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
 /* ================= MAIN LOOP ================= */
 let last=0;
 function loop(ts){requestAnimationFrame(loop);
-  const dt=Math.min(.033,(ts-last)/1000||0);last=ts;
+  const dt=Math.max(0,Math.min(.033,(ts-last)/1000||0));last=ts; // clamp both ends: visibilitychange/syncRot reset last from performance.now(), which can read ahead of ts
   if(MODE==='action'&&S&&!S.paused&&!document.hidden){update(dt);draw();}}
 requestAnimationFrame(loop);
 document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;});
