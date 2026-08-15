@@ -77,7 +77,8 @@ Open `index.html` in a browser. That's it.
 > **art: PUDD-CO Graphics Division** *(a wholly-owned subsidiary of the evil pudding conglomerate)*
 
 The cast — Doug, the goo critters, CHONKY BOY, the sentinel, the story portraits, **GLAZE the
-Forbidden Donut**, and **K.E.V.I.N.** in all his forms — is AI-generated with
-[PixelLab](https://pixellab.ai) from PUDD-CO's character bible, after honest player feedback that
-nobody could tell what the characters were. Every other sprite is original, authored in-engine at ≥64px.
+Forbidden Donut**, **K.E.V.I.N.** in all his forms, and all vehicles (the taco truck, fighter jets,
+wall pods, tankers, cassette pickups) — is AI-generated with
+[PixelLab](https://pixellab.ai) from PUDD-CO's character bible. Every other sprite is original,
+authored in-engine at ≥64px.
 Code, writing, and music are original. An original parody — no real timelines were harmed.
