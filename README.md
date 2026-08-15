@@ -72,6 +72,31 @@ catalog of every sprite and drawn entity — code hooks, native sizes, usage, an
 
 Open `index.html` in a browser. That's it.
 
+## Verifying changes
+
+All of the game's JavaScript lives in **one** `<script>` block. A SyntaxError anywhere in it means *zero*
+JavaScript executes — but the HTML/CSS title screen still paints, so the page looks loaded and every tap does
+nothing. It reads exactly like broken input. Two tools guard that, neither with any dependencies:
+
+```bash
+node tools/check.mjs index.html && node tools/smoke.mjs "$PWD/index.html"
+```
+
+- **`tools/check.mjs`** — compiles the inline script with `vm.Script` (classic-script semantics, unlike
+  `node --check`) and reports any SyntaxError mapped back to an `index.html` line. Milliseconds.
+- **`tools/smoke.mjs`** — loads the page in headless Chrome and asserts the script ran, nothing threw, and
+  **clicking START MISSION actually changes screen**. ~4s. This catches what the gate can't: a runtime throw
+  parses fine and still kills the whole game.
+
+Git never tracks `.git/hooks/`, so after a clone re-arm the hooks once:
+
+```bash
+sh tools/install-hooks.sh
+```
+
+That installs `pre-commit` (gate on staged content) and `pre-push` (gate + smoke, since pushing to `main`
+deploys straight to the live URL).
+
 ## Art credits
 
 > **art: PUDD-CO Graphics Division** *(a wholly-owned subsidiary of the evil pudding conglomerate)*
