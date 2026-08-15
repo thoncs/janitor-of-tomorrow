@@ -247,7 +247,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
   <div class="btnrow"><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
   <p class="small dim blink">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
-  <p class="small dim" style="margin-top:8px">v0.3 (No Touchstart Listener)</p>
+  <p class="small dim" style="margin-top:8px">v0.4 (Pre-Phase 0 Baseline)</p>
 </div>
 
 <div class="screen" id="story">
@@ -550,67 +550,6 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const rr=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[(Math.random()*a.length)|0];
 
-// Phase 0: Particle Emitter Class for reusable particle effects
-class ParticleEmitter{
- constructor(x,y,config){this.x=x;this.y=y;this.particles=[];
-  this.config={rate:10,life:{min:.3,max:.65},size:{min:2,max:5},
-    velocity:{x:{min:-190,max:190},y:{min:-260,max:60}},color:'#ffffff',gravity:0,...config};
-  this.active=true;this.time=0;}
- update(dt){if(!this.active)return;
-  this.time+=dt;
-  const spawnCount=Math.floor(this.config.rate*dt);
-  for(let i=0;i<spawnCount;i++){
-   const p={x:this.x,y:this.y,
-     vx:rr(this.config.velocity.x.min,this.config.velocity.x.max),
-     vy:rr(this.config.velocity.y.min,this.config.velocity.y.max),
-     life:rr(this.config.life.min,this.config.life.max),
-     sz:rr(this.config.size.min,this.config.size.max),
-     col:this.config.color};
-   this.particles.push(p);}
-  for(let i=this.particles.length-1;i>=0;i--){
-   const p=this.particles[i];p.life-=dt;
-   if(p.life<=0){this.particles.splice(i,1);continue;}
-   p.vy+=this.config.gravity*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}}
- draw(ctx){for(const p of this.particles){ctx.globalAlpha=Math.min(1,p.life*2.5);
-   ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();}
-   ctx.globalAlpha=1;}
- burst(n){for(let i=0;i<n;i++){const p={x:this.x,y:this.y,
-   vx:rr(this.config.velocity.x.min,this.config.velocity.x.max),
-   vy:rr(this.config.velocity.y.min,this.config.velocity.y.max),
-   life:rr(this.config.life.min,this.config.life.max),
-   sz:rr(this.config.size.min,this.config.size.max),col:this.config.color};
-   this.particles.push(p);}}
-}
-
-// Phase 0: Canvas Filter Manager for visual effects
-const CanvasFilters={
- flicker:{enabled:false,intensity:0},
- gooTaint:{enabled:false,color:'rgba(0,255,0,0.3)'},
- timeWarp:{enabled:false,distortion:0},
- apply(ctx){if(!ctx)return;
-  if(this.flicker.enabled&&this.flicker.intensity>0){ctx.filter=`brightness(${1+Math.sin(Date.now()/200)*this.flicker.intensity})`;}
-  if(this.gooTaint.enabled){ctx.fillStyle=this.gooTaint.color;ctx.globalAlpha=0.3;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
-  if(this.timeWarp.enabled&&this.timeWarp.distortion>0){ctx.filter=`url(#timeWarpFilter)`;}
-  else{ctx.filter='none';}}
- clear(ctx){if(ctx)ctx.filter='none';}
-};
-
-// Phase 0: Parallax Background System for map screen
-const ParallaxBg={
- layers:[],W:0,H:0,
- init(w,h){this.W=w;this.H=h;},
- addLayer(source,depth,alpha=1){this.layers.push({source,depth,alpha});},
- draw(ctx,scrollX=0,scrollY=0){const w=this.W,h=this.H;
-  for(const layer of this.layers){
-   ctx.save();
-   ctx.globalAlpha=layer.alpha;
-   const offsetX=scrollX*layer.depth;
-   const offsetY=scrollY*layer.depth;
-   ctx.drawImage(layer.source,offsetX,offsetY,w,h);
-   ctx.restore();}},
- clear(){this.layers=[];}
-};
-
 // G = persistent run state (story + meters). S = per-stage action state (defined later).
 let G=null;
 function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timeline:50,torque:3,vex:3,
@@ -630,12 +569,7 @@ function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85
 const AU={c:null,on:true,
  init(){if(!this.c){try{this.c=new (window.AudioContext||window.webkitAudioContext)();
    this.g=this.c.createGain();this.g.gain.value=.15;this.g.connect(this.c.destination);}catch(e){this.c=null}}
-   if(this.c&&this.c.state==='suspended')this.c.resume().catch(()=>{});
-   // Mobile browsers often suspend audio context until user interaction
-   if(this.c){const handleSuspend=()=>{if(this.c.state==='suspended')this.c.resume().catch(()=>{});};
-     this.c.addEventListener('suspend',handleSuspend);
-     document.addEventListener('click',handleSuspend,{once:true});}},
- setMasterVolume(v){if(this.g)this.g.gain.value=v;},
+   if(this.c&&this.c.state==='suspended')this.c.resume();},
  t(f,d,type,v,slide){if(!this.on||!this.c)return;const t0=this.c.currentTime,o=this.c.createOscillator(),g=this.c.createGain();
    o.type=type||'square';o.frequency.setValueAtTime(f,t0);
    if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t0+d);
@@ -717,35 +651,13 @@ end:{bpm:92,len:64,amb:null,tracks:[ // golden-taquito outro — C G Am F
   {wave:'sine',vol:.09,len:1.8,pat:P({0:60,2:64,4:67,6:72,8:67,10:64,
     16:55,18:59,20:62,22:67,24:62,26:59,
     32:57,34:60,36:64,38:69,40:64,42:60,
-    48:53,50:57,52:60,54:65,56:60,58:57},64)}]},
-// Phase 0: New ambient tracks for environment-based audio mixing
- hub:{bpm:80,len:64,amb:'vat',tracks:[ // Core Vat ambient — facility hum with deep bass
-  {wave:'sine',vol:.12,len:20,pat:P({0:20,16:20,32:19,48:19},64)},
-  {wave:'sine',vol:.08,len:20,pat:P({0:25,8:27,16:29,24:27},64)}]},
- goo_zone:{bpm:0,len:1,amb:'goo',tracks:[ // Goo zone ambient — bubbling, ominous
-  {wave:'sawtooth',vol:.15,lp:400,len:2,pat:P({0:30},1)},
-  {wave:'sine',vol:.1,lp:800,len:3,pat:P({0:40},1)}]},
- time_warp:{bpm:0,len:1,amb:'warp',tracks:[ // Time warp ambient — glitchy, distorted
-  {wave:'sawtooth',vol:.18,lp:1200,det:50,len:1.5,pat:P({0:50},1)},
-  {wave:'square',vol:.1,lp:2000,len:1,pat:P({0:70},1)}]}};
-const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,sg:null,amb:[],vol:.5,
- layers:{ambient:.8,music:.5,sfx:1.0},crossfadeDuration:.5,crossfading:false,crossfadeStart:0,crossfadeFrom:null,crossfadeTo:null,
+    48:53,50:57,52:60,54:65,56:60,58:57},64)}]}};
+const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,amb:[],vol:.5,
  ensure(){if(!AU.c)return false;
    if(!this.g){this.g=AU.c.createGain();this.g.gain.value=AU.on?this.vol:0;this.g.connect(AU.c.destination);
-     this.ag=AU.c.createGain();this.ag.gain.value=AU.on?1:0;this.ag.connect(AU.c.destination);
-     this.sg=AU.c.createGain();this.sg.gain.value=AU.on?this.layers.sfx:0;this.sg.connect(AU.c.destination);}
+     this.ag=AU.c.createGain();this.ag.gain.value=AU.on?1:0;this.ag.connect(AU.c.destination);}
    return true;},
- setOn(on){if(this.g){this.g.gain.value=on?this.vol:0;this.ag.gain.value=on?1:0;this.sg.gain.value=on?this.layers.sfx:0;}},
- setLayerVolume(layer,volume){if(this.layers[layer]!==undefined){this.layers[layer]=volume;if(this.sg&&layer==='sfx')this.sg.gain.value=AU.on?volume:0;}},
- setMasterVolume(volume){this.vol=volume;if(this.g)this.g.gain.value=AU.on?volume:0;},
- crossfade(toLayer,duration){if(this.crossfading)return;
-   this.crossfading=true;this.crossfadeDuration=duration||this.crossfadeDuration;
-   this.crossfadeFrom=this.cur;this.crossfadeTo=toLayer;this.crossfadeStart=AU.c.currentTime;
-   const oldVol=this.layers.music;this.layers.music=0;
-   if(this.ensure()){const t0=AU.c.currentTime;
-     this.g.gain.setValueAtTime(oldVol,t0);
-     this.g.gain.linearRampToValueAtTime(0,t0+duration);
-     setTimeout(()=>{this.crossfading=false;this.play(toLayer);},duration*1000);}},
+ setOn(on){if(this.g){this.g.gain.value=on?this.vol:0;this.ag.gain.value=on?1:0;}},
  play(name){if(this.want===name&&this.cur===name)return;this.want=name;
    if(this.ensure())this._start(name);},
  stop(){this.want=null;if(this.g)this._start(null);},
@@ -806,11 +718,7 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,sg:null,amb:
      lg.gain.value=380;lfo.connect(lg);lg.connect(f.frequency);lfo.start();
      this.amb.push(lfo,lg);}
    else if(kind==='vat'){noise('lowpass',140,.09);hum(31,.03);}
-   else if(kind==='table'){noise('lowpass',300,.014);}
-   else if(kind==='goo'){noise('bandpass',300,.08);const o=c2.createOscillator(),g=c2.createGain();o.type='sine';
-     o.frequency.setValueAtTime(60);g.gain.value=.07;o.connect(g);g.connect(this.ag);o.start();this.amb.push(o,g);}
-   else if(kind==='warp'){noise('highpass',1200,.06);const o=c2.createOscillator(),g=c2.createGain();o.type='sawtooth';
-     o.frequency.setValueAtTime(150);g.gain.value=.05;o.connect(g);g.connect(this.ag);o.start();this.amb.push(o,g);}},
+   else if(kind==='table'){noise('lowpass',300,.014);}},
  _bubble(t){const c2=AU.c,o=c2.createOscillator(),g=c2.createGain();o.type='sine';
    const f0=90+Math.random()*160;
    o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f0*2.6,t+.14);
@@ -821,15 +729,6 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,sg:null,amb:
    for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*(1-i/len);
    const s2=c2.createBufferSource(),g=c2.createGain();g.gain.value=.05;
    s2.buffer=b;s2.connect(g);g.connect(this.ag);s2.start(t);}};
-
-// Phase 0: Environment-based audio mixing
-function updateAudioEnvironment(envType){// envType: 'normal' | 'vat' | 'goo' | 'warp'
- if(!MUS.ensure())return;
- switch(envType){
- case 'vat':MUS.setLayerVolume('ambient',.9);break;
- case 'goo':MUS.setLayerVolume('ambient',.7);break;
- case 'warp':MUS.setLayerVolume('ambient',.6);MUS.setLayerVolume('music',.4);break;
- default:MUS.setLayerVolume('ambient',.3);MUS.setLayerVolume('music',.5);}}
 
 document.addEventListener('pointerdown',()=>{AU.init();MUS.kick();},{once:false});
 $('mute').addEventListener('click',()=>{AU.on=!AU.on;MUS.setOn(AU.on);
@@ -873,45 +772,6 @@ $('bGotit2').addEventListener('click',()=>{AU.ui();const f=tutNext;tutNext=null;
   if(f)f();else showScreen('title');});
 $('bHow').addEventListener('click',()=>{AU.ui();tutNext=null;showScreen('tut');});
 $('bStart').addEventListener('click',()=>{AU.ui();newGame();openScene(0);});
-$('bSettings').addEventListener('click',()=>{AU.ui();initSettings();showScreen('settings');});
-
-/* ================= Phase 0: Settings Management ================= */
-let settingsState={masterVol:.5,musicVol:.5,ambientVol:.8,sfxVol:1,flicker:true,goo:true,warp:true};
-function initSettings(){const s=settingsState;
-  $('masterVol').value=s.masterVol;$('musicVol').value=s.musicVol;
-  $('ambientVol').value=s.ambientVol;$('sfxVol').value=s.sfxVol;
-  $('toggleFlicker').textContent=s.flicker?'Flicker ON':'Flicker OFF';
-  $('toggleGoo').textContent=s.goo?'Goo ON':'Goo OFF';
-  $('toggleWarp').textContent=s.warp?'Warp ON':'Warp OFF';
-  MUS.setMasterVolume(s.masterVol);MUS.setLayerVolume('music',s.musicVol);
-  MUS.setLayerVolume('ambient',s.ambientVol);MUS.setLayerVolume('sfx',s.sfxVol);}
-function saveSettings(){const s=settingsState;
-  s.masterVol=parseFloat($('masterVol').value);s.musicVol=parseFloat($('musicVol').value);
-  s.ambientVol=parseFloat($('ambientVol').value);s.sfxVol=parseFloat($('sfxVol').value);
-  s.flicker=$('toggleFlicker').textContent.includes('ON');
-  s.goo=$('toggleGoo').textContent.includes('ON');
-  s.warp=$('toggleWarp').textContent.includes('ON');
-  localStorage.setItem('janitorAVDSettings',JSON.stringify(s));
-  MUS.setMasterVolume(s.masterVol);MUS.setLayerVolume('music',s.musicVol);
-  MUS.setLayerVolume('ambient',s.ambientVol);MUS.setLayerVolume('sfx',s.sfxVol);
-  CanvasFilters.flicker.enabled=s.flicker;CanvasFilters.gooTaint.enabled=s.goo;
-  CanvasFilters.timeWarp.enabled=s.warp;AU.ui();showScreen('title');}
-function loadSettings(){const saved=localStorage.getItem('janitorAVDSettings');
-  if(saved)Object.assign(settingsState,JSON.parse(saved));
-  MUS.setMasterVolume(settingsState.masterVol);MUS.setLayerVolume('music',settingsState.musicVol);
-  MUS.setLayerVolume('ambient',settingsState.ambientVol);MUS.setLayerVolume('sfx',settingsState.sfxVol);
-  CanvasFilters.flicker.enabled=settingsState.flicker;CanvasFilters.gooTaint.enabled=settingsState.goo;
-  CanvasFilters.timeWarp.enabled=settingsState.warp;}
-// Load settings on game start
-loadSettings();
-$('bSaveSettings').addEventListener('click',saveSettings);
-$('bCancelSettings').addEventListener('click',()=>{AU.ui();showScreen('title');});
-$('toggleFlicker').addEventListener('click',()=>{const b=$('toggleFlicker');
-  b.textContent=b.textContent.includes('ON')?'Flicker OFF':'Flicker ON';});
-$('toggleGoo').addEventListener('click',()=>{const b=$('toggleGoo');
-  b.textContent=b.textContent.includes('ON')?'Goo OFF':'Goo ON';});
-$('toggleWarp').addEventListener('click',()=>{const b=$('toggleWarp');
-  b.textContent=b.textContent.includes('ON')?'Warp OFF':'Warp ON';});
 
 /* ================= CONSEQUENCE / GAMEOVER / ENDING ================= */
 function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
@@ -1377,12 +1237,6 @@ let S=null;
 function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
   if(st.war){openWar();return;}
   MODE='action';
-  // Phase 0: Set environment for audio mixing and visual effects
-  let envType='normal';
-  if(st.boss)envType='vat';
-  else if(st.dungeon)envType='goo';
-  else if(st.top)envType='warp';
-  updateAudioEnvironment(envType);
   MUS.play(st.boss?'boss':st.top?'drive':st.race?'race':st.fight?'fight':st.dungeon?'dnd':['chip','punk'][i]);
   S={st,stIdx:i,t:0,scroll:0,shake:0,done:false,paused:false,
      p:{x:210,y:groundY,vy:0,onG:true,jumps:0,inv:1.4,fireT:0},
