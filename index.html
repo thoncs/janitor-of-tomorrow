@@ -61,6 +61,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 .btn.alt{background:linear-gradient(180deg,var(--mag),#b0189f);color:#fff;box-shadow:0 0 18px rgba(255,61,240,.4),inset 0 -3px 0 rgba(0,0,0,.25)}
 .btn.ghost{background:#241646;color:var(--ink);box-shadow:inset 0 0 0 2px #4b357f}
 .btn.sm{min-height:40px;min-width:0;padding:9px 18px;font-size:13px}
+.btn.xs{min-height:28px;min-width:0;padding:4px 10px;font-size:11px;letter-spacing:.04em}
 
 /* ---------- story / consequence ---------- */
 #story{justify-content:flex-start;gap:8px}
@@ -264,9 +265,9 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
   <div id="cast"></div>
   <div class="btnrow"><button class="btn" id="bCont" style="display:none">⏱ CONTINUE</button><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
   <p class="small dim" id="contline" style="display:none"></p>
+  <p class="small dim" id="diffline">shift difficulty: <button class="btn ghost sm" id="bDiff">NORMAL</button> <span id="diffblurb" class="dim"></span></p>
   <p class="small dim blink" id="courage">— insert courage to begin —</p>
-  <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
-  <p class="small dim" style="margin-top:8px">v0.5<button class="btn ghost sm" id="bErase" style="display:none;margin-left:10px">🧽 erase save</button></p>
+  <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab · v0.6<button class="btn ghost xs" id="bErase" style="display:none;margin-left:8px">🧽 erase save</button></p>
 </div>
 
 <div class="screen" id="story">
@@ -369,7 +370,22 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 <script>
 'use strict';
 /* ================= DATA: tuning, weapons, enemies, stages ================= */
-const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1};
+const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1,
+ // juice, gathered from the call sites so it can be tuned in one place
+ juice:{killShake:.4,killFreeze:.045,comboFreeze:.09,hurtShake:.3,hurtFreeze:.1,
+   bossDieShake:.6,bossDieFreeze:.18,boomShake:.6,plungerShake:.5}};
+// Difficulty. `spawn` multiplies the seconds BETWEEN spawns, so a bigger number means FEWER enemies.
+// `inv` scales the mercy window after a hit, `regen` scales energy regen. Nothing here touches the
+// player's own weapon damage — scaling that is how the reverted build made easy mode do zero damage.
+const DIFFS=[
+ {id:'chill',    name:'CHILL',     spawn:1.45,inv:1.45,regen:1.30,blurb:'Fewer hostiles, longer mercy.'},
+ {id:'normal',   name:'NORMAL',    spawn:1,   inv:1,   regen:1,   blurb:'The intended shift.'},
+ {id:'spicy',    name:'SPICY',     spawn:.80, inv:.90, regen:.95, blurb:'More hostiles, less mercy.'},
+ {id:'nightmare',name:'NIGHTMARE', spawn:.62, inv:.72, regen:.85, blurb:'Doug did not consent to this.'}];
+function DF(){return DIFFS.find(d=>d.id===PROF.diff)||DIFFS[1];}
+// Trust pays off in the action boards, on the real 0-10 meter scale.
+function torqueRegenMul(){return G&&G.torque>=7?1.15:1;}
+function vexInvMul(){return G&&G.vex>=7?1.2:1;}
 const WEAPONS={
   pistol:{name:'MALL-PUNK PISTOL',rate:.15,cost:5,dmg:1,speed:560,size:6,pierce:0,col:'#21f0ff'},
   railgun:{name:'HAIR-METAL RAILGUN',rate:.55,cost:20,dmg:3,speed:720,size:11,pierce:2,col:'#ff3df0'}
@@ -573,7 +589,7 @@ const pick=a=>a[(Math.random()*a.length)|0];
 let G=null;
 function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timeline:50,torque:3,vex:3,
   weapon:'pistol',pattern:'single',regen:0,spawnMul:1,pendingAfter:'',lastDeltas:[],deaths:0,
-  score:0,comboBest:0,seenTut:false,seenTut2:false,taquitos:0};}
+  score:0,comboBest:0,seenTut:false,seenTut2:false,taquitos:0,cpStage:-1,cpKind:null,cpValue:0};}
 newGame();
 
 /* ================= PERSISTENCE =================
@@ -587,7 +603,7 @@ const LS={
  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
  set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},
  del(k){try{localStorage.removeItem(k);return true}catch(e){return false}}};
-function defaultProfile(){return{ver:SAVE_VER,taquitos:0,items:[],stats:{},best:{},run:null};}
+function defaultProfile(){return{ver:SAVE_VER,diff:'normal',taquitos:0,items:[],stats:{},best:{},run:null};}
 // A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
 // truncated save can offer CONTINUE and then throw on STAGES[999]/STORY[999] inside the click handler.
 function validRun(r){
@@ -610,6 +626,7 @@ const SAVE={
    }
    // merge field by field so a truncated or hand-edited save can never produce a wrong-shaped profile
    return{ver:SAVE_VER,
+     diff:DIFFS.some(d=>d.id===o.diff)?o.diff:d.diff,
      taquitos:Number.isFinite(o.taquitos)?Math.max(0,o.taquitos|0):d.taquitos,
      items:Array.isArray(o.items)?o.items.filter(x=>typeof x==='string'):d.items,
      stats:(o.stats&&typeof o.stats==='object'&&!Array.isArray(o.stats))?o.stats:d.stats,
@@ -642,6 +659,14 @@ function snapshotRun(at,idx){
   let g=null;try{g=JSON.parse(JSON.stringify(G))}catch(e){return}
   PROF.run={g,at,idx};SAVE.write();}
 function clearRun(){PROF.run=null;SAVE.write();}
+
+// --- mid-board checkpoints ---
+// Halfway through a timed board (or the race) we bank a resume point, so dying sends you back to the
+// midpoint instead of the start. Cleared on board completion and whenever a different board begins.
+function markCheckpoint(kind,value){if(G.cpStage===G.stage)return;
+  G.cpStage=G.stage;G.cpKind=kind;G.cpValue=value;
+  if(S)S.banner={text:'\u25c9 CHECKPOINT',t:1.4};AU.pickup();}
+function clearCheckpoint(){G.cpStage=-1;G.cpKind=null;G.cpValue=0;}
 let MODE='title'; // title | story | conseq | action | over | end
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
@@ -876,6 +901,13 @@ function refreshContinue(){const b=$('bCont'),l=$('contline'),r=PROF.run;
   $('courage').style.display='none'; // the resume line takes this slot; "insert courage" reads wrong on a return visit
   l.textContent='resume: '+(where||'in progress')+' · 🌮 '+PROF.taquitos;}
 
+// Difficulty cycles through DIFFS and persists immediately, so it survives a reload like everything else.
+function renderDiff(){const d=DF();$('bDiff').textContent=d.name;$('diffblurb').textContent=d.blurb;}
+$('bDiff').addEventListener('click',()=>{AU.ui();
+  const i=DIFFS.findIndex(d=>d.id===PROF.diff);
+  PROF.diff=DIFFS[(i<0?1:i+1)%DIFFS.length].id;
+  renderDiff();SAVE.write();});
+
 // Erasing is destructive, so it takes two taps.
 let eraseArmed=false;
 $('bErase').addEventListener('click',()=>{AU.ui();const b=$('bErase');
@@ -895,7 +927,7 @@ function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMe
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
   // board cleared: bank the stats and a personal best, keyed by the stage's stable id
-  bumpStat('cleared.'+st.id);bumpStat('boardsCleared');
+  bumpStat('cleared.'+st.id);bumpStat('boardsCleared');clearCheckpoint();
   const newBest=recordBest(st.id,G.score);
   if(st.id==='dungeon')addItem('golden_plunger');
   SAVE.write();
@@ -1384,6 +1416,12 @@ function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
     S.p.x=200;S.p.y=groundY;}
   if(st.dungeon){S.p.x=0;S.p.y=0;S.p.vx=0;S.p.vy=0;
     S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};dungeonInit();}
+  // Resume from a mid-board checkpoint if this is the board we banked one on. Done after all the
+  // per-mode setup above, so it overrides those defaults rather than being overwritten by them.
+  if(G.cpStage===i&&G.cpValue>0){
+    if(G.cpKind==='t'){S.t=G.cpValue;S.scroll=(st.scroll||0)*G.cpValue;}
+    else if(G.cpKind==='dist'){S.dist=G.cpValue;S.nextOb=G.cpValue+260;}
+    S.banner={text:'◉ RESUMING FROM CHECKPOINT',t:1.6};}
   $('padJ').style.display=(st.top||st.race||st.dungeon)?'none':'';
   $('padF').style.display=st.race?'none':'';
   G.energy=100;
@@ -1408,14 +1446,14 @@ function boom(x,y,col,n){for(let i=0;i<n;i++)S.parts.push({x,y,vx:rr(-190,190),v
 
 /* ---- BIG DUMB FUN: combo, score, hit-stop, floaty text, flying cap ---- */
 const MILESTONES={5:'RADICAL!',10:'MOP LORD!',15:'JANITORIAL VIOLENCE!',20:'BEYOND CLEAN!',30:'CUSTODIAN OF DOOM!'};
-function killJuice(x,y,base){S.freeze=Math.max(S.freeze,.045);
+function killJuice(x,y,base){S.freeze=Math.max(S.freeze,TUNING.juice.killFreeze);
   S.rings.push({x,y,r:8,life:.5});
   S.combo++;S.comboT=2.5;G.comboBest=Math.max(G.comboBest,S.combo);bumpStat('kills');
   const pts=base*Math.min(S.combo,10);G.score+=pts;
   S.pops.push({x,y:y-16,t:1,txt:'+'+pts,col:S.combo>=5?'#ffd75e':'#eae6ff',big:false});
   if(S.combo>=2)AU.t(280+Math.min(S.combo,12)*55,.06,'square',.25,120);
   if(MILESTONES[S.combo]){S.banner={text:MILESTONES[S.combo]+' ×'+S.combo,t:1.7};
-    S.freeze=Math.max(S.freeze,.09);AU.pickup();}}
+    S.freeze=Math.max(S.freeze,TUNING.juice.comboFreeze);AU.pickup();}}
 function updateJuice(dt){if(S.comboT>0){S.comboT-=dt;if(S.comboT<=0)S.combo=0;}
   if(S.taq>0){S.taq-=dt;
     if(Math.random()<.5)S.parts.push({x:S.p.x+rr(-16,16),y:S.p.y-rr(0,44),
@@ -1462,7 +1500,7 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
     IN.jumpBuf=0;IN.fire=false;return;}
   if(fx.phase==='moptality'){fx.t+=dt;
     gz.x+=90*dt; // the donut recoils from destiny
-    if(fx.t>.5&&!fx.boomed){fx.boomed=true;S.shake=.6;
+    if(fx.t>.5&&!fx.boomed){fx.boomed=true;S.shake=TUNING.juice.boomShake;
       boom(gz.x,groundY-70,'#ff9ecb',40);boom(gz.x,groundY-70,'#f4f4ff',30);
       S.rings.push({x:gz.x,y:groundY-70,r:20,life:.8},{x:gz.x,y:groundY-70,r:50,life:.6});
       S.banner={text:'M O P T A L I T Y',t:2.4};G.score+=1500;AU.roar();AU.boom();}
@@ -1727,6 +1765,7 @@ function raceUpdate(dt){const st=S.st,p=S.p;
   // hud + finish line
   $('ebar').style.width=Math.min(100,S.speed/350*100)+'%';
   $('pbar').style.width=Math.min(100,S.dist/st.dist*100)+'%';
+  if(S.dist>=st.dist*.5)markCheckpoint('dist',st.dist*.5);
   if(S.dist>=st.dist&&!S.done){S.done=true;
     G.pendingAfter=st.after;G.lastDeltas=[];G.score+=1000;
     S.banner={text:'🏁 BIOCORE TOWER  +1000',t:2};
@@ -1842,7 +1881,7 @@ function topUpdate(dt){const st=S.st,p=S.p;
   p.x=clamp(p.x+p.vx*dt,80,W-80);p.y=clamp(p.y+p.vy*dt,96,H-46);
   // --- directional fire ---
   const wp=WEAPONS[G.weapon],pat=PATTERNS[G.pattern];p.fireT-=dt;
-  G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*dt);
+  G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*DF().regen*torqueRegenMul()*dt);
   const cost=wp.cost*pat.costMul;
   if(IN.fire&&p.fireT<=0&&G.energy>=cost){G.energy-=cost;p.fireT=wp.rate;
     pat.angles.forEach(a=>{const sa=Math.sin(a),ca=Math.cos(a);
@@ -1854,7 +1893,7 @@ function topUpdate(dt){const st=S.st,p=S.p;
   const ramp=S.t>32?.72:1;
   for(const kk in S.timers){S.timers[kk]-=dt;
     if(S.timers[kk]<=0&&S.t<st.dur-2){topSpawn(kk);
-      S.timers[kk]=rr(st.mix[kk][0],st.mix[kk][1])*G.spawnMul*ramp;}}
+      S.timers[kk]=rr(st.mix[kk][0],st.mix[kk][1])*G.spawnMul*ramp*DF().spawn;}}
   // scripted cassette drops
   if(S.t>13&&!S.tok1){S.tok1=1;S.picks.push({x:rr(150,W-150),y:-24,t:0,kind:'spread'});}
   if(S.t>31&&!S.tok2){S.tok2=1;S.picks.push({x:rr(150,W-150),y:-24,t:0,kind:'shred'});}
@@ -1906,6 +1945,7 @@ function topUpdate(dt){const st=S.st,p=S.p;
   if(S.banner)S.banner.t-=dt;
   // --- progress / win ---
   $('pbar').style.width=Math.min(100,S.t/st.dur*100)+'%';
+  if(S.t>=st.dur*.5)markCheckpoint('t',st.dur*.5);
   if(S.t>=st.dur&&!S.done){S.done=true;warp();setTimeout(showConsequence,350);}}
 
 function topSpawn(type){
@@ -1950,7 +1990,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
 
   // --- firing & energy ---
   const wp=WEAPONS[G.weapon];p.fireT-=dt;
-  G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*dt);
+  G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*DF().regen*torqueRegenMul()*dt);
   if(IN.fire&&p.fireT<=0&&G.energy>=wp.cost){G.energy-=wp.cost;p.fireT=wp.rate;
     S.bullets.push({x:p.x+(S.stIdx===0?8:S.st.boss?34:20),y:p.y-(S.st.boss?44:26),vx:wp.speed,vy:0,pierce:wp.pierce,dmg:wp.dmg,sz:wp.size,col:wp.col});
     if(G.weapon==='railgun')AU.boom();else AU.pew();}
@@ -1958,7 +1998,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
 
   // --- spawns ---
   if(!st.boss)for(const k in S.timers){S.timers[k]-=dt;
-    if(S.timers[k]<=0&&S.t<st.dur-1.5){spawnFoe(k);S.timers[k]=rr(st.mix[k][0],st.mix[k][1])*G.spawnMul;}}
+    if(S.timers[k]<=0&&S.t<st.dur-1.5){spawnFoe(k);S.timers[k]=rr(st.mix[k][0],st.mix[k][1])*G.spawnMul*DF().spawn;}}
   if(st.boss)updateBoss(dt);
 
   // --- bullets ---
@@ -2018,6 +2058,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
 
   // --- progress / win ---
   if(!st.boss){$('pbar').style.width=Math.min(100,S.t/st.dur*100)+'%';
+    if(S.t>=st.dur*.5)markCheckpoint('t',st.dur*.5);
     if(S.t>=st.dur&&!S.done){S.done=true;warp();setTimeout(showConsequence,350);}}
   else if(S.boss){$('pbar').style.width=Math.max(0,S.boss.hp/S.boss.max*100)+'%';
     if(S.bossDying>=0){S.bossDying+=dt;
@@ -2032,13 +2073,13 @@ function killFoe(j){const f=S.foes[j];boom(f.x,f.y-f.h/2,f.type==='drone'?'#ff3d
   else if(r<.3)S.picks.push({x:f.x,y:groundY-46,t:0,kind:'en'});
   S.foes.splice(j,1);
   if(f.big){ // CHONKY BOY erupts into the blobs he always was
-    S.freeze=Math.max(S.freeze,.1);S.shake=.4;
+    S.freeze=Math.max(S.freeze,TUNING.juice.hurtFreeze);S.shake=TUNING.juice.killShake;
     S.rings.push({x:f.x,y:f.y-22,r:14,life:.7});AU.roar();
     S.pops.push({x:f.x,y:f.y-60,t:1.4,txt:'CHONKY DOWN',col:'#ff3df0',big:true});
     for(let k2=0;k2<3;k2++){spawnFoe('blob',true);const nb=S.foes[S.foes.length-1];
       nb.x=f.x+(k2-1)*34;nb.t=k2*.2;}}}
 
-function hurt(){G.hp--;S.p.inv=TUNING.invuln;S.shake=.3;AU.hit();updateHearts();
+function hurt(){G.hp--;S.p.inv=TUNING.invuln*DF().inv*vexInvMul();S.shake=TUNING.juice.hurtShake;AU.hit();updateHearts();
   boom(S.p.x,S.p.y-20,'#ff4757',8);
   S.combo=0;S.comboT=0; // the combo dies with your dignity
   S.caps.push({x:S.p.x,y:S.p.y-46,vx:rr(-160,-60),vy:rr(-380,-260),rot:0,vr:rr(-9,9),life:1.1});
@@ -2062,8 +2103,8 @@ function updateBoss(dt){const bs=S.boss;if(S.bossDying>=0)return;
         const d=S.boss.x-60-S.p.x;
         S.shots.push({x:S.boss.x-40,y:S.boss.y,vx:-clamp(d*(.5+i*.28+rr(0,.18))/.85,120,720),vy:-rr(360,520),grav:true,w:13,h:13});}},i*130);
     }else if(blobs<4){spawnFoe('blob');S.foes[S.foes.length-1].x=bs.x-60;}}}
-function killBoss(){S.bossDying=0;S.shots.length=0;AU.roar();S.shake=.6;
-  S.freeze=.18;G.score+=2000;
+function killBoss(){S.bossDying=0;S.shots.length=0;AU.roar();S.shake=TUNING.juice.bossDieShake;
+  S.freeze=TUNING.juice.bossDieFreeze;G.score+=2000;
   S.banner={text:'VAT: MOPPED  +2000',t:2.2};}
 
 /* ================= RENDER: 64-bit top-scroller ================= */
@@ -2265,7 +2306,7 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
   if(Math.hypot(ix,iy)>.3)S.dir=Math.round(Math.atan2(p.vy,p.vx)/(Math.PI/4))&7;
   // --- fire in facing direction ---
   const wp=WEAPONS[G.weapon];p.fireT-=dt;
-  G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*dt);
+  G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*DF().regen*torqueRegenMul()*dt);
   if(IN.fire&&p.fireT<=0&&G.energy>=wp.cost){G.energy-=wp.cost;p.fireT=wp.rate;
     const a=S.dir*(Math.PI/4);
     S.bullets.push({x:p.x+Math.cos(a)*18,y:p.y+Math.sin(a)*10-12,
@@ -2323,7 +2364,7 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
   if(dg.plunger&&!dg.plungerGot){dg.plunger.t+=dt;
     if(Math.hypot(dg.plunger.x-p.x,dg.plunger.y-p.y)<30){dg.plungerGot=true;
       if(!G.plungerClaimed){G.plungerClaimed=true;G.maxHp++;}
-      G.hp=G.maxHp;AU.roar();S.shake=.5;
+      G.hp=G.maxHp;AU.roar();S.shake=TUNING.juice.plungerShake;
       S.banner={text:'🪠 GOLDEN PLUNGER GET! MAX ♥ +1',t:2.6};
       dg.exit.on=true;}}
   if(dg.exit.on&&Math.hypot(dg.exit.x-p.x,dg.exit.y-p.y)<34&&!S.done){S.done=true;
@@ -2729,7 +2770,7 @@ MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 
 // Load the profile LAST: every listener is bound and the loop is running by now, so even an
 // unexpected throw in here cannot cost us input. SAVE.load() is internally guarded regardless.
-SAVE.load();updateTaqHud();refreshContinue();
+SAVE.load();updateTaqHud();renderDiff();refreshContinue();
 </script>
 </body>
 </html>
