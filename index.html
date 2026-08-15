@@ -113,6 +113,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 #hearts{font-size:19px;letter-spacing:2px;color:var(--red);text-shadow:0 0 8px rgba(255,71,87,.7)}
 #ebarw{flex:1;height:13px;background:rgba(10,6,24,.75);border:1px solid #35226b;border-radius:8px;overflow:hidden}
 #ebar{height:100%;width:100%;background:linear-gradient(90deg,#c77b0a,var(--amb))}
+#taq{font-size:15px;font-weight:800;letter-spacing:.02em;color:#ffd75e;text-shadow:0 0 8px rgba(255,215,94,.6);white-space:nowrap}
 #pbarw{height:5px;background:rgba(10,6,24,.75);border-radius:4px;overflow:hidden;margin-top:7px}
 #pbar{height:100%;width:0%;background:var(--cyn)}
 #pbar.boss{background:var(--lim)}
@@ -234,7 +235,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 <div id="app">
 <canvas id="cv"></canvas>
 
-<div id="hud"><div id="hudrow"><div id="hearts">♥♥♥♥♥</div><div id="ebarw"><div id="ebar"></div></div></div><div id="pbarw"><div id="pbar"></div></div></div>
+<div id="hud"><div id="hudrow"><div id="hearts">♥♥♥♥♥</div><div id="ebarw"><div id="ebar"></div></div><div id="taq">🌮 0</div></div><div id="pbarw"><div id="pbar"></div></div></div>
 <div id="pads"><div class="pad" id="padJ">⬆ JUMP</div><div class="pad" id="padF">🔥 FIRE</div></div>
 <div id="stick"></div>
 <div id="steer"></div>
@@ -244,10 +245,11 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
   <h1 class="glitch">Janitor of<span>Tomorrow</span></h1>
   <p class="sub">Mop tonight. Save 2099. Try not to die in a mall.</p>
   <div id="cast"></div>
-  <div class="btnrow"><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
+  <div class="btnrow"><button class="btn" id="bCont" style="display:none">⏱ CONTINUE</button><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
+  <p class="small dim" id="contline" style="display:none"></p>
   <p class="small dim blink">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
-  <p class="small dim" style="margin-top:8px">v0.4 (Pre-Phase 0 Baseline)</p>
+  <p class="small dim" style="margin-top:8px">v0.5 · <button class="btn ghost sm" id="bErase" style="display:none">🧽 erase save</button></p>
 </div>
 
 <div class="screen" id="story">
@@ -369,23 +371,23 @@ const PATTERNS={
   shred:{name:'📼 DOUBLE-NECK SHRED — 4-WAY',angles:[-.16,.16,-1.05,1.05],costMul:1.7}};
 // mix = seconds between spawns [min,max] per enemy type
 const STAGES=[
-  {name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,mix:{blob:[1.6,2.6],turret:[6,9]},
+  {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,mix:{blob:[1.6,2.6],turret:[6,9]},
    next:{scene:1}},
-  {name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:200,hue:315,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
+  {id:'ch2',name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:200,hue:315,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
    next:{stage:2,label:'🏁 TORQUE FOUND THE KEYS →'}},
-  {name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2099 · ARCADE CABINET MODE',race:true,dist:3400,hue:265,
+  {id:'race',name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2099 · ARCADE CABINET MODE',race:true,dist:3400,hue:265,
    next:{scene:2},
    after:'You parallel-parked at 90 mph. Vex logged it as "a war crime, but efficient." Biocore Tower looms overhead, humming show tunes to itself.'},
-  {name:'CH.3 — CUSTARD ASCENT',sub:'Biocore Vat Shaft · 64-BIT MODE',dur:55,top:true,scroll:220,hue:200,mix:{wasp:[2.4,3.6],sinker:[5,8],pod:[3.6,5.6]},
+  {id:'ch3',name:'CH.3 — CUSTARD ASCENT',sub:'Biocore Vat Shaft · 64-BIT MODE',dur:55,top:true,scroll:220,hue:200,mix:{wasp:[2.4,3.6],sinker:[5,8],pod:[3.6,5.6]},
    next:{stage:4,label:'🗺️ VEX UNROLLS A MAP →'}},
-  {name:'OPERATION: FLOOR PLAN',sub:'The Vat Floor · TURN-BASED TERRITORY MODE',war:true,
+  {id:'war',name:'OPERATION: FLOOR PLAN',sub:'The Vat Floor · TURN-BASED TERRITORY MODE',war:true,
    next:{stage:7,label:'🪠 A HATCH OPENS UNDER THE CORE →'},
    after:'THE CORE is yours. The pudding garrisons surrendered their tiny flags. Vex folds the map with the reverence of a national funeral.'},
-  {name:'VS GLAZE — THE FORBIDDEN DONUT',sub:'Vat Door Dojo · KUMITE MODE',fight:true,hue:150,
+  {id:'glaze',name:'VS GLAZE — THE FORBIDDEN DONUT',sub:'Vat Door Dojo · KUMITE MODE',fight:true,hue:150,
    next:{stage:6,label:'⚔️ FACE K.E.V.I.N. →'},
    after:'MOPTALITY. GLAZE crumbles into six thousand sprinkles. Torque eats the evidence "so forensics can\'t find it." The vat door, deeply unsettled, opens on its own.'},
-  {name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,hue:120,bossHp:64},
-  {name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,hue:265,
+  {id:'boss',name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,hue:120,bossHp:64},
+  {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
    after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'}
 ];
@@ -554,12 +556,79 @@ const pick=a=>a[(Math.random()*a.length)|0];
 let G=null;
 function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timeline:50,torque:3,vex:3,
   weapon:'pistol',pattern:'single',regen:0,spawnMul:1,pendingAfter:'',lastDeltas:[],deaths:0,
-  score:0,comboBest:0,seenTut:false,seenTut2:false};}
+  score:0,comboBest:0,seenTut:false,seenTut2:false,taquitos:0};}
 newGame();
+
+/* ================= PERSISTENCE =================
+   One key, plain JSON only — never a Set or Map in the payload (JSON.stringify(new Set()) is "{}",
+   which silently saves nothing). Every storage touch is wrapped, so NOTHING in here can throw: this page
+   has a single script block, so an uncaught error at top level kills every listener registered after it,
+   which looks exactly like broken input. SAVE.load() is called at the very end of the script, after all
+   listeners are bound and the loop has started. */
+const SAVE_KEY='jot.save', SAVE_VER=1;
+const LS={
+ get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+ set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},
+ del(k){try{localStorage.removeItem(k);return true}catch(e){return false}}};
+function defaultProfile(){return{ver:SAVE_VER,taquitos:0,items:[],stats:{},best:{},run:null};}
+// A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
+// truncated save can offer CONTINUE and then throw on STAGES[999]/STORY[999] inside the click handler.
+function validRun(r){
+  if(!r||typeof r!=='object'||!r.g||typeof r.g!=='object')return null;
+  const idx=r.idx|0;
+  if(r.at==='stage')return STAGES[idx]?{g:r.g,at:'stage',idx}:null;
+  if(r.at==='scene')return STORY[idx]?{g:r.g,at:'scene',idx}:null;
+  return null;}
+let PROF=defaultProfile();
+let SAVE_OK=true; // false once a write has failed — used to stay quiet rather than retry every board
+const SAVE={
+ load(){const raw=LS.get(SAVE_KEY);if(!raw)return PROF;
+   let o=null;try{o=JSON.parse(raw)}catch(e){o=null}
+   if(!o||typeof o!=='object'){LS.del(SAVE_KEY);return PROF;}
+   PROF=SAVE.migrate(o);return PROF;},
+ migrate(o){const d=defaultProfile();
+   switch(o.ver){
+     case SAVE_VER: break;              // current
+     default: return d;                 // unknown/older shape: start clean rather than guess
+   }
+   // merge field by field so a truncated or hand-edited save can never produce a wrong-shaped profile
+   return{ver:SAVE_VER,
+     taquitos:Number.isFinite(o.taquitos)?Math.max(0,o.taquitos|0):d.taquitos,
+     items:Array.isArray(o.items)?o.items.filter(x=>typeof x==='string'):d.items,
+     stats:(o.stats&&typeof o.stats==='object'&&!Array.isArray(o.stats))?o.stats:d.stats,
+     best:(o.best&&typeof o.best==='object'&&!Array.isArray(o.best))?o.best:d.best,
+     run:validRun(o.run)};},
+ write(){if(!SAVE_OK)return false;
+   let s=null;try{s=JSON.stringify(PROF)}catch(e){return false}
+   if(!LS.set(SAVE_KEY,s)){SAVE_OK=false;return false}
+   return true;},
+ erase(){PROF=defaultProfile();LS.del(SAVE_KEY);SAVE_OK=true;}};
+
+// --- ledger + inventory + stats ---
+// Persist on pickup: taquitos are rare (roughly one per board, five in the dungeon), so the write cost
+// is nothing, and "I picked it up, it's mine" should survive closing the tab mid-board.
+function earnTaquitos(n){n=n|0;if(n<=0)return;G.taquitos+=n;PROF.taquitos+=n;updateTaqHud();SAVE.write();}
+function spendTaquitos(n){n=n|0;if(n<=0||PROF.taquitos<n)return false;
+  PROF.taquitos-=n;updateTaqHud();SAVE.write();return true;}
+function hasItem(id){return PROF.items.indexOf(id)>=0;}
+function addItem(id){if(!hasItem(id))PROF.items.push(id);}
+function bumpStat(k,n){PROF.stats[k]=(PROF.stats[k]|0)+(n==null?1:n|0);}
+function recordBest(id,score){if(!id)return false;
+  if((PROF.best[id]|0)>=score)return false;PROF.best[id]=score;return true;}
+function updateTaqHud(){const el=$('taq');if(el)el.textContent='🌮 '+PROF.taquitos;}
+
+// --- resumable run ---
+// Snapshot a DEEP COPY, never a live reference to G. With a live reference every later write would
+// persist the current G instead of the checkpoint — and since gameOver() writes, the save would end up
+// holding hp:0 and CONTINUE would drop you into a board you are already dead in.
+function snapshotRun(at,idx){
+  let g=null;try{g=JSON.parse(JSON.stringify(G))}catch(e){return}
+  PROF.run={g,at,idx};SAVE.write();}
+function clearRun(){PROF.run=null;SAVE.write();}
 let MODE='title'; // title | story | conseq | action | over | end
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
-function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);
+function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);if(v)updateTaqHud();
   $('stick').classList.toggle('on',v&&!!(S&&S.st&&(S.st.top||S.st.dungeon)));
   $('steer').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));}
 function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85;
@@ -752,6 +821,7 @@ function applyFx(fx){const d=[];const add=(txt,neg)=>d.push({txt,neg});
   return d;}
 
 function openScene(i){MODE='story';hudOn(false);MUS.play('title');const sc=STORY[i];renderMeters();
+  snapshotRun('scene',i); // checkpoint at each story beat
   $('chap').textContent=sc.chap;
   $('stext').innerHTML=sc.lines.map(([s,t])=>s
     ?'<p class="dlg"><img class="port" src="'+PORT[s]+'" alt=""><span><b class="sp '+s.toLowerCase()+'">'+s+':</b> '+t+'</span></p>'
@@ -774,18 +844,52 @@ $('bGotit').addEventListener('click',()=>{AU.ui();const f=tutNext;tutNext=null;
 $('bGotit2').addEventListener('click',()=>{AU.ui();const f=tutNext;tutNext=null;
   if(f)f();else showScreen('title');});
 $('bHow').addEventListener('click',()=>{AU.ui();tutNext=null;showScreen('tut');});
-$('bStart').addEventListener('click',()=>{AU.ui();newGame();openScene(0);});
+$('bStart').addEventListener('click',()=>{AU.ui();
+  if(PROF.run)clearRun(); // starting fresh abandons the saved run
+  newGame();updateTaqHud();refreshContinue();openScene(0);});
+
+// Show CONTINUE only when there is a run to resume, and say what it resumes into.
+// Show the erase button whenever there is ANY saved data, run or not (a wallet is worth erasing too).
+function refreshContinue(){const b=$('bCont'),l=$('contline'),r=PROF.run;
+  const hasData=!!(r||PROF.taquitos||PROF.items.length||Object.keys(PROF.best).length);
+  $('bErase').style.display=hasData?'':'none';eraseArmed=false;$('bErase').textContent='🧽 erase save';
+  if(!r||!r.g){b.style.display='none';l.style.display='none';l.textContent='';return;}
+  const where=r.at==='stage'?(STAGES[r.idx]&&STAGES[r.idx].name):('CHAPTER '+((r.idx|0)+1));
+  b.style.display='';l.style.display='';
+  l.textContent='resume: '+(where||'in progress')+' · 🌮 '+PROF.taquitos;}
+
+// Erasing is destructive, so it takes two taps.
+let eraseArmed=false;
+$('bErase').addEventListener('click',()=>{AU.ui();const b=$('bErase');
+  if(!eraseArmed){eraseArmed=true;b.textContent='⚠️ tap again to erase';return;}
+  SAVE.erase();newGame();updateTaqHud();refreshContinue();});
+
+$('bCont').addEventListener('click',()=>{AU.ui();
+  const r=validRun(PROF.run); // re-validate at click time, not just at load
+  if(!r){PROF.run=null;refreshContinue();return;}
+  newGame();Object.assign(G,r.g); // start from a complete current-shape G, then layer the save over it
+  updateTaqHud();
+  if(r.at==='stage'){G.stage=r.idx;warp();startStage(G.stage);}
+  else{G.scene=r.idx;openScene(G.scene);}});
 
 /* ================= CONSEQUENCE / GAMEOVER / ENDING ================= */
 function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
+  // board cleared: bank the stats and a personal best, keyed by the stage's stable id
+  bumpStat('cleared.'+st.id);bumpStat('boardsCleared');
+  const newBest=recordBest(st.id,G.score);
+  if(st.id==='dungeon')addItem('golden_plunger');
+  SAVE.write();
   let loot;
   if(G.hp<G.maxHp){G.hp++;loot=pick(LOOT);}
   else loot='🫗 You loot a taquito, but you\'re full. Torque eats it. Whole. Wrapper too.';
   const chips=G.lastDeltas.map(d=>'<span class="chip'+(d.neg?' neg':'')+'">'+d.txt+'</span>').join('');
+  const bestLine='<p class="nar">'+(newBest?'🏆 NEW PERSONAL BEST — ':'best on this board: ')+
+    'SCORE '+String(PROF.best[st.id]|0).padStart(7,'0')+
+    (G.taquitos?' · 🌮 '+G.taquitos+' collected this run':'')+'</p>';
   $('stext').innerHTML=(chips?'<div class="chips">'+chips+'</div>':'')+
-    '<p>'+G.pendingAfter+'</p><p>'+loot+'</p><p class="nar">'+pick(FLAVOR)+'</p>'+
+    '<p>'+G.pendingAfter+'</p><p>'+loot+'</p>'+bestLine+'<p class="nar">'+pick(FLAVOR)+'</p>'+
     (preBoss?'<p class="nar">🖥️ Vex reroutes the last of the graphics budget into the boss room. "K.E.V.I.N. deserves full 64-bit," she says. It\'s the most emotion she\'s ever shown.</p>':'');
   const ch=$('choices');ch.innerHTML='';
   const b=document.createElement('button');b.className='choice';
@@ -795,7 +899,7 @@ function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMe
     else{G.stage=nx.stage;warp();startStage(nx.stage);}});
   ch.appendChild(b);$('stext').scrollTop=0;showScreen('story');}
 
-function gameOver(){MODE='over';hudOn(false);MUS.stop();AU.die();G.deaths++;
+function gameOver(){MODE='over';hudOn(false);MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
   G.timeline=clamp(G.timeline-TUNING.retryTimelineCost,0,100);
   $('overline').textContent=pick(DEATHLINES);
   $('overstats').textContent='-'+TUNING.retryTimelineCost+' TIMELINE · rewinds annoy time itself';
@@ -806,6 +910,7 @@ $('bQuit').addEventListener('click',()=>{AU.ui();hudOn(false);MUS.play('title');
 
 function ending(){MODE='end';hudOn(false);MUS.play('end');
   const key=G.timeline>=70?'gold':G.timeline>=35?'side':'beige';
+  bumpStat('completed');bumpStat('ending.'+key);clearRun();refreshContinue(); // run is over: nothing to resume
   const e=ENDINGS[key],n=key==='gold'?'1':key==='side'?'2':'3';
   const bKey=G.torque>G.vex?'TORQUE':G.vex>G.torque?'VEX':null;
   const buddy=bKey==='TORQUE'
@@ -1238,6 +1343,7 @@ addEventListener('contextmenu',e=>e.preventDefault());
 /* ================= ACTION: stage setup ================= */
 let S=null;
 function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
+  snapshotRun('stage',i); // checkpoint at board start — placed above the war early-return so it covers every board
   if(st.war){openWar();return;}
   MODE='action';
   MUS.play(st.boss?'boss':st.top?'drive':st.race?'race':st.fight?'fight':st.dungeon?'dnd':['chip','punk'][i]);
@@ -1286,7 +1392,7 @@ function boom(x,y,col,n){for(let i=0;i<n;i++)S.parts.push({x,y,vx:rr(-190,190),v
 const MILESTONES={5:'RADICAL!',10:'MOP LORD!',15:'JANITORIAL VIOLENCE!',20:'BEYOND CLEAN!',30:'CUSTODIAN OF DOOM!'};
 function killJuice(x,y,base){S.freeze=Math.max(S.freeze,.045);
   S.rings.push({x,y,r:8,life:.5});
-  S.combo++;S.comboT=2.5;G.comboBest=Math.max(G.comboBest,S.combo);
+  S.combo++;S.comboT=2.5;G.comboBest=Math.max(G.comboBest,S.combo);bumpStat('kills');
   const pts=base*Math.min(S.combo,10);G.score+=pts;
   S.pops.push({x,y:y-16,t:1,txt:'+'+pts,col:S.combo>=5?'#ffd75e':'#eae6ff',big:false});
   if(S.combo>=2)AU.t(280+Math.min(S.combo,12)*55,.06,'square',.25,120);
@@ -1580,7 +1686,7 @@ function raceUpdate(dt){const st=S.st,p=S.p;
     if(o.z<=0&&!o.done&&!S.done){o.done=true; // finish line = diplomatic immunity
       const hitW=o.type==='chonky'?.52:o.type==='tanker'?.4:.3;
       if(Math.abs(o.lane-S.px)<hitW){
-        if(o.type==='taq'){S.taq=5;G.score+=200;S.banner={text:'🌮 TAQUITO TIME! 🌮',t:2};
+        if(o.type==='taq'){S.taq=5;G.score+=200;earnTaquitos(1);S.banner={text:'🌮 TAQUITO TIME! 🌮',t:2};
           AU.t(523,.09,'sine',.5,0);setTimeout(()=>AU.t(659,.09,'sine',.5,0),90);
           setTimeout(()=>AU.t(784,.16,'sine',.5,0),180);}
         else if(o.type==='goo'){if(S.taq<=0){S.combo=0;S.comboT=0;S.speed*=.5;
@@ -1767,7 +1873,7 @@ function topUpdate(dt){const st=S.st,p=S.p;
     if((kp.x-p.x)*(kp.x-p.x)+(kp.y-p.y)*(kp.y-p.y)<38*38){
       if(kp.kind==='hp')G.hp=Math.min(G.maxHp,G.hp+1);
       else if(kp.kind==='en')G.energy=Math.min(100,G.energy+30);
-      else if(kp.kind==='taq'){S.taq=5;G.score+=200;
+      else if(kp.kind==='taq'){S.taq=5;G.score+=200;earnTaquitos(1);
         S.banner={text:'🌮 TAQUITO TIME! 🌮',t:2};
         AU.t(523,.09,'sine',.5,0);setTimeout(()=>AU.t(659,.09,'sine',.5,0),90);
         setTimeout(()=>AU.t(784,.16,'sine',.5,0),180);}
@@ -1879,7 +1985,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
     if(k.x<-30){S.picks.splice(i,1);continue;}
     if(Math.abs(k.x-p.x)<26&&Math.abs((k.y+Math.sin(k.t*5)*6)-(p.y-20))<40){
       if(k.kind==='hp')G.hp=Math.min(G.maxHp,G.hp+TUNING.pickupHeal);
-      else if(k.kind==='taq'){S.taq=5;G.score+=200;
+      else if(k.kind==='taq'){S.taq=5;G.score+=200;earnTaquitos(1);
         S.banner={text:'🌮 TAQUITO TIME! 🌮',t:2};S.pops.push({x:p.x,y:p.y-70,t:1.2,txt:'+200',col:'#ffd75e'});
         AU.t(523,.09,'sine',.5,0);setTimeout(()=>AU.t(659,.09,'sine',.5,0),90);
         setTimeout(()=>AU.t(784,.16,'sine',.5,0),180);}
@@ -2192,7 +2298,7 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
   // --- crates / plunger / exit ---
   for(let i=dg.crates.length-1;i>=0;i--){const c=dg.crates[i];c.t+=dt;
     if(Math.hypot(c.x-p.x,c.y-p.y)<30){dg.crates.splice(i,1);dg.got++;
-      G.score+=500;AU.pickup();boom(c.x,c.y,'#ffd75e',8);
+      G.score+=500;earnTaquitos(1);AU.pickup();boom(c.x,c.y,'#ffd75e',8);
       S.pops.push({x:c.x,y:c.y-22,t:.9,txt:dg.got+'/5 🌮',col:'#ffd75e'});
       if(dg.got>=5){S.banner={text:'🪠 THE PLUNGER AWAKENS',t:2};
         dg.plunger={x:S.dg.pedestal.x,y:S.dg.pedestal.y,t:0};}}}
@@ -2602,6 +2708,10 @@ const PMQ=matchMedia('(orientation: portrait)');
 function syncRot(){if(S)S.paused=PMQ.matches;IN.fire=false;last=performance.now();}
 try{PMQ.addEventListener('change',syncRot);}catch(e){PMQ.addListener(syncRot);}
 MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
+
+// Load the profile LAST: every listener is bound and the loop is running by now, so even an
+// unexpected throw in here cannot cost us input. SAVE.load() is internally guarded regardless.
+SAVE.load();updateTaqHud();refreshContinue();
 </script>
 </body>
 </html>

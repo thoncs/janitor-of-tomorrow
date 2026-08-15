@@ -293,7 +293,7 @@ critter enemies. Either create the location or rewrite the references.
 |---|---|---|
 | Verification gate | ✅ **Done** `72ec6cd` | `tools/check.mjs` + `tools/smoke.mjs` + hooks. Verified against known-good and known-broken commits. |
 | HEAD defect fixes | ✅ **Done** `d75d25f` | Non-negative `dt` clamp; sequencer no longer schedules notes in the past after a throttle stall. |
-| A — Persistence & ledger | ⬜ Not started | |
+| A — Persistence & ledger | ✅ **Done** | One guarded key (`jot.save`, ver 1), taquito wallet + HUD, inventory, stats, per-board bests keyed by new `STAGES[].id`, CONTINUE with a deep-copied checkpoint, erase-save. Verified against 12 hostile save payloads and a storage-denied boot. `spendTaquitos`/`hasItem` are in place but unspent until the shop phase. |
 | B — Gameplay refinement | ⬜ Not started | |
 | C — Pause & menu shell | ⬜ Not started | |
 | D — AV settings & mixing | ⬜ Not started | |
