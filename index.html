@@ -441,13 +441,7 @@ input[type="range"]:hover{opacity:1;}
 <script>
 'use strict';
 /* ================= DATA: tuning, weapons, enemies, stages ================= */
-const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1,
-difficulty:'normal',difficulties:{ // Phase 2: Difficulty settings
-  easy:{spawnMul:0.7,enemyHp:0.8,damageMul:0.8,timelineDecay:0.5},
-  normal:{spawnMul:1.0,enemyHp:1.0,damageMul:1.0,timelineDecay:1.0},
-  hard:{spawnMul:1.3,enemyHp:1.2,damageMul:1.2,timelineDecay:1.5},
-  hell:{spawnMul:1.6,enemyHp:1.5,damageMul:1.5,timelineDecay:2.0}
-}};
+const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1};
 const WEAPONS={
   pistol:{name:'MALL-PUNK PISTOL',rate:.15,cost:5,dmg:1,speed:560,size:6,pierce:0,col:'#21f0ff'},
   railgun:{name:'HAIR-METAL RAILGUN',rate:.55,cost:20,dmg:3,speed:720,size:11,pierce:2,col:'#ff3df0'}
@@ -780,14 +774,6 @@ let MAP_STATE={discovered:new Set(),completed:new Set(),currentNode:'core_vat',s
 function saveMapState(){try{localStorage.setItem('janitorMap',JSON.stringify(MAP_STATE));}catch(e){}}
 function loadMapState(){try{const saved=localStorage.getItem('janitorMap');
   if(saved)Object.assign(MAP_STATE,JSON.parse(saved));}catch(e){}}
-// Phase 2: Comprehensive save/load system
-function saveGame(){try{const save={G,MAP_STATE,settings:settingsState};
-  localStorage.setItem('janitorSave',JSON.stringify(save));}catch(e){}}
-function loadGame(){try{const saved=localStorage.getItem('janitorSave');
-  if(saved){const save=JSON.parse(saved);Object.assign(G,save.G);Object.assign(MAP_STATE,save.MAP_STATE);
-    Object.assign(settingsState,save.settings||settingsState);
-    loadSettings();loadMapState();return true;}}catch(e){}
-  return false;}
 function isNodeUnlocked(nodeId){return FACILITY_MAP.getNodeUnlockStatus(nodeId);}
 function hasItem(item){return G[item]===true||G.inventory&&G.inventory.includes(item);}
 
@@ -800,12 +786,7 @@ function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timelin
   MAP_STATE={discovered:new Set(['core_vat']),completed:new Set(),
     currentNode:'core_vat',selectedNode:null};
   saveMapState();
-  // Phase 2: Load difficulty setting and apply spawn multiplier
-  let savedDiff='normal';
-  try{savedDiff=localStorage.getItem('janitorDifficulty')||'normal';}catch(e){}
-  TUNING.difficulty=savedDiff;
-  try{localStorage.setItem('janitorDifficulty',savedDiff);}catch(e){}
-  G.spawnMul*=(TUNING.difficulties[TUNING.difficulty].spawnMul||1);}
+  G.spawnMul=1;}
 newGame();
 let MODE='title'; // title | story | conseq | action | over | end
 
@@ -1256,8 +1237,6 @@ function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMe
   // Phase 1: Mark stage as complete in map and handle unlock items
   markStageComplete(G.stage);
   if(st.unlockItem&&!G.inventory.includes(st.unlockItem))G.inventory.push(st.unlockItem);
-  // Phase 2: Auto-save after completing a stage
-  saveGame();
   $('chap').textContent='✅ '+st.name+' — CLEAR';
   let loot;
   if(G.hp<G.maxHp){G.hp++;loot=pick(LOOT);}
@@ -1716,9 +1695,6 @@ addEventListener('contextmenu',e=>e.preventDefault());
 
 /* ================= ACTION: stage setup ================= */
 let S=null;
-// Phase 2: Global particle emitters for weapon feedback
-const weaponEmitter=new ParticleEmitter(0,0,{rate:0,life:{min:.2,max:.4},size:{min:3,max:6},
-  velocity:{x:{min:-100,max:100},y:{min:-100,max:100}},color:'#21f0ff',gravity:0});
 function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
   if(st.war){openWar();return;}
   MODE='action';
@@ -1762,13 +1738,12 @@ function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
     if(st.fight)S.fx.doug.x=Math.max(S.fx.doug.x,S.p.x);} // kumite respects the notch too
   $('pbar').classList.toggle('boss',!!st.boss);}
 
-function spawnFoe(type,plain){const d=ENEMIES[type];const diff=TUNING.difficulties[TUNING.difficulty];
-  const f={type,hp:Math.floor(d.hp*diff.enemyHp),w:d.w,h:d.h,x:W+50,t:0,hitT:0};
+function spawnFoe(type,plain){const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:W+50,t:0,hitT:0};
   if(type==='drone'){f.baseY=groundY-95-rr(0,70);f.y=f.baseY;f.ph=rr(0,6.3);}
   else{f.y=groundY;if(type==='turret')f.fireT=rr(.6,1.4);}
   // CHONKY BOY: rare giant blob. He contains multitudes (of blobs).
   // (never in the boss arena — bossDraw doesn't know him, and K.E.V.I.N. hates sharing)
-  if(type==='blob'&&!plain&&!S.st.boss&&S.t>9&&Math.random()<.13){f.big=true;f.hp=Math.floor(8*diff.enemyHp);f.w=60;f.h=44;
+  if(type==='blob'&&!plain&&!S.st.boss&&S.t>9&&Math.random()<.13){f.big=true;f.hp=8;f.w=60;f.h=44;
     AU.t(70,.3,'sawtooth',.5,-30);}
   S.foes.push(f);}
 
@@ -2009,7 +1984,6 @@ function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   S.parts.forEach(q=>{cx.globalAlpha=Math.min(1,q.life*2.5);cx.fillStyle=q.col;
     cx.fillRect(q.x-q.sz/2,q.y-q.sz/2,q.sz,q.sz);});
   // Phase 2: Draw weapon particle emitter
-  weaponEmitter.draw(cx);
   cx.globalAlpha=1;
   S.rings.forEach(r2=>{cx.strokeStyle='rgba(255,220,120,'+Math.max(0,r2.life)+')';
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
@@ -2216,13 +2190,10 @@ function topUpdate(dt){const st=S.st,p=S.p;
   G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*dt);
   const cost=wp.cost*pat.costMul;
   if(IN.fire&&p.fireT<=0&&G.energy>=cost){G.energy-=cost;p.fireT=wp.rate;
-    const diff=TUNING.difficulties[TUNING.difficulty];
     pat.angles.forEach(a=>{const sa=Math.sin(a),ca=Math.cos(a);
       S.bullets.push({x:p.x+sa*26,y:p.y-26*ca,vx:sa*wp.speed+p.vx*.25,vy:-ca*wp.speed,
-        pierce:wp.pierce,dmg:Math.floor(wp.dmg*diff.damageMul),sz:wp.size,col:wp.col});});
-    // Phase 2: Weapon feedback with particle emitter
-    weaponEmitter.config.color=wp.col;weaponEmitter.burst(5);
-    if(G.weapon==='railgun'){AU.boom();weaponEmitter.burst(8);}else AU.pew();}
+        pierce:wp.pierce,dmg:wp.dmg,sz:wp.size,col:wp.col});});
+    if(G.weapon==='railgun')AU.boom();else AU.pew();}
   $('ebar').style.width=G.energy+'%';
   // --- spawns (density ramps in the last third) ---
   const ramp=S.t>32?.72:1;
@@ -2282,13 +2253,13 @@ function topUpdate(dt){const st=S.st,p=S.p;
   $('pbar').style.width=Math.min(100,S.t/st.dur*100)+'%';
   if(S.t>=st.dur&&!S.done){S.done=true;warp();setTimeout(showConsequence,350);}}
 
-function topSpawn(type){const diff=TUNING.difficulties[TUNING.difficulty];
+function topSpawn(type){
   if(type==='wasp'){const n=3+(Math.random()*3|0),bx=rr(170,W-170);
-    for(let i=0;i<n;i++)S.foes.push({type:'wasp',hp:Math.floor(TEN.wasp.hp*diff.enemyHp),r:TEN.wasp.r,
+    for(let i=0;i<n;i++)S.foes.push({type:'wasp',hp:TEN.wasp.hp,r:TEN.wasp.r,
       x:bx,bx:bx+(i-(n-1)/2)*56,y:-30-i*36,t:0,ph:i*.7,hitT:0});}
-  else if(type==='sinker')S.foes.push({type:'sinker',hp:Math.floor(TEN.sinker.hp*diff.enemyHp),r:TEN.sinker.r,
+  else if(type==='sinker')S.foes.push({type:'sinker',hp:TEN.sinker.hp,r:TEN.sinker.r,
     x:rr(170,W-170),y:-44,t:0,ph:rr(0,6),hitT:0});
-  else{const left=Math.random()<.5;S.foes.push({type:'pod',hp:Math.floor(TEN.pod.hp*diff.enemyHp),r:TEN.pod.r,
+  else{const left=Math.random()<.5;S.foes.push({type:'pod',hp:TEN.pod.hp,r:TEN.pod.r,
     x:left?58:W-58,y:-26,t:0,fireT:rr(.8,1.6),hitT:0});}}
 
 function topKill(j){const f=S.foes[j];
@@ -2305,8 +2276,6 @@ function topKill(j){const f=S.foes[j];
 /* ================= ACTION: per-frame update ================= */
 function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
   if(S.freeze>0){S.freeze-=dt;return;} // hit-stop: the world respects a good kill
-  // Phase 2: Update weapon particle emitter
-  weaponEmitter.x=p.x;weaponEmitter.y=p.y;weaponEmitter.update(dt);
   if(st.race){raceUpdate(dt);return;}
   if(st.fight){fightUpdate(dt);return;}
   if(st.top){topUpdate(dt);return;}
@@ -2603,14 +2572,14 @@ const DROW=[2,1,0,7,6,5,4,3];
 // wang sheet is repacked at bake time so tile (idx%4, idx/4) = corner combo idx
 const WANG=Array.from({length:16},(_,i)=>[i%4,i>>2]);
 
-function dungeonInit(){const diff=TUNING.difficulties[TUNING.difficulty];
+function dungeonInit(){
   S.dg={crates:[],turrets:[],goos:[],spawners:[],got:0,plunger:null,exit:null,
     plungerGot:false,spawnT:2,orbT:0};
   for(let ty=0;ty<DROWS;ty++)for(let tx=0;tx<DCOLS;tx++){
     const ch=DMAP[ty][tx],x=(tx+.5)*DTS,y=(ty+.5)*DTS;
     if(ch==='D'){S.p.x=x;S.p.y=y;S.dg.exit={x,y,on:false};}
     else if(ch==='C')S.dg.crates.push({x,y,t:Math.random()*6});
-    else if(ch==='T')S.dg.turrets.push({x,y,hp:Math.floor(4*diff.enemyHp),t:rr(0,2),hitT:0});
+    else if(ch==='T')S.dg.turrets.push({x,y,hp:4,t:rr(0,2),hitT:0});
     else if(ch==='G')S.dg.spawners.push({x,y});
     else if(ch==='P')S.dg.pedestal={x,y};}
   S.dir=0;}
