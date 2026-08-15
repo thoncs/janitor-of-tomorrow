@@ -449,7 +449,7 @@ difficulty:'normal',difficulties:{
   hard:{spawnMul:1.3,enemyHp:1.2,damageMul:1.2,timelineDecay:1.5},
   hell:{spawnMul:1.6,enemyHp:1.5,damageMul:1.5,timelineDecay:2.0}
 },
-setDifficulty(d){this.difficulty=d;G.difficulty=d;localStorage.setItem('janitorDifficulty',d);},
+setDifficulty(d){this.difficulty=d;if(G)G.difficulty=d;try{localStorage.setItem('janitorDifficulty',d);}catch(e){}},
 getDifficulty(){return this.difficulties[this.difficulty]||this.difficulties.normal;}};
 const WEAPONS={
   pistol:{name:'MALL-PUNK PISTOL',rate:.15,cost:5,dmg:1,speed:560,size:6,pierce:0,col:'#21f0ff'},
@@ -780,16 +780,16 @@ const FACILITY_MAP={
 // Map State Management
 let MAP_STATE={discovered:new Set(),completed:new Set(),currentNode:'core_vat',selectedNode:null};
 
-function saveMapState(){localStorage.setItem('janitorMap',JSON.stringify(MAP_STATE));}
-function loadMapState(){const saved=localStorage.getItem('janitorMap');
-  if(saved)Object.assign(MAP_STATE,JSON.parse(saved));}
+function saveMapState(){try{localStorage.setItem('janitorMap',JSON.stringify(MAP_STATE));}catch(e){}}
+function loadMapState(){try{const saved=localStorage.getItem('janitorMap');
+  if(saved)Object.assign(MAP_STATE,JSON.parse(saved));}catch(e){}}
 // Phase 2: Comprehensive save/load system
-function saveGame(){const save={G,G:G,MAP_STATE,settings:settingsState};
-  localStorage.setItem('janitorSave',JSON.stringify(save));}
-function loadGame(){const saved=localStorage.getItem('janitorSave');
+function saveGame(){try{const save={G,MAP_STATE,settings:settingsState};
+  localStorage.setItem('janitorSave',JSON.stringify(save));}catch(e){}}
+function loadGame(){try{const saved=localStorage.getItem('janitorSave');
   if(saved){const save=JSON.parse(saved);Object.assign(G,save.G);Object.assign(MAP_STATE,save.MAP_STATE);
     Object.assign(settingsState,save.settings||settingsState);
-    loadSettings();loadMapState();return true;}
+    loadSettings();loadMapState();return true;}}catch(e){}
   return false;}
 function isNodeUnlocked(nodeId){return FACILITY_MAP.getNodeUnlockStatus(nodeId);}
 function hasItem(item){return G[item]===true||G.inventory&&G.inventory.includes(item);}
@@ -804,8 +804,10 @@ function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timelin
     currentNode:'core_vat',selectedNode:null};
   saveMapState();
   // Phase 2: Load difficulty setting and apply spawn multiplier
-  const savedDiff=localStorage.getItem('janitorDifficulty')||'normal';
-  TUNING.setDifficulty(savedDiff);G.spawnMul*=(TUNING.getDifficulty().spawnMul||1);}
+  let savedDiff='normal';
+  try{savedDiff=localStorage.getItem('janitorDifficulty')||'normal';}catch(e){}
+  try{TUNING.setDifficulty(savedDiff);}catch(e){}
+  G.spawnMul*=(TUNING.getDifficulty().spawnMul||1);}
 newGame();
 let MODE='title'; // title | story | conseq | action | over | end
 
@@ -1087,12 +1089,12 @@ function saveSettings(){const s=settingsState;
   MUS.setLayerVolume('ambient',s.ambientVol);MUS.setLayerVolume('sfx',s.sfxVol);
   CanvasFilters.flicker.enabled=s.flicker;CanvasFilters.gooTaint.enabled=s.goo;
   CanvasFilters.timeWarp.enabled=s.warp;AU.ui();showScreen('title');}
-function loadSettings(){const saved=localStorage.getItem('janitorAVDSettings');
-  if(saved)Object.assign(settingsState,JSON.parse(saved));
-  MUS.setMasterVolume(settingsState.masterVol);MUS.setLayerVolume('music',settingsState.musicVol);
+function loadSettings(){try{const saved=localStorage.getItem('janitorAVDSettings');
+  if(saved)Object.assign(settingsState,JSON.parse(saved));}catch(e){}
+  try{MUS.setMasterVolume(settingsState.masterVol);MUS.setLayerVolume('music',settingsState.musicVol);
   MUS.setLayerVolume('ambient',settingsState.ambientVol);MUS.setLayerVolume('sfx',settingsState.sfxVol);
   CanvasFilters.flicker.enabled=settingsState.flicker;CanvasFilters.gooTaint.enabled=settingsState.goo;
-  CanvasFilters.timeWarp.enabled=settingsState.warp;}
+  CanvasFilters.timeWarp.enabled=settingsState.warp;}catch(e){}}
 // Load settings on game start
 loadSettings();
 $('bSaveSettings').addEventListener('click',saveSettings);
