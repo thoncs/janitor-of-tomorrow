@@ -228,36 +228,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 #rot b{font-size:52px;animation:rotp 2.2s infinite}
 @keyframes rotp{0%,50%{transform:rotate(0)}65%,100%{transform:rotate(90deg)}}
 @media (orientation:portrait){#rot{display:flex}}
-/* Phase 0: Canvas filters for visual effects */
-.timeWarpFilter{filter:url(#timeWarpSvg)} /* Will be created dynamically */
-/* Phase 0: Settings screen styles */
-input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:#180d33;border-radius:2px;outline:none;opacity:.9;transition:opacity .2s;}
-input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;background:#21f0ff;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(33,240,255,.7);}
-input[type="range"]::-moz-range-thumb{width:18px;height:18px;background:#21f0ff;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(33,240,255,.7);}
-input[type="range"]:hover{opacity:1;}
-/* Phase 1: Map screen styles */
-#mapCanvas{image-rendering:pixelated;}
-.mapNode{position:absolute;transform:translate(-50%,-50%);cursor:pointer;transition:transform .15s;touch-action:manipulation;}
-.mapNode:hover{transform:translate(-50%,-50%) scale(1.1);}
-.mapNode.selected{transform:translate(-50%,-50%) scale(1.2);box-shadow:0 0 20px rgba(255,215,94,.7);}
-.mapNode.completed{filter:drop-shadow(0 0 6px rgba(0,255,0,.5));}
-.mapNode.locked{opacity:.4;filter:grayscale(1);cursor:not-allowed;}
-.mapNode::before{content:'';position:absolute;inset:-16px;border:2px solid rgba(255,215,94,.4);border-radius:50%;opacity:0;transition:opacity .2s;}
-.mapNode.selected::before{opacity:1;}
-.mapIcon{width:40px;height:40px;image-rendering:pixelated;border-radius:8px;border:2px solid #4b357f;background:#241646;display:flex;align-items:center;justify-content:center;font-size:20px;}
-.mapLabel{position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--ink);text-align:center;white-space:nowrap;background:rgba(21,12,46,.9);border:1px solid #35226b;border-radius:4px;padding:2px 6px;}
-.mapConnection{position:absolute;pointer-events:none;stroke:rgba(255,215,94,.25);stroke-width:2;z-index:-1;}
-.mapConnection.discovered{stroke:rgba(255,215,94,.45);stroke-width:3;}
-#mapContainer{overflow:hidden;}
 </style>
-<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="timeWarpSvg" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.01 0.02" numOctaves="2" result="turbulence" seed="1"/>
-      <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="15" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs>
-</svg>
 </head>
 <body>
 <div id="app">
@@ -274,7 +245,6 @@ input[type="range"]:hover{opacity:1;}
   <p class="sub">Mop tonight. Save 2099. Try not to die in a mall.</p>
   <div id="cast"></div>
   <div class="btnrow"><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
-  <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="bSettings">⚙️ AV SETTINGS</button><button class="btn ghost sm" id="bMap">🗺️ FACILITY MAP</button></div>
   <p class="small dim blink">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
 </div>
@@ -318,68 +288,6 @@ input[type="range"]:hover{opacity:1;}
   <div class="trow"><b>🖥️</b><span><b>VEX INSTALLED A 64-BIT GRAPHICS CARD.</b> Gaze upon the future. It has gradients.</span></div>
   </div>
   <button class="btn" id="bGotit2">🚀 LAUNCH →</button>
-</div>
-
-<div class="screen" id="settings">
-  <div class="pill">Audio/Visual Settings</div>
-  <h2>Phase 0: AV Configuration</h2>
-  <div id="settingsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:600px">
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">MASTER VOLUME</div>
-      <input type="range" id="masterVol" min="0" max="1" step=".05" value=".5" style="width:100%">
-    </div>
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">MUSIC VOLUME</div>
-      <input type="range" id="musicVol" min="0" max="1" step=".05" value=".5" style="width:100%">
-    </div>
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">AMBIENT VOLUME</div>
-      <input type="range" id="ambientVol" min="0" max="1" step=".05" value=".8" style="width:100%">
-    </div>
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">SFX VOLUME</div>
-      <input type="range" id="sfxVol" min="0" max="1" step=".05" value="1" style="width:100%">
-    </div>
-  </div>
-  <div style="display:flex;gap:12px;margin-top:16px">
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">VISUAL EFFECTS</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn sm" id="toggleFlicker">Flicker ON</button>
-        <button class="btn sm" id="toggleGoo">Goo OFF</button>
-        <button class="btn sm" id="toggleWarp">Warp OFF</button>
-      </div>
-    </div>
-  </div>
-  <div class="btnrow" style="margin-top:16px">
-    <button class="btn" id="bSaveSettings">Save & Return</button>
-    <button class="btn ghost" id="bCancelSettings">Cancel</button>
-  </div>
-</div>
-
-<div class="screen" id="map">
-  <div class="pill">Operation: Floor Plan</div>
-  <h2>Facility Navigation</h2>
-  <div id="mapContainer" style="position:relative;width:100%;max-width:800px;height:500px;background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:14px;margin:12px auto;">
-    <canvas id="mapCanvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
-    <div id="mapNodes" style="position:absolute;inset:0;"></div>
-    <div id="mapInfo" style="position:absolute;bottom:12px;left:12px;color:var(--ink);font-size:12px;font-weight:700;background:rgba(36,22,70,.8);border:1px solid #4b357f;border-radius:8px;padding:6px 10px;"></div>
-  </div>
-  <div class="btnrow">
-    <button class="btn" id="bMapBack">Return to Mission</button>
-  </div>
-</div>
-
-<div class="screen" id="shop">
-  <div class="pill">Upgrade Terminal</div>
-  <h2>Vex's Black Market</h2>
-  <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px;max-width:500px;margin:12px auto;">
-    <div style="display:flex;gap:12px;flex-wrap:wrap;" id="shopItems"></div>
-    <p style="margin-top:12px;font-size:12px;color:var(--dim);">Taquitos: <span id="shopTaquitos">0</span></p>
-  </div>
-  <div class="btnrow">
-    <button class="btn" id="bShopBack">Return to Map</button>
-  </div>
 </div>
 
 <div class="screen" id="over">
@@ -478,20 +386,7 @@ const STAGES=[
   {name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,hue:120,bossHp:64},
   {name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
-   after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
-// Phase 1: New boards
-  {name:'VENTILATION SHAFTS',sub:'Biocore Tower · NINJA MODE',dur:45,scroll:180,hue:240,
-   mix:{blob:[1.8,2.8],drone:[2.2,3.4]},unlockItem:'keycard',
-   next:{stage:4,label:'🗺️ DESCEND TO THE CORE →'},
-   after:'The ventilation shafts were tight, dark, and full of drones. You found a KEYCARD. Torque pocketed it. "For emergencies," she said. The way down opens.'},
-  {name:'CUSTARD STORAGE',sub:'Biocore Larder · SLIP-N-SLIDE MODE',dur:50,scroll:190,hue:280,
-   mix:{blob:[1.4,2.4],turret:[5,8]},unlockItem:'taco_truck',
-   next:{stage:4,label:'🗺️ THE CORE AWAITS →'},
-   after:'Custard Storage was exactly as advertised: a freezer full of sentient pudding. You found the TACO TRUCK key fob. Vex looked impressed. "This might be the most dangerous room," she admitted.'},
-  {name:'TIME WARP ZONE',sub:'Temporal Anomaly · GLITCH MODE',dur:55,scroll:210,hue:180,glitch:true,
-   mix:{blob:[2.0,3.0],drone:[1.8,2.8]},unlockItem:'golden_plunger',
-   next:{stage:4,label:'🗺️ BACK TO REALITY →'},
-   after:'Time itself bent around you. You emerged with the GOLDEN PLUNGER. "This changes everything," whispered Vex. "Or maybe nothing. Time is confusing." The anomaly stabilizes.'}
+   after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'}
 ];
 
 /* ================= DATA: story scenes ================= */
@@ -654,139 +549,11 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const rr=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[(Math.random()*a.length)|0];
 
-// Phase 0: Particle Emitter Class for reusable particle effects
-class ParticleEmitter{
- constructor(x,y,config){this.x=x;this.y=y;this.particles=[];
-  this.config={rate:10,life:{min:.3,max:.65},size:{min:2,max:5},
-    velocity:{x:{min:-190,max:190},y:{min:-260,max:60}},color:'#ffffff',gravity:0,...config};
-  this.active=true;this.time=0;}
- update(dt){if(!this.active)return;
-  this.time+=dt;
-  const spawnCount=Math.floor(this.config.rate*dt);
-  for(let i=0;i<spawnCount;i++){
-   const p={x:this.x,y:this.y,
-     vx:rr(this.config.velocity.x.min,this.config.velocity.x.max),
-     vy:rr(this.config.velocity.y.min,this.config.velocity.y.max),
-     life:rr(this.config.life.min,this.config.life.max),
-     sz:rr(this.config.size.min,this.config.size.max),
-     col:this.config.color};
-   this.particles.push(p);}
-  for(let i=this.particles.length-1;i>=0;i--){
-   const p=this.particles[i];p.life-=dt;
-   if(p.life<=0){this.particles.splice(i,1);continue;}
-   p.vy+=this.config.gravity*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}}
- draw(ctx){for(const p of this.particles){ctx.globalAlpha=Math.min(1,p.life*2.5);
-   ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();}
-   ctx.globalAlpha=1;}
- burst(n){for(let i=0;i<n;i++){const p={x:this.x,y:this.y,
-   vx:rr(this.config.velocity.x.min,this.config.velocity.x.max),
-   vy:rr(this.config.velocity.y.min,this.config.velocity.y.max),
-   life:rr(this.config.life.min,this.config.life.max),
-   sz:rr(this.config.size.min,this.config.size.max),col:this.config.color};
-   this.particles.push(p);}}
-}
-
-// Phase 0: Canvas Filter Manager for visual effects
-const CanvasFilters={
- flicker:{enabled:false,intensity:0},
- gooTaint:{enabled:false,color:'rgba(0,255,0,0.3)'},
- timeWarp:{enabled:false,distortion:0},
- apply(ctx){if(!ctx)return;
-  if(this.flicker.enabled&&this.flicker.intensity>0){ctx.filter=`brightness(${1+Math.sin(Date.now()/200)*this.flicker.intensity})`;}
-  if(this.gooTaint.enabled){ctx.fillStyle=this.gooTaint.color;ctx.globalAlpha=0.3;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
-  if(this.timeWarp.enabled&&this.timeWarp.distortion>0){ctx.filter=`url(#timeWarpFilter)`;}
-  else{ctx.filter='none';}}
- clear(ctx){if(ctx)ctx.filter='none';}
-};
-
-// Phase 0: Parallax Background System for map screen
-const ParallaxBg={
- layers:[],W:0,H:0,
- init(w,h){this.W=w;this.H=h;},
- addLayer(source,depth,alpha=1){this.layers.push({source,depth,alpha});},
- draw(ctx,scrollX=0,scrollY=0){const w=this.W,h=this.H;
-  for(const layer of this.layers){
-   ctx.save();
-   ctx.globalAlpha=layer.alpha;
-   const offsetX=scrollX*layer.depth;
-   const offsetY=scrollY*layer.depth;
-   ctx.drawImage(layer.source,offsetX,offsetY,w,h);
-   ctx.restore();}},
- clear(){this.layers=[];}
-};
-
-// ================= Phase 1: World Map & Exploration System =================
-// Map Node Types
-const NODE_TYPES={HUB:'hub',ACTION:'action',STORY:'story',SHOP:'shop',
-  BOSS:'boss',SECRET:'secret',FAST_TRAVEL:'fast'}; 
-
-// Facility Map Data - all nodes in the game world
-const FACILITY_MAP={
- nodes:{
-  core_vat:{id:'core_vat',type:NODE_TYPES.HUB,x:500,y:300,label:'Core Vat',icon:'vat',
-    unlocked:true,connections:['ch1','ch2','dungeon','shop']},
-  ch1:{id:'ch1',type:NODE_TYPES.ACTION,x:200,y:200,label:'Mop & Destroy',icon:'mop',
-    stageIndex:0,unlocked:true,completed:false,connections:['core_vat','ventilation']},
-  ch2:{id:'ch2',type:NODE_TYPES.ACTION,x:350,y:250,label:'Escalator to Hell',icon:'mall',
-    stageIndex:1,unlocked:true,completed:false,connections:['core_vat','race']},
-  race:{id:'race',type:NODE_TYPES.ACTION,x:250,y:150,label:'Taquito Grand Prix',icon:'truck',
-    stageIndex:2,unlocked:false,completed:false,connections:['ch2','custard']},
-  ch3:{id:'ch3',type:NODE_TYPES.ACTION,x:400,y:100,label:'Custard Ascent',icon:'shaft',
-    stageIndex:3,unlocked:false,completed:false,connections:['race','core_vat']},
-  war:{id:'war',type:NODE_TYPES.ACTION,x:500,y:400,label:'Floor Plan',icon:'map',
-    stageIndex:4,unlocked:false,completed:false,connections:['core_vat']},
-  glaze:{id:'glaze',type:NODE_TYPES.BOSS,x:650,y:200,label:'VS GLAZE',icon:'donut',
-    stageIndex:5,unlocked:false,completed:false,connections:['war']},
-  boss:{id:'boss',type:NODE_TYPES.BOSS,x:800,y:300,label:'K.E.V.I.N.',icon:'kevin',
-    stageIndex:6,unlocked:false,completed:false,connections:['glaze']},
-  dungeon:{id:'dungeon',type:NODE_TYPES.ACTION,x:500,y:500,label:'Supply Dungeon',icon:'dungeon',
-    stageIndex:7,unlocked:false,completed:false,connections:['core_vat']},
-  shop:{id:'shop',type:NODE_TYPES.SHOP,x:700,y:400,label:'Upgrade Terminal',icon:'shop',
-    unlocked:false,connections:['core_vat']},
-  // Phase 1: New nodes
-  ventilation:{id:'ventilation',type:NODE_TYPES.ACTION,x:100,y:300,label:'Ventilation Shafts',icon:'vent',
-    stageIndex:8,unlocked:false,completed:false,requiresItem:'keycard',connections:['ch1']},
-  custard_storage:{id:'custard_storage',type:NODE_TYPES.ACTION,x:300,y:50,label:'Custard Storage',icon:'storage',
-    stageIndex:9,unlocked:false,completed:false,requiresItem:'taco_truck',connections:['race']},
-  time_warp:{id:'time_warp',type:NODE_TYPES.SECRET,x:700,y:100,label:'Time Warp Zone',icon:'warp',
-    stageIndex:10,unlocked:false,completed:false,requiresItem:'golden_plunger',connections:['ch3']}
- },
- unlockRules:{
-  ch2:{requires:'ch1_completed'},
-  race:{requires:'ch2_completed'},
-  ch3:{requires:'race_completed'},
-  war:{requires:'ch3_completed'},
-  glaze:{requires:'war_completed'},
-  boss:{requires:'glaze_completed'},
-  dungeon:{requires:'core_vat_discovered'},
-  shop:{requires:'ch1_completed'},
-  ventilation:{requires:'ch1_completed'},
-  custard_storage:{requires:'ch2_completed'},
-  time_warp:{requires:'ch3_completed'}
- },
- getNodeUnlockStatus(nodeId){const node=this.nodes[nodeId];const rule=this.unlockRules[nodeId];
-  if(!node)return false;if(node.unlocked)return true;if(rule&&rule.requires&&G[rule.requires])return true;return false;}
-};
-
-// Map State Management
-let MAP_STATE={discovered:new Set(),completed:new Set(),currentNode:'core_vat',selectedNode:null};
-
-function saveMapState(){try{localStorage.setItem('janitorMap',JSON.stringify(MAP_STATE));}catch(e){}}
-function loadMapState(){try{const saved=localStorage.getItem('janitorMap');
-  if(saved)Object.assign(MAP_STATE,JSON.parse(saved));}catch(e){}}
-function isNodeUnlocked(nodeId){return FACILITY_MAP.getNodeUnlockStatus(nodeId);}
-function hasItem(item){return G[item]===true||G.inventory&&G.inventory.includes(item);}
-
 // G = persistent run state (story + meters). S = per-stage action state (defined later).
 let G=null;
 function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timeline:50,torque:3,vex:3,
   weapon:'pistol',pattern:'single',regen:0,spawnMul:1,pendingAfter:'',lastDeltas:[],deaths:0,
-  score:0,comboBest:0,seenTut:false,seenTut2:false,inventory:[]};
-  // Phase 1: Initialize map state
-  MAP_STATE={discovered:new Set(['core_vat']),completed:new Set(),
-    currentNode:'core_vat',selectedNode:null};
-  saveMapState();
-  G.spawnMul=1;}
+  score:0,comboBest:0,seenTut:false,seenTut2:false};}
 newGame();
 let MODE='title'; // title | story | conseq | action | over | end
 
@@ -801,13 +568,7 @@ function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85
 const AU={c:null,on:true,
  init(){if(!this.c){try{this.c=new (window.AudioContext||window.webkitAudioContext)();
    this.g=this.c.createGain();this.g.gain.value=.15;this.g.connect(this.c.destination);}catch(e){this.c=null}}
-   if(this.c&&this.c.state==='suspended')this.c.resume().catch(()=>{});
-   // Mobile browsers often suspend audio context until user interaction
-   if(this.c){const handleSuspend=()=>{if(this.c.state==='suspended')this.c.resume().catch(()=>{});};
-     this.c.addEventListener('suspend',handleSuspend);
-     document.addEventListener('click',handleSuspend,{once:true});
-     document.addEventListener('touchstart',handleSuspend,{once:true});}},
- setMasterVolume(v){if(this.g)this.g.gain.value=v;},
+   if(this.c&&this.c.state==='suspended')this.c.resume();},
  t(f,d,type,v,slide){if(!this.on||!this.c)return;const t0=this.c.currentTime,o=this.c.createOscillator(),g=this.c.createGain();
    o.type=type||'square';o.frequency.setValueAtTime(f,t0);
    if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t0+d);
@@ -889,35 +650,13 @@ end:{bpm:92,len:64,amb:null,tracks:[ // golden-taquito outro — C G Am F
   {wave:'sine',vol:.09,len:1.8,pat:P({0:60,2:64,4:67,6:72,8:67,10:64,
     16:55,18:59,20:62,22:67,24:62,26:59,
     32:57,34:60,36:64,38:69,40:64,42:60,
-    48:53,50:57,52:60,54:65,56:60,58:57},64)}]},
-// Phase 0: New ambient tracks for environment-based audio mixing
- hub:{bpm:80,len:64,amb:'vat',tracks:[ // Core Vat ambient — facility hum with deep bass
-  {wave:'sine',vol:.12,len:20,pat:P({0:20,16:20,32:19,48:19},64)},
-  {wave:'sine',vol:.08,len:20,pat:P({0:25,8:27,16:29,24:27},64)}]},
- goo_zone:{bpm:0,len:1,amb:'goo',tracks:[ // Goo zone ambient — bubbling, ominous
-  {wave:'sawtooth',vol:.15,lp:400,len:2,pat:P({0:30},1)},
-  {wave:'sine',vol:.1,lp:800,len:3,pat:P({0:40},1)}]},
- time_warp:{bpm:0,len:1,amb:'warp',tracks:[ // Time warp ambient — glitchy, distorted
-  {wave:'sawtooth',vol:.18,lp:1200,det:50,len:1.5,pat:P({0:50},1)},
-  {wave:'square',vol:.1,lp:2000,len:1,pat:P({0:70},1)}]}};
-const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,sg:null,amb:[],vol:.5,
- layers:{ambient:.8,music:.5,sfx:1.0},crossfadeDuration:.5,crossfading:false,crossfadeStart:0,crossfadeFrom:null,crossfadeTo:null,
+    48:53,50:57,52:60,54:65,56:60,58:57},64)}]}};
+const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,amb:[],vol:.5,
  ensure(){if(!AU.c)return false;
    if(!this.g){this.g=AU.c.createGain();this.g.gain.value=AU.on?this.vol:0;this.g.connect(AU.c.destination);
-     this.ag=AU.c.createGain();this.ag.gain.value=AU.on?1:0;this.ag.connect(AU.c.destination);
-     this.sg=AU.c.createGain();this.sg.gain.value=AU.on?this.layers.sfx:0;this.sg.connect(AU.c.destination);}
+     this.ag=AU.c.createGain();this.ag.gain.value=AU.on?1:0;this.ag.connect(AU.c.destination);}
    return true;},
- setOn(on){if(this.g){this.g.gain.value=on?this.vol:0;this.ag.gain.value=on?1:0;this.sg.gain.value=on?this.layers.sfx:0;}},
- setLayerVolume(layer,volume){if(this.layers[layer]!==undefined){this.layers[layer]=volume;if(this.sg&&layer==='sfx')this.sg.gain.value=AU.on?volume:0;}},
- setMasterVolume(volume){this.vol=volume;if(this.g)this.g.gain.value=AU.on?volume:0;},
- crossfade(toLayer,duration){if(this.crossfading)return;
-   this.crossfading=true;this.crossfadeDuration=duration||this.crossfadeDuration;
-   this.crossfadeFrom=this.cur;this.crossfadeTo=toLayer;this.crossfadeStart=AU.c.currentTime;
-   const oldVol=this.layers.music;this.layers.music=0;
-   if(this.ensure()){const t0=AU.c.currentTime;
-     this.g.gain.setValueAtTime(oldVol,t0);
-     this.g.gain.linearRampToValueAtTime(0,t0+duration);
-     setTimeout(()=>{this.crossfading=false;this.play(toLayer);},duration*1000);}},
+ setOn(on){if(this.g){this.g.gain.value=on?this.vol:0;this.ag.gain.value=on?1:0;}},
  play(name){if(this.want===name&&this.cur===name)return;this.want=name;
    if(this.ensure())this._start(name);},
  stop(){this.want=null;if(this.g)this._start(null);},
@@ -978,11 +717,7 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,sg:null,amb:
      lg.gain.value=380;lfo.connect(lg);lg.connect(f.frequency);lfo.start();
      this.amb.push(lfo,lg);}
    else if(kind==='vat'){noise('lowpass',140,.09);hum(31,.03);}
-   else if(kind==='table'){noise('lowpass',300,.014);}
-   else if(kind==='goo'){noise('bandpass',300,.08);const o=c2.createOscillator(),g=c2.createGain();o.type='sine';
-     o.frequency.setValueAtTime(60);g.gain.value=.07;o.connect(g);g.connect(this.ag);o.start();this.amb.push(o,g);}
-   else if(kind==='warp'){noise('highpass',1200,.06);const o=c2.createOscillator(),g=c2.createGain();o.type='sawtooth';
-     o.frequency.setValueAtTime(150);g.gain.value=.05;o.connect(g);g.connect(this.ag);o.start();this.amb.push(o,g);}},
+   else if(kind==='table'){noise('lowpass',300,.014);}},
  _bubble(t){const c2=AU.c,o=c2.createOscillator(),g=c2.createGain();o.type='sine';
    const f0=90+Math.random()*160;
    o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f0*2.6,t+.14);
@@ -993,15 +728,6 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,sg:null,amb:
    for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*(1-i/len);
    const s2=c2.createBufferSource(),g=c2.createGain();g.gain.value=.05;
    s2.buffer=b;s2.connect(g);g.connect(this.ag);s2.start(t);}};
-
-// Phase 0: Environment-based audio mixing
-function updateAudioEnvironment(envType){// envType: 'normal' | 'vat' | 'goo' | 'warp'
- if(!MUS.ensure())return;
- switch(envType){
- case 'vat':MUS.setLayerVolume('ambient',.9);break;
- case 'goo':MUS.setLayerVolume('ambient',.7);break;
- case 'warp':MUS.setLayerVolume('ambient',.6);MUS.setLayerVolume('music',.4);break;
- default:MUS.setLayerVolume('ambient',.3);MUS.setLayerVolume('music',.5);}}
 
 document.addEventListener('pointerdown',()=>{AU.init();MUS.kick();},{once:false});
 $('mute').addEventListener('click',()=>{AU.on=!AU.on;MUS.setOn(AU.on);
@@ -1045,198 +771,10 @@ $('bGotit2').addEventListener('click',()=>{AU.ui();const f=tutNext;tutNext=null;
   if(f)f();else showScreen('title');});
 $('bHow').addEventListener('click',()=>{AU.ui();tutNext=null;showScreen('tut');});
 $('bStart').addEventListener('click',()=>{AU.ui();newGame();openScene(0);});
-$('bSettings').addEventListener('click',()=>{AU.ui();initSettings();showScreen('settings');});
-
-/* ================= Phase 0: Settings Management ================= */
-let settingsState={masterVol:.5,musicVol:.5,ambientVol:.8,sfxVol:1,flicker:true,goo:true,warp:true};
-function initSettings(){const s=settingsState;
-  $('masterVol').value=s.masterVol;$('musicVol').value=s.musicVol;
-  $('ambientVol').value=s.ambientVol;$('sfxVol').value=s.sfxVol;
-  $('toggleFlicker').textContent=s.flicker?'Flicker ON':'Flicker OFF';
-  $('toggleGoo').textContent=s.goo?'Goo ON':'Goo OFF';
-  $('toggleWarp').textContent=s.warp?'Warp ON':'Warp OFF';
-  MUS.setMasterVolume(s.masterVol);MUS.setLayerVolume('music',s.musicVol);
-  MUS.setLayerVolume('ambient',s.ambientVol);MUS.setLayerVolume('sfx',s.sfxVol);}
-function saveSettings(){const s=settingsState;
-  s.masterVol=parseFloat($('masterVol').value);s.musicVol=parseFloat($('musicVol').value);
-  s.ambientVol=parseFloat($('ambientVol').value);s.sfxVol=parseFloat($('sfxVol').value);
-  s.flicker=$('toggleFlicker').textContent.includes('ON');
-  s.goo=$('toggleGoo').textContent.includes('ON');
-  s.warp=$('toggleWarp').textContent.includes('ON');
-  localStorage.setItem('janitorAVDSettings',JSON.stringify(s));
-  MUS.setMasterVolume(s.masterVol);MUS.setLayerVolume('music',s.musicVol);
-  MUS.setLayerVolume('ambient',s.ambientVol);MUS.setLayerVolume('sfx',s.sfxVol);
-  CanvasFilters.flicker.enabled=s.flicker;CanvasFilters.gooTaint.enabled=s.goo;
-  CanvasFilters.timeWarp.enabled=s.warp;AU.ui();showScreen('title');}
-function loadSettings(){try{const saved=localStorage.getItem('janitorAVDSettings');
-  if(saved)Object.assign(settingsState,JSON.parse(saved));}catch(e){}
-  try{MUS.setMasterVolume(settingsState.masterVol);MUS.setLayerVolume('music',settingsState.musicVol);
-  MUS.setLayerVolume('ambient',settingsState.ambientVol);MUS.setLayerVolume('sfx',settingsState.sfxVol);
-  CanvasFilters.flicker.enabled=settingsState.flicker;CanvasFilters.gooTaint.enabled=settingsState.goo;
-  CanvasFilters.timeWarp.enabled=settingsState.warp;}catch(e){}}
-// Load settings on game start
-loadSettings();
-$('bSaveSettings').addEventListener('click',saveSettings);
-$('bCancelSettings').addEventListener('click',()=>{AU.ui();showScreen('title');});
-$('toggleFlicker').addEventListener('click',()=>{const b=$('toggleFlicker');
-  b.textContent=b.textContent.includes('ON')?'Flicker OFF':'Flicker ON';});
-$('toggleGoo').addEventListener('click',()=>{const b=$('toggleGoo');
-  b.textContent=b.textContent.includes('ON')?'Goo OFF':'Goo ON';});
-$('toggleWarp').addEventListener('click',()=>{const b=$('toggleWarp');
-  b.textContent=b.textContent.includes('ON')?'Warp OFF':'Warp ON';});
-
-/* ================= Phase 1: Map System ================= */
-// Map Canvas Setup
-let mapCtx=null;let mapW=800;let mapH=500;
-function initMapCanvas(){const mc=$('mapCanvas');if(mc&&!mapCtx){mapCtx=mc.getContext('2d');mapW=mc.width;mapH=mc.height;drawMap();}}
-
-// Map rendering
-function drawMap(){if(!mapCtx)initMapCanvas();if(!mapCtx)return;
-  mapCtx.clearRect(0,0,mapW,mapH);
-  // Draw background
-  mapCtx.fillStyle='#0a0618';mapCtx.fillRect(0,0,mapW,mapH);
-  // Draw connections first (z-index -1)
-  drawMapConnections();
-  // Draw nodes
-  drawMapNodes();
-  // Phase 1: Fog of war effect
-  drawFogOfWar();}
-
-function drawFogOfWar(){if(!mapCtx)return;
-  mapCtx.save();mapCtx.globalCompositeOperation='destination-out';
-  mapCtx.fillStyle='rgba(5,2,16,.85)';mapCtx.fillRect(0,0,mapW,mapH);
-  mapCtx.globalCompositeOperation='source-over';
-  // Cut out discovered areas
-  for(const nodeId of MAP_STATE.discovered){const node=FACILITY_MAP.nodes[nodeId];
-    if(node){mapCtx.beginPath();mapCtx.arc(node.x,node.y,120,0,Math.PI*2);mapCtx.fill();}}
-  mapCtx.restore();}
-
-function drawMapConnections(){if(!mapCtx)return;
-  mapCtx.strokeStyle='rgba(255,215,94,.25)';mapCtx.lineWidth=2;
-  for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
-    if(node.connections)node.connections.forEach(conId=>{
-      const con=FACILITY_MAP.nodes[conId];if(!con)return;
-      const isDiscovered=MAP_STATE.discovered.has(nodeId)&&MAP_STATE.discovered.has(conId);
-      mapCtx.strokeStyle=isDiscovered?'rgba(255,215,94,.45)':'rgba(255,215,94,.2)';
-      mapCtx.lineWidth=isDiscovered?3:2;mapCtx.beginPath();
-      mapCtx.moveTo(node.x,node.y);mapCtx.lineTo(con.x,con.y);mapCtx.stroke();});}}
-
-function drawMapNodes(){if(!mapCtx)return;const nodesDiv=$('mapNodes');nodesDiv.innerHTML='';
-  for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
-    const isDiscovered=MAP_STATE.discovered.has(nodeId);
-    const isCompleted=MAP_STATE.completed.has(nodeId);
-    const isUnlocked=isNodeUnlocked(nodeId);
-    const isCurrent=MAP_STATE.currentNode===nodeId;
-    const isSelected=MAP_STATE.selectedNode===nodeId;
-    const div=document.createElement('div');div.className='mapNode';
-    if(isCurrent)div.classList.add('current');
-    if(isSelected)div.classList.add('selected');
-    if(isCompleted)div.classList.add('completed');
-    if(!isUnlocked)div.classList.add('locked');
-    if(!isDiscovered)div.style.opacity='0';
-    div.style.left=node.x+'px';div.style.top=node.y+'px';
-    const iconDiv=document.createElement('div');iconDiv.className='mapIcon';
-    iconDiv.innerHTML=getNodeIcon(node);
-    div.appendChild(iconDiv);
-    const labelDiv=document.createElement('div');labelDiv.className='mapLabel';
-    labelDiv.textContent=node.label;
-    div.appendChild(labelDiv);
-    if(isUnlocked||isCompleted)div.addEventListener('click',()=>selectMapNode(nodeId));
-    nodesDiv.appendChild(div);}
-  updateMapInfo();
-}
-
-function getNodeIcon(node){const icons={vat:'🏭',mop:'🧹',mall:'🏪',truck:'🚚',shaft:'⬆️',map:'🗺️',
-  donut:'🍩',kevin:'👹',dungeon:'🏰',shop:'🏬',vent:'🌀',storage:'🥘',warp:'⏳'};return icons[node.icon]||'❓';}
-
-function updateMapInfo(){const info=$('mapInfo');const node=FACILITY_MAP.nodes[MAP_STATE.selectedNode];
-  if(!node)info.textContent='Select a node to travel';
-  else if(!isNodeUnlocked(node.id)){
-    const rule=FACILITY_MAP.unlockRules[node.id];
-    info.textContent=rule?'Locked: Requires '+rule.requires.replace('completed',''):'Locked';
-  }else if(node.requiresItem&&!hasItem(node.requiresItem)){
-    info.textContent='Requires: '+node.requiresItem.replace('_',' ');
-  }else info.textContent='Ready to travel to '+node.label;
-}
-
-function selectMapNode(nodeId){const node=FACILITY_MAP.nodes[nodeId];
-  if(!node||!isNodeUnlocked(nodeId))return;
-  if(node.requiresItem&&!hasItem(node.requiresItem)){updateMapInfo();return;}
-  if(MAP_STATE.selectedNode===nodeId){startStageFromMap(nodeId);return;}
-  MAP_STATE.selectedNode=nodeId;drawMap();}
-
-function startStageFromMap(nodeId){const node=FACILITY_MAP.nodes[nodeId];
-  if(node.type===NODE_TYPES.ACTION){MUS.play('chip');setTimeout(()=>{startStage(node.stageIndex);},300);}
-  else if(node.type===NODE_TYPES.STORY){openScene(node.sceneIndex);}
-  else if(node.type===NODE_TYPES.SHOP){openShop();}
-  MAP_STATE.currentNode=nodeId;MAP_STATE.discovered.add(nodeId);saveMapState();}
-
-function openMap(){MODE='map';hudOn(false);MUS.play('war');
-  loadMapState();updateMapForTrust();initMapCanvas();drawMap();showScreen('map');}
-function openShop(){MODE='shop';hudOn(false);MUS.play('table');showScreen('shop');}
-
-// Backtracking support - mark nodes as completed when stage is cleared
-function markStageComplete(stageIndex){const stageId=getStageId(stageIndex);
-  if(stageId)MAP_STATE.completed.add(stageId);saveMapState();}
-
-function getStageId(stageIndex){const mapping={0:'ch1',1:'ch2',2:'race',3:'ch3',4:'war',5:'glaze',6:'boss',7:'dungeon',8:'ventilation',9:'custard_storage',10:'time_warp'};return mapping[stageIndex]||('stage_'+stageIndex);}
-
-// Track collectibles per board
-const BOARD_COLLECTIBLES={
-  ch1:{taquitos:{total:10,found:0},lore_notes:{total:2,found:0}},
-  ch2:{taquitos:{total:8,found:0},lore_notes:{total:1,found:0}},
-  race:{taquitos:{total:12,found:0},cassettes:{total:3,found:0}},
-  dungeon:{taquitos:{total:15,found:0},golden_plunger:{total:1,found:0}}
-};
-
-// Button handlers
-$('bMapBack').addEventListener('click',()=>{AU.ui();showScreen('title');});
-$('bMap').addEventListener('click',()=>{AU.ui();openMap();});
-$('bShopBack').addEventListener('click',()=>{AU.ui();openMap();});
-
-// Phase 1: Trust/Timeline integration with map
-function updateMapForTrust(){const g=G;
-  if(g.vex>75){// High Vex trust: reveal hidden caches
-    for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
-      if(node.hiddenCache)node.revealed=true;}}
-  if(g.torque<25){// Low Torque: some connections become unstable
-    for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
-      if(node.torqueUnstable)node.connections=node.connections.filter(c=>c!=='boss');}}
-  if(g.timeline<30){// Low timeline stability: randomize some connections
-    // This could create new temporary connections or remove some
-  }
-}
-
-function getFastTravelCost(nodeId1,nodeId2){// Cost in taquitos
-  const n1=FACILITY_MAP.nodes[nodeId1];const n2=FACILITY_MAP.nodes[nodeId2];
-  if(!n1||!n2)return 0;const dx=Math.abs(n1.x-n2.x);const dy=Math.abs(n1.y-n2.y);
-  const dist=Math.sqrt(dx*dx+dy*dy);return Math.max(0,Math.floor(dist/100));
-}
-
-function fastTravelTo(nodeId){const cost=getFastTravelCost(MAP_STATE.currentNode,nodeId);
-  if(G.taquitos<cost){updateMapInfo();return;}
-  G.taquitos-=cost;updateHUD();
-  warp();setTimeout(()=>{startStageFromMap(nodeId);},500);
-}
-
-// Phase 1: Map keyboard navigation
-document.addEventListener('keydown',(e)=>{if(MODE!=='map')return;
-  if(e.key==='ArrowUp'){const nodeId=MAP_STATE.selectedNode||MAP_STATE.currentNode;
-    const node=FACILITY_MAP.nodes[nodeId];if(node&&node.connections&&node.connections[0]){
-      selectMapNode(node.connections[0]);e.preventDefault();}}
-  else if(e.key==='ArrowDown'){const nodeId=MAP_STATE.selectedNode||MAP_STATE.currentNode;
-    const node=FACILITY_MAP.nodes[nodeId];if(node&&node.connections&&node.connections[1]){
-      selectMapNode(node.connections[1]);e.preventDefault();}}
-  else if(e.key==='Enter'||e.key===' '){const nodeId=MAP_STATE.selectedNode||MAP_STATE.currentNode;
-    if(nodeId)startStageFromMap(nodeId);}
-  else if(e.key==='Escape'){AU.ui();showScreen('title');}});
 
 /* ================= CONSEQUENCE / GAMEOVER / ENDING ================= */
 function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
-  // Phase 1: Mark stage as complete in map and handle unlock items
-  markStageComplete(G.stage);
-  if(st.unlockItem&&!G.inventory.includes(st.unlockItem))G.inventory.push(st.unlockItem);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
   let loot;
   if(G.hp<G.maxHp){G.hp++;loot=pick(LOOT);}
@@ -1698,16 +1236,6 @@ let S=null;
 function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
   if(st.war){openWar();return;}
   MODE='action';
-  // Phase 0: Set environment for audio mixing and visual effects
-  let envType='normal';
-  if(st.boss)envType='vat';
-  else if(st.dungeon)envType='goo';
-  else if(st.top)envType='warp';
-  updateAudioEnvironment(envType);
-  // Apply visual effects based on environment
-  CanvasFilters.flicker.enabled=st.top;
-  CanvasFilters.gooTaint.enabled=st.dungeon;
-  CanvasFilters.timeWarp.enabled=st.boss;
   MUS.play(st.boss?'boss':st.top?'drive':st.race?'race':st.fight?'fight':st.dungeon?'dnd':['chip','punk'][i]);
   S={st,stIdx:i,t:0,scroll:0,shake:0,done:false,paused:false,
      p:{x:210,y:groundY,vy:0,onG:true,jumps:0,inv:1.4,fireT:0},
@@ -1983,7 +1511,6 @@ function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   cx.save();cx.globalCompositeOperation='lighter';
   S.parts.forEach(q=>{cx.globalAlpha=Math.min(1,q.life*2.5);cx.fillStyle=q.col;
     cx.fillRect(q.x-q.sz/2,q.y-q.sz/2,q.sz,q.sz);});
-  // Phase 2: Draw weapon particle emitter
   cx.globalAlpha=1;
   S.rings.forEach(r2=>{cx.strokeStyle='rgba(255,220,120,'+Math.max(0,r2.life)+')';
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
@@ -2938,15 +2465,11 @@ function bossDraw(){const p=S.p,bs=S.boss;
 /* ================= RENDER ================= */
 const seed=i=>{const r=Math.sin(i*127.1)*43758.5453;return r-Math.floor(r);};
 function draw(){const st=S.st,p=S.p,hue=st.hue;
-  // Phase 0: Apply canvas filters based on environment
-  CanvasFilters.apply(cx);
-  // Phase 1: Glitch effect for Time Warp Zone
-  if(st.glitch&&Math.random()<.03){cx.save();cx.filter='hue-rotate(180deg)';}
-  if(st.race){raceDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
-  if(st.fight){fightDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
-  if(st.top){topDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
-  if(st.boss){bossDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
-  if(st.dungeon){dungeonDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
+  if(st.race){raceDraw();return;}
+  if(st.fight){fightDraw();return;}
+  if(st.top){topDraw();return;}
+  if(st.boss){bossDraw();return;}
+  if(st.dungeon){dungeonDraw();return;}
   cx.clearRect(0,0,W,H);cx.save();
   cx.imageSmoothingEnabled=false;
   if(S.shake>0)cx.translate(rr(-5,5)*S.shake,rr(-4,4)*S.shake);
@@ -3061,8 +2584,6 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
     if(st.boss){cx.fillStyle='#7dff3a';cx.font='700 12px sans-serif';
       cx.fillText('Kinetic Enzyme Vat, Infinitely Networked',W/2,H*.4+48);}
     cx.globalAlpha=1;}
-  // Phase 1: Clean up glitch filter
-  if(st.glitch)cx.restore();
   cx.restore();}
 
 /* ================= MAIN LOOP ================= */
