@@ -296,7 +296,7 @@ critter enemies. Either create the location or rewrite the references.
 | A — Persistence & ledger | ✅ **Done** | One guarded key (`jot.save`, ver 1), taquito wallet + HUD, inventory, stats, per-board bests keyed by new `STAGES[].id`, CONTINUE with a deep-copied checkpoint, erase-save. Verified against 12 hostile save payloads and a storage-denied boot. `spendTaquitos`/`hasItem` are in place but unspent until the shop phase. |
 | B — Gameplay refinement | ✅ **Done** | Four difficulty tiers (picker on the title, persisted) scaling spawn interval, mercy window and regen — never player damage. Mid-board checkpoints on the three timed boards and the race. Trust now pays off in action boards (Torque ≥7 regen, Vex ≥7 mercy). Juice constants gathered into `TUNING.juice`. |
 | C — Pause & menu shell | ✅ **Done** | In-board pause (⏸ button + Esc/P) reusing `S.paused`, with STATS / DOSSIERS / OPTIONS tabs, resume and quit-to-title. Dossiers unlock off the Phase A stats. OPTIONS holds the difficulty cycler and sound toggle — Phase D drops volume sliders in the same panel, Phase E fills out the dossier text. |
-| D — AV settings & mixing | ⬜ Not started | |
+| D — AV settings & mixing | ✅ **Done** | One master `GainNode` with the SFX, music and ambience buses routed into it, driven by four persisted sliders in the pause OPTIONS panel. Timeline decay now flickers the existing `#fx` scanline layer via CSS (no `ctx.filter` anywhere), with an off switch and `prefers-reduced-motion` respected. Defaults reproduce the pre-phase mix exactly. |
 | E — Story depth | ⬜ Not started | |
 | F — QOL & accessibility | ⬜ Not started | |
 | G — Hub screen | ⬜ Not started | Highest risk. Behind `?hub=1`. |

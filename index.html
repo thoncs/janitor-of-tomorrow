@@ -77,6 +77,20 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 #pausePanel .bio.locked{opacity:.45}
 #pausePanel .bname{font-weight:800;letter-spacing:.04em;color:var(--mag)}
 #pausePanel .phint{color:var(--dim);padding:6px 9px}
+#pausePanel .vrow{display:flex;align-items:center;gap:10px;padding:2px 9px;border-bottom:1px solid rgba(75,53,127,.35)}
+#pausePanel .vrow b{flex:0 0 92px}
+#pausePanel .vnum{flex:0 0 40px;text-align:right;color:var(--cyn);font-variant-numeric:tabular-nums}
+/* 40px-tall input so the drag band clears a fingertip; the visible track stays 4px */
+input[type=range].vol{-webkit-appearance:none;appearance:none;flex:1;height:40px;background:transparent;margin:0}
+input[type=range].vol::-webkit-slider-runnable-track{height:4px;background:#180d33;border:1px solid #35226b;border-radius:3px}
+input[type=range].vol::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-10px;background:var(--cyn);border:0;border-radius:50%;box-shadow:0 0 7px rgba(33,240,255,.75)}
+input[type=range].vol::-moz-range-track{height:4px;background:#180d33;border:1px solid #35226b;border-radius:3px}
+input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--cyn);border:0;border-radius:50%}
+/* timeline decay flickers the existing scanline layer — GPU-composited, no per-frame canvas work */
+#fx.unstable{animation:instab 2.4s infinite}
+#fx.unstable.bad{animation-duration:.95s}
+@keyframes instab{0%,100%{opacity:.45}44%{opacity:.72}46%{opacity:.38}68%{opacity:.86}70%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){#fx.unstable{animation:none}}
 
 /* ---------- story / consequence ---------- */
 #story{justify-content:flex-start;gap:8px}
@@ -634,7 +648,11 @@ const LS={
  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
  set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},
  del(k){try{localStorage.removeItem(k);return true}catch(e){return false}}};
-function defaultProfile(){return{ver:SAVE_VER,diff:'normal',taquitos:0,items:[],stats:{},best:{},run:null};}
+const SFX_TRIM=.15; // the long-standing SFX bus trim; the sfx slider scales this
+function defaultAudio(){return{master:1,music:.5,ambient:1,sfx:1};} // == the pre-Phase-D mix
+function defaultProfile(){return{ver:SAVE_VER,diff:'normal',audio:defaultAudio(),fx:{flicker:true},
+  taquitos:0,items:[],stats:{},best:{},run:null};}
+const clamp01=v=>Number.isFinite(v)?(v<0?0:v>1?1:v):null;
 // A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
 // truncated save can offer CONTINUE and then throw on STAGES[999]/STORY[999] inside the click handler.
 function validRun(r){
@@ -658,6 +676,10 @@ const SAVE={
    // merge field by field so a truncated or hand-edited save can never produce a wrong-shaped profile
    return{ver:SAVE_VER,
      diff:DIFFS.some(d=>d.id===o.diff)?o.diff:d.diff,
+     audio:(()=>{const a=defaultAudio();if(o.audio&&typeof o.audio==='object')
+       for(const k in a){const v=clamp01(o.audio[k]);if(v!==null)a[k]=v;}
+       return a;})(),
+     fx:{flicker:o.fx&&typeof o.fx==='object'?o.fx.flicker!==false:true},
      taquitos:Number.isFinite(o.taquitos)?Math.max(0,o.taquitos|0):d.taquitos,
      items:Array.isArray(o.items)?o.items.filter(x=>typeof x==='string'):d.items,
      stats:(o.stats&&typeof o.stats==='object'&&!Array.isArray(o.stats))?o.stats:d.stats,
@@ -681,6 +703,25 @@ function bumpStat(k,n){PROF.stats[k]=(PROF.stats[k]|0)+(n==null?1:n|0);}
 function recordBest(id,score){if(!id)return false;
   if((PROF.best[id]|0)>=score)return false;PROF.best[id]=score;return true;}
 function updateTaqHud(){const el=$('taq');if(el)el.textContent='🌮 '+PROF.taquitos;}
+
+// --- audio mixing ---
+// Every source now runs through AU.master, so these four values are the whole mix. Called after the
+// graph is built, whenever a slider moves, and on mute. Safe to call before the context exists.
+function applyAudio(){const a=PROF.audio||defaultAudio();
+  if(AU.master)AU.master.gain.value=AU.on?a.master:0;
+  if(AU.g)AU.g.gain.value=SFX_TRIM*a.sfx;
+  if(MUS.g)MUS.g.gain.value=a.music;
+  if(MUS.ag)MUS.ag.gain.value=a.ambient;
+  MUS.vol=a.music;}
+
+// --- timeline instability ---
+// Flicker the scanline overlay as the timeline decays. Deliberately a CSS animation on an existing
+// DOM layer: it composites on the GPU and costs nothing per frame, unlike a per-frame canvas filter.
+// Toggled by class only when the timeline actually changes, never from the draw loop.
+function applyInstability(){const el=$('fx');if(!el)return;
+  const want=!!(PROF.fx&&PROF.fx.flicker)&&!!G&&G.timeline<60;
+  el.classList.toggle('unstable',want);
+  el.classList.toggle('bad',want&&G.timeline<35);}
 
 // --- resumable run ---
 // Snapshot a DEEP COPY, never a live reference to G. With a live reference every later write would
@@ -711,7 +752,9 @@ function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85
 /* ================= AUDIO: tiny beep synth ================= */
 const AU={c:null,on:true,
  init(){if(!this.c){try{this.c=new (window.AudioContext||window.webkitAudioContext)();
-   this.g=this.c.createGain();this.g.gain.value=.15;this.g.connect(this.c.destination);}catch(e){this.c=null}}
+   this.master=this.c.createGain();this.master.gain.value=1;this.master.connect(this.c.destination);
+   this.g=this.c.createGain();this.g.gain.value=SFX_TRIM;this.g.connect(this.master);}catch(e){this.c=null}}
+   if(this.c)applyAudio(); // gains come from the saved profile, not from hardcoded defaults
    if(this.c&&this.c.state==='suspended')this.c.resume();},
  t(f,d,type,v,slide){if(!this.on||!this.c)return;const t0=this.c.currentTime,o=this.c.createOscillator(),g=this.c.createGain();
    o.type=type||'square';o.frequency.setValueAtTime(f,t0);
@@ -797,10 +840,11 @@ end:{bpm:92,len:64,amb:null,tracks:[ // golden-taquito outro — C G Am F
     48:53,50:57,52:60,54:65,56:60,58:57},64)}]}};
 const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,amb:[],vol:.5,
  ensure(){if(!AU.c)return false;
-   if(!this.g){this.g=AU.c.createGain();this.g.gain.value=AU.on?this.vol:0;this.g.connect(AU.c.destination);
-     this.ag=AU.c.createGain();this.ag.gain.value=AU.on?1:0;this.ag.connect(AU.c.destination);}
+   if(!this.g){const out=AU.master||AU.c.destination;
+     this.g=AU.c.createGain();this.g.connect(out);
+     this.ag=AU.c.createGain();this.ag.connect(out);applyAudio();}
    return true;},
- setOn(on){if(this.g){this.g.gain.value=on?this.vol:0;this.ag.gain.value=on?1:0;}},
+ setOn(on){AU.on=on;applyAudio();},
  play(name){if(this.want===name&&this.cur===name)return;this.want=name;
    if(this.ensure())this._start(name);},
  stop(){this.want=null;if(this.g)this._start(null);},
@@ -877,11 +921,11 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,amb:[],vol:.
    s2.buffer=b;s2.connect(g);g.connect(this.ag);s2.start(t);}};
 
 document.addEventListener('pointerdown',()=>{AU.init();MUS.kick();},{once:false});
-$('mute').addEventListener('click',()=>{AU.on=!AU.on;MUS.setOn(AU.on);
+$('mute').addEventListener('click',()=>{AU.on=!AU.on;applyAudio();
   $('mute').textContent=AU.on?'🔊':'🔇';});
 
 /* ================= STORY FLOW ================= */
-function renderMeters(){$('mTime').style.width=G.timeline+'%';
+function renderMeters(){applyInstability();$('mTime').style.width=G.timeline+'%';
   $('mTor').style.width=G.torque*10+'%';$('mVex').style.width=G.vex*10+'%';}
 
 function applyFx(fx){const d=[];const add=(txt,neg)=>d.push({txt,neg});
@@ -999,13 +1043,30 @@ function renderPausePanel(){const p=$('pausePanel');
         '<div><div class="bname">'+(open?b.name:'█████████')+'</div><div>'+
         (open?b.txt:'Dossier sealed. Meet them first.')+'</div></div></div>';}).join('');}
   else{
+    const a=PROF.audio||defaultAudio();
+    const vrow=(k,label)=>'<div class="vrow"><b>'+label+'</b>'+
+      '<input class="vol" type="range" min="0" max="1" step="0.05" value="'+a[k]+'" data-mix="'+k+'" aria-label="'+label+'">'+
+      '<span class="vnum" data-num="'+k+'">'+Math.round(a[k]*100)+'%</span></div>';
     p.innerHTML='<div class="prow"><b>Difficulty</b><span><button class="btn ghost xs" id="bDiff2"><span class="diffLabel">NORMAL</span></button></span></div>'+
       '<div class="phint diffBlurb"></div>'+
+      vrow('master','Master')+vrow('music','Music')+vrow('ambient','Ambience')+vrow('sfx','Effects')+
       '<div class="prow"><b>Sound</b><span><button class="btn ghost xs" id="bSnd">'+(AU.on?'🔊 ON':'🔇 OFF')+'</button></span></div>'+
-      '<div class="phint">Volume sliders arrive with the audio pass. Difficulty applies immediately — mid-board too.</div>';
+      '<div class="prow"><b>Timeline flicker</b><span><button class="btn ghost xs" id="bFlick">'+
+        (PROF.fx.flicker?'ON':'OFF')+'</button></span></div>'+
+      '<div class="phint">Sliders take effect as you drag. Flicker follows timeline decay; turn it off if the pulsing bothers you.</div>';
     $('bDiff2').addEventListener('click',cycleDiff);
-    $('bSnd').addEventListener('click',()=>{AU.on=!AU.on;MUS.setOn(AU.on);
+    // live-drag the mix, then persist once the gesture ends rather than on every step
+    p.querySelectorAll('input.vol').forEach(el=>{
+      const k=el.dataset.mix;
+      el.addEventListener('input',()=>{const v=clamp01(parseFloat(el.value));
+        if(v===null)return;PROF.audio[k]=v;
+        p.querySelector('[data-num="'+k+'"]').textContent=Math.round(v*100)+'%';
+        applyAudio();});
+      el.addEventListener('change',()=>{SAVE.write();AU.ui();});});
+    $('bSnd').addEventListener('click',()=>{AU.on=!AU.on;applyAudio();
       $('mute').textContent=AU.on?'🔊':'🔇';$('bSnd').textContent=AU.on?'🔊 ON':'🔇 OFF';AU.ui();});
+    $('bFlick').addEventListener('click',()=>{PROF.fx.flicker=!PROF.fx.flicker;
+      $('bFlick').textContent=PROF.fx.flicker?'ON':'OFF';applyInstability();SAVE.write();AU.ui();});
     renderDiff();}}
 
 document.querySelectorAll('.ptab').forEach(b=>
@@ -1502,6 +1563,7 @@ addEventListener('contextmenu',e=>e.preventDefault());
 /* ================= ACTION: stage setup ================= */
 let S=null;
 function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
+  applyInstability();
   snapshotRun('stage',i); // checkpoint at board start — placed above the war early-return so it covers every board
   if(st.war){openWar();return;}
   MODE='action';
@@ -2879,7 +2941,7 @@ MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 
 // Load the profile LAST: every listener is bound and the loop is running by now, so even an
 // unexpected throw in here cannot cost us input. SAVE.load() is internally guarded regardless.
-SAVE.load();updateTaqHud();renderDiff();refreshContinue();
+SAVE.load();applyAudio();applyInstability();updateTaqHud();renderDiff();refreshContinue();
 </script>
 </body>
 </html>
