@@ -228,11 +228,6 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 #rot b{font-size:52px;animation:rotp 2.2s infinite}
 @keyframes rotp{0%,50%{transform:rotate(0)}65%,100%{transform:rotate(90deg)}}
 @media (orientation:portrait){#rot{display:flex}}
-/* Phase 0: Settings screen styles */
-input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:#180d33;border-radius:2px;outline:none;opacity:.9;transition:opacity .2s;}
-input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;background:#21f0ff;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(33,240,255,.7);}
-input[type="range"]::-moz-range-thumb{width:18px;height:18px;background:#21f0ff;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(33,240,255,.7);}
-input[type="range"]:hover{opacity:1;}
 </style>
 </head>
 <body>
@@ -250,7 +245,6 @@ input[type="range"]:hover{opacity:1;}
   <p class="sub">Mop tonight. Save 2099. Try not to die in a mall.</p>
   <div id="cast"></div>
   <div class="btnrow"><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
-  <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="bSettings">⚙️ AV SETTINGS</button></div>
   <p class="small dim blink">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
   <p class="small dim" style="margin-top:8px">v0.2 (No Range Inputs Test)</p>
@@ -295,43 +289,6 @@ input[type="range"]:hover{opacity:1;}
   <div class="trow"><b>🖥️</b><span><b>VEX INSTALLED A 64-BIT GRAPHICS CARD.</b> Gaze upon the future. It has gradients.</span></div>
   </div>
   <button class="btn" id="bGotit2">🚀 LAUNCH →</button>
-</div>
-
-<div class="screen" id="settings">
-  <div class="pill">Audio/Visual Settings</div>
-  <h2>Phase 0: AV Configuration</h2>
-  <div id="settingsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:600px">
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">MASTER VOLUME</div>
-      <input type="range" id="masterVol" min="0" max="1" step=".05" value=".5" style="width:100%">
-    </div>
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">MUSIC VOLUME</div>
-      <input type="range" id="musicVol" min="0" max="1" step=".05" value=".5" style="width:100%">
-    </div>
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">AMBIENT VOLUME</div>
-      <input type="range" id="ambientVol" min="0" max="1" step=".05" value=".8" style="width:100%">
-    </div>
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">SFX VOLUME</div>
-      <input type="range" id="sfxVol" min="0" max="1" step=".05" value="1" style="width:100%">
-    </div>
-  </div>
-  <div style="display:flex;gap:12px;margin-top:16px">
-    <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);margin-bottom:8px">VISUAL EFFECTS</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn sm" id="toggleFlicker">Flicker ON</button>
-        <button class="btn sm" id="toggleGoo">Goo OFF</button>
-        <button class="btn sm" id="toggleWarp">Warp OFF</button>
-      </div>
-    </div>
-  </div>
-  <div class="btnrow" style="margin-top:16px">
-    <button class="btn" id="bSaveSettings">Save & Return</button>
-    <button class="btn ghost" id="bCancelSettings">Cancel</button>
-  </div>
 </div>
 
 <div class="screen" id="over">
