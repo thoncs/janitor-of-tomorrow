@@ -235,6 +235,20 @@ input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:4p
 input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;background:#21f0ff;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(33,240,255,.7);}
 input[type="range"]::-moz-range-thumb{width:18px;height:18px;background:#21f0ff;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(33,240,255,.7);}
 input[type="range"]:hover{opacity:1;}
+/* Phase 1: Map screen styles */
+#mapCanvas{image-rendering:pixelated;}
+.mapNode{position:absolute;transform:translate(-50%,-50%);cursor:pointer;transition:transform .15s;touch-action:manipulation;}
+.mapNode:hover{transform:translate(-50%,-50%) scale(1.1);}
+.mapNode.selected{transform:translate(-50%,-50%) scale(1.2);box-shadow:0 0 20px rgba(255,215,94,.7);}
+.mapNode.completed{filter:drop-shadow(0 0 6px rgba(0,255,0,.5));}
+.mapNode.locked{opacity:.4;filter:grayscale(1);cursor:not-allowed;}
+.mapNode::before{content:'';position:absolute;inset:-16px;border:2px solid rgba(255,215,94,.4);border-radius:50%;opacity:0;transition:opacity .2s;}
+.mapNode.selected::before{opacity:1;}
+.mapIcon{width:40px;height:40px;image-rendering:pixelated;border-radius:8px;border:2px solid #4b357f;background:#241646;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.mapLabel{position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--ink);text-align:center;white-space:nowrap;background:rgba(21,12,46,.9);border:1px solid #35226b;border-radius:4px;padding:2px 6px;}
+.mapConnection{position:absolute;pointer-events:none;stroke:rgba(255,215,94,.25);stroke-width:2;z-index:-1;}
+.mapConnection.discovered{stroke:rgba(255,215,94,.45);stroke-width:3;}
+#mapContainer{overflow:hidden;}
 </style>
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -260,7 +274,7 @@ input[type="range"]:hover{opacity:1;}
   <p class="sub">Mop tonight. Save 2099. Try not to die in a mall.</p>
   <div id="cast"></div>
   <div class="btnrow"><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
-  <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="bSettings">⚙️ AV SETTINGS</button></div>
+  <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="bSettings">⚙️ AV SETTINGS</button><button class="btn ghost sm" id="bMap">🗺️ FACILITY MAP</button></div>
   <p class="small dim blink">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab</p>
 </div>
@@ -340,6 +354,31 @@ input[type="range"]:hover{opacity:1;}
   <div class="btnrow" style="margin-top:16px">
     <button class="btn" id="bSaveSettings">Save & Return</button>
     <button class="btn ghost" id="bCancelSettings">Cancel</button>
+  </div>
+</div>
+
+<div class="screen" id="map">
+  <div class="pill">Operation: Floor Plan</div>
+  <h2>Facility Navigation</h2>
+  <div id="mapContainer" style="position:relative;width:100%;max-width:800px;height:500px;background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:14px;margin:12px auto;">
+    <canvas id="mapCanvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+    <div id="mapNodes" style="position:absolute;inset:0;"></div>
+    <div id="mapInfo" style="position:absolute;bottom:12px;left:12px;color:var(--ink);font-size:12px;font-weight:700;background:rgba(36,22,70,.8);border:1px solid #4b357f;border-radius:8px;padding:6px 10px;"></div>
+  </div>
+  <div class="btnrow">
+    <button class="btn" id="bMapBack">Return to Mission</button>
+  </div>
+</div>
+
+<div class="screen" id="shop">
+  <div class="pill">Upgrade Terminal</div>
+  <h2>Vex's Black Market</h2>
+  <div style="background:rgba(21,12,46,.8);border:1px solid #35226b;border-radius:12px;padding:12px;max-width:500px;margin:12px auto;">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;" id="shopItems"></div>
+    <p style="margin-top:12px;font-size:12px;color:var(--dim);">Taquitos: <span id="shopTaquitos">0</span></p>
+  </div>
+  <div class="btnrow">
+    <button class="btn" id="bShopBack">Return to Map</button>
   </div>
 </div>
 
@@ -439,7 +478,20 @@ const STAGES=[
   {name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,hue:120,bossHp:64},
   {name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
-   after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'}
+   after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
+// Phase 1: New boards
+  {name:'VENTILATION SHAFTS',sub:'Biocore Tower · NINJA MODE',dur:45,scroll:180,hue:240,
+   mix:{blob:[1.8,2.8],drone:[2.2,3.4]},unlockItem:'keycard',
+   next:{stage:4,label:'🗺️ DESCEND TO THE CORE →'},
+   after:'The ventilation shafts were tight, dark, and full of drones. You found a KEYCARD. Torque pocketed it. "For emergencies," she said. The way down opens.'},
+  {name:'CUSTARD STORAGE',sub:'Biocore Larder · SLIP-N-SLIDE MODE',dur:50,scroll:190,hue:280,
+   mix:{blob:[1.4,2.4],turret:[5,8]},unlockItem:'taco_truck',
+   next:{stage:4,label:'🗺️ THE CORE AWAITS →'},
+   after:'Custard Storage was exactly as advertised: a freezer full of sentient pudding. You found the TACO TRUCK key fob. Vex looked impressed. "This might be the most dangerous room," she admitted.'},
+  {name:'TIME WARP ZONE',sub:'Temporal Anomaly · GLITCH MODE',dur:55,scroll:210,hue:180,glitch:true,
+   mix:{blob:[2.0,3.0],drone:[1.8,2.8]},unlockItem:'golden_plunger',
+   next:{stage:4,label:'🗺️ BACK TO REALITY →'},
+   after:'Time itself bent around you. You emerged with the GOLDEN PLUNGER. "This changes everything," whispered Vex. "Or maybe nothing. Time is confusing." The anomaly stabilizes.'}
 ];
 
 /* ================= DATA: story scenes ================= */
@@ -663,11 +715,77 @@ const ParallaxBg={
  clear(){this.layers=[];}
 };
 
+// ================= Phase 1: World Map & Exploration System =================
+// Map Node Types
+const NODE_TYPES={HUB:'hub',ACTION:'action',STORY:'story',SHOP:'shop',
+  BOSS:'boss',SECRET:'secret',FAST_TRAVEL:'fast'}; 
+
+// Facility Map Data - all nodes in the game world
+const FACILITY_MAP={
+ nodes:{
+  core_vat:{id:'core_vat',type:NODE_TYPES.HUB,x:500,y:300,label:'Core Vat',icon:'vat',
+    unlocked:true,connections:['ch1','ch2','dungeon','shop']},
+  ch1:{id:'ch1',type:NODE_TYPES.ACTION,x:200,y:200,label:'Mop & Destroy',icon:'mop',
+    stageIndex:0,unlocked:true,completed:false,connections:['core_vat','ventilation']},
+  ch2:{id:'ch2',type:NODE_TYPES.ACTION,x:350,y:250,label:'Escalator to Hell',icon:'mall',
+    stageIndex:1,unlocked:true,completed:false,connections:['core_vat','race']},
+  race:{id:'race',type:NODE_TYPES.ACTION,x:250,y:150,label:'Taquito Grand Prix',icon:'truck',
+    stageIndex:2,unlocked:false,completed:false,connections:['ch2','custard']},
+  ch3:{id:'ch3',type:NODE_TYPES.ACTION,x:400,y:100,label:'Custard Ascent',icon:'shaft',
+    stageIndex:3,unlocked:false,completed:false,connections:['race','core_vat']},
+  war:{id:'war',type:NODE_TYPES.ACTION,x:500,y:400,label:'Floor Plan',icon:'map',
+    stageIndex:4,unlocked:false,completed:false,connections:['core_vat']},
+  glaze:{id:'glaze',type:NODE_TYPES.BOSS,x:650,y:200,label:'VS GLAZE',icon:'donut',
+    stageIndex:5,unlocked:false,completed:false,connections:['war']},
+  boss:{id:'boss',type:NODE_TYPES.BOSS,x:800,y:300,label:'K.E.V.I.N.',icon:'kevin',
+    stageIndex:6,unlocked:false,completed:false,connections:['glaze']},
+  dungeon:{id:'dungeon',type:NODE_TYPES.ACTION,x:500,y:500,label:'Supply Dungeon',icon:'dungeon',
+    stageIndex:7,unlocked:false,completed:false,connections:['core_vat']},
+  shop:{id:'shop',type:NODE_TYPES.SHOP,x:700,y:400,label:'Upgrade Terminal',icon:'shop',
+    unlocked:false,connections:['core_vat']},
+  // Phase 1: New nodes
+  ventilation:{id:'ventilation',type:NODE_TYPES.ACTION,x:100,y:300,label:'Ventilation Shafts',icon:'vent',
+    stageIndex:8,unlocked:false,completed:false,requiresItem:'keycard',connections:['ch1']},
+  custard_storage:{id:'custard_storage',type:NODE_TYPES.ACTION,x:300,y:50,label:'Custard Storage',icon:'storage',
+    stageIndex:9,unlocked:false,completed:false,requiresItem:'taco_truck',connections:['race']},
+  time_warp:{id:'time_warp',type:NODE_TYPES.SECRET,x:700,y:100,label:'Time Warp Zone',icon:'warp',
+    stageIndex:10,unlocked:false,completed:false,requiresItem:'golden_plunger',connections:['ch3']}
+ },
+ unlockRules:{
+  ch2:{requires:'ch1_completed'},
+  race:{requires:'ch2_completed'},
+  ch3:{requires:'race_completed'},
+  war:{requires:'ch3_completed'},
+  glaze:{requires:'war_completed'},
+  boss:{requires:'glaze_completed'},
+  dungeon:{requires:'core_vat_discovered'},
+  shop:{requires:'ch1_completed'},
+  ventilation:{requires:'ch1_completed'},
+  custard_storage:{requires:'ch2_completed'},
+  time_warp:{requires:'ch3_completed'}
+ },
+ getNodeUnlockStatus(nodeId){const node=this.nodes[nodeId];const rule=this.unlockRules[nodeId];
+  if(!node)return false;if(node.unlocked)return true;if(rule&&rule.requires&&G[rule.requires])return true;return false;}
+};
+
+// Map State Management
+let MAP_STATE={discovered:new Set(),completed:new Set(),currentNode:'core_vat',selectedNode:null};
+
+function saveMapState(){localStorage.setItem('janitorMap',JSON.stringify(MAP_STATE));}
+function loadMapState(){const saved=localStorage.getItem('janitorMap');
+  if(saved)Object.assign(MAP_STATE,JSON.parse(saved));}
+function isNodeUnlocked(nodeId){return FACILITY_MAP.getNodeUnlockStatus(nodeId);}
+function hasItem(item){return G[item]===true||G.inventory&&G.inventory.includes(item);}
+
 // G = persistent run state (story + meters). S = per-stage action state (defined later).
 let G=null;
 function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timeline:50,torque:3,vex:3,
   weapon:'pistol',pattern:'single',regen:0,spawnMul:1,pendingAfter:'',lastDeltas:[],deaths:0,
-  score:0,comboBest:0,seenTut:false,seenTut2:false};}
+  score:0,comboBest:0,seenTut:false,seenTut2:false,inventory:[]};
+  // Phase 1: Initialize map state
+  MAP_STATE={discovered:new Set(['core_vat']),completed:new Set(),
+    currentNode:'core_vat',selectedNode:null};
+  saveMapState();}
 newGame();
 let MODE='title'; // title | story | conseq | action | over | end
 
@@ -966,9 +1084,158 @@ $('toggleGoo').addEventListener('click',()=>{const b=$('toggleGoo');
 $('toggleWarp').addEventListener('click',()=>{const b=$('toggleWarp');
   b.textContent=b.textContent.includes('ON')?'Warp OFF':'Warp ON';});
 
+/* ================= Phase 1: Map System ================= */
+// Map Canvas Setup
+let mapCtx=null;let mapW=800;let mapH=500;
+function initMapCanvas(){const mc=$('mapCanvas');if(mc&&!mapCtx){mapCtx=mc.getContext('2d');mapW=mc.width;mapH=mc.height;drawMap();}}
+
+// Map rendering
+function drawMap(){if(!mapCtx)initMapCanvas();if(!mapCtx)return;
+  mapCtx.clearRect(0,0,mapW,mapH);
+  // Draw background
+  mapCtx.fillStyle='#0a0618';mapCtx.fillRect(0,0,mapW,mapH);
+  // Draw connections first (z-index -1)
+  drawMapConnections();
+  // Draw nodes
+  drawMapNodes();
+  // Phase 1: Fog of war effect
+  drawFogOfWar();}
+
+function drawFogOfWar(){if(!mapCtx)return;
+  mapCtx.save();mapCtx.globalCompositeOperation='destination-out';
+  mapCtx.fillStyle='rgba(5,2,16,.85)';mapCtx.fillRect(0,0,mapW,mapH);
+  mapCtx.globalCompositeOperation='source-over';
+  // Cut out discovered areas
+  for(const nodeId of MAP_STATE.discovered){const node=FACILITY_MAP.nodes[nodeId];
+    if(node){mapCtx.beginPath();mapCtx.arc(node.x,node.y,120,0,Math.PI*2);mapCtx.fill();}}
+  mapCtx.restore();}
+
+function drawMapConnections(){if(!mapCtx)return;
+  mapCtx.strokeStyle='rgba(255,215,94,.25)';mapCtx.lineWidth=2;
+  for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
+    if(node.connections)node.connections.forEach(conId=>{
+      const con=FACILITY_MAP.nodes[conId];if(!con)return;
+      const isDiscovered=MAP_STATE.discovered.has(nodeId)&&MAP_STATE.discovered.has(conId);
+      mapCtx.strokeStyle=isDiscovered?'rgba(255,215,94,.45)':'rgba(255,215,94,.2)';
+      mapCtx.lineWidth=isDiscovered?3:2;mapCtx.beginPath();
+      mapCtx.moveTo(node.x,node.y);mapCtx.lineTo(con.x,con.y);mapCtx.stroke();});}}
+
+function drawMapNodes(){if(!mapCtx)return;const nodesDiv=$('mapNodes');nodesDiv.innerHTML='';
+  for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
+    const isDiscovered=MAP_STATE.discovered.has(nodeId);
+    const isCompleted=MAP_STATE.completed.has(nodeId);
+    const isUnlocked=isNodeUnlocked(nodeId);
+    const isCurrent=MAP_STATE.currentNode===nodeId;
+    const isSelected=MAP_STATE.selectedNode===nodeId;
+    const div=document.createElement('div');div.className='mapNode';
+    if(isCurrent)div.classList.add('current');
+    if(isSelected)div.classList.add('selected');
+    if(isCompleted)div.classList.add('completed');
+    if(!isUnlocked)div.classList.add('locked');
+    if(!isDiscovered)div.style.opacity='0';
+    div.style.left=node.x+'px';div.style.top=node.y+'px';
+    const iconDiv=document.createElement('div');iconDiv.className='mapIcon';
+    iconDiv.innerHTML=getNodeIcon(node);
+    div.appendChild(iconDiv);
+    const labelDiv=document.createElement('div');labelDiv.className='mapLabel';
+    labelDiv.textContent=node.label;
+    div.appendChild(labelDiv);
+    if(isUnlocked||isCompleted)div.addEventListener('click',()=>selectMapNode(nodeId));
+    nodesDiv.appendChild(div);}
+  updateMapInfo();
+}
+
+function getNodeIcon(node){const icons={vat:'🏭',mop:'🧹',mall:'🏪',truck:'🚚',shaft:'⬆️',map:'🗺️',
+  donut:'🍩',kevin:'👹',dungeon:'🏰',shop:'🏬',vent:'🌀',storage:'🥘',warp:'⏳'};return icons[node.icon]||'❓';}
+
+function updateMapInfo(){const info=$('mapInfo');const node=FACILITY_MAP.nodes[MAP_STATE.selectedNode];
+  if(!node)info.textContent='Select a node to travel';
+  else if(!isNodeUnlocked(node.id)){
+    const rule=FACILITY_MAP.unlockRules[node.id];
+    info.textContent=rule?'Locked: Requires '+rule.requires.replace('completed',''):'Locked';
+  }else if(node.requiresItem&&!hasItem(node.requiresItem)){
+    info.textContent='Requires: '+node.requiresItem.replace('_',' ');
+  }else info.textContent='Ready to travel to '+node.label;
+}
+
+function selectMapNode(nodeId){const node=FACILITY_MAP.nodes[nodeId];
+  if(!node||!isNodeUnlocked(nodeId))return;
+  if(node.requiresItem&&!hasItem(node.requiresItem)){updateMapInfo();return;}
+  if(MAP_STATE.selectedNode===nodeId){startStageFromMap(nodeId);return;}
+  MAP_STATE.selectedNode=nodeId;drawMap();}
+
+function startStageFromMap(nodeId){const node=FACILITY_MAP.nodes[nodeId];
+  if(node.type===NODE_TYPES.ACTION){MUS.play('chip');setTimeout(()=>{startStage(node.stageIndex);},300);}
+  else if(node.type===NODE_TYPES.STORY){openScene(node.sceneIndex);}
+  else if(node.type===NODE_TYPES.SHOP){openShop();}
+  MAP_STATE.currentNode=nodeId;MAP_STATE.discovered.add(nodeId);saveMapState();}
+
+function openMap(){MODE='map';hudOn(false);MUS.play('war');
+  loadMapState();updateMapForTrust();initMapCanvas();drawMap();showScreen('map');}
+function openShop(){MODE='shop';hudOn(false);MUS.play('table');showScreen('shop');}
+
+// Backtracking support - mark nodes as completed when stage is cleared
+function markStageComplete(stageIndex){const stageId=getStageId(stageIndex);
+  if(stageId)MAP_STATE.completed.add(stageId);saveMapState();}
+
+function getStageId(stageIndex){const mapping={0:'ch1',1:'ch2',2:'race',3:'ch3',4:'war',5:'glaze',6:'boss',7:'dungeon',8:'ventilation',9:'custard_storage',10:'time_warp'};return mapping[stageIndex]||('stage_'+stageIndex);}
+
+// Track collectibles per board
+const BOARD_COLLECTIBLES={
+  ch1:{taquitos:{total:10,found:0},lore_notes:{total:2,found:0}},
+  ch2:{taquitos:{total:8,found:0},lore_notes:{total:1,found:0}},
+  race:{taquitos:{total:12,found:0},cassettes:{total:3,found:0}},
+  dungeon:{taquitos:{total:15,found:0},golden_plunger:{total:1,found:0}}
+};
+
+// Button handlers
+$('bMapBack').addEventListener('click',()=>{AU.ui();showScreen('title');});
+$('bMap').addEventListener('click',()=>{AU.ui();openMap();});
+$('bShopBack').addEventListener('click',()=>{AU.ui();openMap();});
+
+// Phase 1: Trust/Timeline integration with map
+function updateMapForTrust(){const g=G;
+  if(g.vex>75){// High Vex trust: reveal hidden caches
+    for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
+      if(node.hiddenCache)node.revealed=true;}}
+  if(g.torque<25){// Low Torque: some connections become unstable
+    for(const nodeId in FACILITY_MAP.nodes){const node=FACILITY_MAP.nodes[nodeId];
+      if(node.torqueUnstable)node.connections=node.connections.filter(c=>c!=='boss');}}
+  if(g.timeline<30){// Low timeline stability: randomize some connections
+    // This could create new temporary connections or remove some
+  }
+}
+
+function getFastTravelCost(nodeId1,nodeId2){// Cost in taquitos
+  const n1=FACILITY_MAP.nodes[nodeId1];const n2=FACILITY_MAP.nodes[nodeId2];
+  if(!n1||!n2)return 0;const dx=Math.abs(n1.x-n2.x);const dy=Math.abs(n1.y-n2.y);
+  const dist=Math.sqrt(dx*dx+dy*dy);return Math.max(0,Math.floor(dist/100));
+}
+
+function fastTravelTo(nodeId){const cost=getFastTravelCost(MAP_STATE.currentNode,nodeId);
+  if(G.taquitos<cost){updateMapInfo();return;}
+  G.taquitos-=cost;updateHUD();
+  warp();setTimeout(()=>{startStageFromMap(nodeId);},500);
+}
+
+// Phase 1: Map keyboard navigation
+document.addEventListener('keydown',(e)=>{if(MODE!=='map')return;
+  if(e.key==='ArrowUp'){const nodeId=MAP_STATE.selectedNode||MAP_STATE.currentNode;
+    const node=FACILITY_MAP.nodes[nodeId];if(node&&node.connections&&node.connections[0]){
+      selectMapNode(node.connections[0]);e.preventDefault();}}
+  else if(e.key==='ArrowDown'){const nodeId=MAP_STATE.selectedNode||MAP_STATE.currentNode;
+    const node=FACILITY_MAP.nodes[nodeId];if(node&&node.connections&&node.connections[1]){
+      selectMapNode(node.connections[1]);e.preventDefault();}}
+  else if(e.key==='Enter'||e.key===' '){const nodeId=MAP_STATE.selectedNode||MAP_STATE.currentNode;
+    if(nodeId)startStageFromMap(nodeId);}
+  else if(e.key==='Escape'){AU.ui();showScreen('title');}});
+
 /* ================= CONSEQUENCE / GAMEOVER / ENDING ================= */
 function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
+  // Phase 1: Mark stage as complete in map and handle unlock items
+  markStageComplete(G.stage);
+  if(st.unlockItem&&!G.inventory.includes(st.unlockItem))G.inventory.push(st.unlockItem);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
   let loot;
   if(G.hp<G.maxHp){G.hp++;loot=pick(LOOT);}
@@ -2671,11 +2938,13 @@ const seed=i=>{const r=Math.sin(i*127.1)*43758.5453;return r-Math.floor(r);};
 function draw(){const st=S.st,p=S.p,hue=st.hue;
   // Phase 0: Apply canvas filters based on environment
   CanvasFilters.apply(cx);
-  if(st.race){raceDraw();CanvasFilters.clear(cx);return;}
-  if(st.fight){fightDraw();CanvasFilters.clear(cx);return;}
-  if(st.top){topDraw();CanvasFilters.clear(cx);return;}
-  if(st.boss){bossDraw();CanvasFilters.clear(cx);return;}
-  if(st.dungeon){dungeonDraw();CanvasFilters.clear(cx);return;}
+  // Phase 1: Glitch effect for Time Warp Zone
+  if(st.glitch&&Math.random()<.03){cx.save();cx.filter='hue-rotate(180deg)';}
+  if(st.race){raceDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
+  if(st.fight){fightDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
+  if(st.top){topDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
+  if(st.boss){bossDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
+  if(st.dungeon){dungeonDraw();CanvasFilters.clear(cx);if(st.glitch)cx.restore();return;}
   cx.clearRect(0,0,W,H);cx.save();
   cx.imageSmoothingEnabled=false;
   if(S.shake>0)cx.translate(rr(-5,5)*S.shake,rr(-4,4)*S.shake);
@@ -2790,6 +3059,8 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
     if(st.boss){cx.fillStyle='#7dff3a';cx.font='700 12px sans-serif';
       cx.fillText('Kinetic Enzyme Vat, Infinitely Networked',W/2,H*.4+48);}
     cx.globalAlpha=1;}
+  // Phase 1: Clean up glitch filter
+  if(st.glitch)cx.restore();
   cx.restore();}
 
 /* ================= MAIN LOOP ================= */
