@@ -295,7 +295,7 @@ critter enemies. Either create the location or rewrite the references.
 | HEAD defect fixes | ✅ **Done** `d75d25f` | Non-negative `dt` clamp; sequencer no longer schedules notes in the past after a throttle stall. |
 | A — Persistence & ledger | ✅ **Done** | One guarded key (`jot.save`, ver 1), taquito wallet + HUD, inventory, stats, per-board bests keyed by new `STAGES[].id`, CONTINUE with a deep-copied checkpoint, erase-save. Verified against 12 hostile save payloads and a storage-denied boot. `spendTaquitos`/`hasItem` are in place but unspent until the shop phase. |
 | B — Gameplay refinement | ✅ **Done** | Four difficulty tiers (picker on the title, persisted) scaling spawn interval, mercy window and regen — never player damage. Mid-board checkpoints on the three timed boards and the race. Trust now pays off in action boards (Torque ≥7 regen, Vex ≥7 mercy). Juice constants gathered into `TUNING.juice`. |
-| C — Pause & menu shell | ⬜ Not started | |
+| C — Pause & menu shell | ✅ **Done** | In-board pause (⏸ button + Esc/P) reusing `S.paused`, with STATS / DOSSIERS / OPTIONS tabs, resume and quit-to-title. Dossiers unlock off the Phase A stats. OPTIONS holds the difficulty cycler and sound toggle — Phase D drops volume sliders in the same panel, Phase E fills out the dossier text. |
 | D — AV settings & mixing | ⬜ Not started | |
 | E — Story depth | ⬜ Not started | |
 | F — QOL & accessibility | ⬜ Not started | |

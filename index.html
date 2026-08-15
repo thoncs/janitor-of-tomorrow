@@ -62,6 +62,21 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 .btn.ghost{background:#241646;color:var(--ink);box-shadow:inset 0 0 0 2px #4b357f}
 .btn.sm{min-height:40px;min-width:0;padding:9px 18px;font-size:13px}
 .btn.xs{min-height:28px;min-width:0;padding:4px 10px;font-size:11px;letter-spacing:.04em}
+/* pause shell — Phase D adds volume controls to the OPTIONS panel, Phase E fills in dossiers */
+#bPause{position:absolute;top:calc(10px + var(--sat));right:calc(62px + var(--sar));z-index:65;font-size:15px;background:rgba(36,22,70,.6);border:1px solid #4b357f;border-radius:11px;width:42px;height:42px;color:var(--ink);touch-action:manipulation}
+#pause{justify-content:flex-start;gap:7px;background:rgba(8,4,22,.94)}
+#pause h2{font-size:19px}
+#pauseTabs{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.ptab.on{background:rgba(33,240,255,.16);border-color:var(--cyn);color:var(--ink)}
+#pausePanel{width:100%;max-width:620px;flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;text-align:left;font-size:12px;line-height:1.5}
+#pausePanel .prow{display:flex;justify-content:space-between;gap:12px;padding:3px 9px;border-bottom:1px solid rgba(75,53,127,.35)}
+#pausePanel .prow b{color:var(--ink);font-weight:800}
+#pausePanel .pval{color:var(--cyn);font-variant-numeric:tabular-nums}
+#pausePanel .bio{display:flex;gap:10px;padding:7px 9px;align-items:flex-start}
+#pausePanel .bio img{width:44px;height:44px;image-rendering:pixelated;border:1px solid #4b357f;border-radius:8px;flex-shrink:0}
+#pausePanel .bio.locked{opacity:.45}
+#pausePanel .bname{font-weight:800;letter-spacing:.04em;color:var(--mag)}
+#pausePanel .phint{color:var(--dim);padding:6px 9px}
 
 /* ---------- story / consequence ---------- */
 #story{justify-content:flex-start;gap:8px}
@@ -265,7 +280,7 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
   <div id="cast"></div>
   <div class="btnrow"><button class="btn" id="bCont" style="display:none">⏱ CONTINUE</button><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
   <p class="small dim" id="contline" style="display:none"></p>
-  <p class="small dim" id="diffline">shift difficulty: <button class="btn ghost sm" id="bDiff">NORMAL</button> <span id="diffblurb" class="dim"></span></p>
+  <p class="small dim" id="diffline">shift difficulty: <button class="btn ghost sm" id="bDiff"><span class="diffLabel">NORMAL</span></button> <span class="dim diffBlurb"></span></p>
   <p class="small dim blink" id="courage">— insert courage to begin —</p>
   <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab · v0.6<button class="btn ghost xs" id="bErase" style="display:none;margin-left:8px">🧽 erase save</button></p>
 </div>
@@ -365,6 +380,22 @@ h2.bad{color:var(--red);text-shadow:0 0 16px rgba(255,71,87,.55)}
 
 <div id="vig"></div><div id="fx"></div><div id="flash"></div>
 <button id="mute">🔊</button>
+<button id="bPause" style="display:none">⏸</button>
+
+<div class="screen" id="pause">
+  <div class="pill">Shift Paused</div>
+  <h2 id="pauseWhere">PAUSED</h2>
+  <div id="pauseTabs">
+    <button class="btn ghost sm ptab on" data-tab="stats">📊 STATS</button>
+    <button class="btn ghost sm ptab" data-tab="bios">🪪 DOSSIERS</button>
+    <button class="btn ghost sm ptab" data-tab="opts">⚙️ OPTIONS</button>
+  </div>
+  <div id="pausePanel"></div>
+  <div class="btnrow">
+    <button class="btn" id="bResume">▶ RESUME SHIFT</button>
+    <button class="btn ghost sm" id="bPQuit">⏏ QUIT TO TITLE</button>
+  </div>
+</div>
 <div id="rot"><b>📱</b><h2>Rotate your phone</h2><p class="sub">This time-war is landscape-only. Doug needs the legroom.</p></div>
 </div>
 <script>
@@ -671,6 +702,7 @@ let MODE='title'; // title | story | conseq | action | over | end
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
 function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);if(v)updateTaqHud();
+  $('bPause').style.display=v?'':'none';
   $('stick').classList.toggle('on',v&&!!(S&&S.st&&(S.st.top||S.st.dungeon)));
   $('steer').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));}
 function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85;
@@ -902,11 +934,87 @@ function refreshContinue(){const b=$('bCont'),l=$('contline'),r=PROF.run;
   l.textContent='resume: '+(where||'in progress')+' · 🌮 '+PROF.taquitos;}
 
 // Difficulty cycles through DIFFS and persists immediately, so it survives a reload like everything else.
-function renderDiff(){const d=DF();$('bDiff').textContent=d.name;$('diffblurb').textContent=d.blurb;}
-$('bDiff').addEventListener('click',()=>{AU.ui();
+// Rendered into every .diffLabel, because the same control appears on the title and in the pause menu.
+function renderDiff(){const d=DF();
+  document.querySelectorAll('.diffLabel').forEach(el=>el.textContent=d.name);
+  document.querySelectorAll('.diffBlurb').forEach(el=>el.textContent=d.blurb);}
+function cycleDiff(){AU.ui();
   const i=DIFFS.findIndex(d=>d.id===PROF.diff);
   PROF.diff=DIFFS[(i<0?1:i+1)%DIFFS.length].id;
-  renderDiff();SAVE.write();});
+  renderDiff();SAVE.write();}
+$('bDiff').addEventListener('click',cycleDiff);
+
+/* ================= PAUSE ================= */
+// S.paused already gated the main loop for the portrait overlay; this reuses it for a real pause menu.
+let userPaused=false, pauseTab='stats';
+function canPause(){return MODE==='action'&&S&&!S.done;}
+function openPause(){if(!canPause()||userPaused)return;
+  userPaused=true;S.paused=true;IN.fire=false;
+  const st=S.st;$('pauseWhere').textContent=st?st.name:'PAUSED';
+  renderPausePanel();showScreen('pause');}
+function closePause(){if(!userPaused)return;
+  userPaused=false;
+  // don't unpause into a portrait phone — the #rot overlay is still covering the game
+  if(S)S.paused=PMQ.matches;
+  last=performance.now(); // otherwise the first frame back gets a giant dt
+  showScreen('');}
+function setPauseTab(t){pauseTab=t;
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  renderPausePanel();}
+
+const BIOS=[
+ {id:'doug',  name:'DOUG PICKLES',    img:()=>ART.port_doug, always:true,
+  txt:'Night janitor. World #1 ranked at GRIME WAR 2099, a game nobody else plays. Owns one (1) fork. Did not ask for a time-war and is being extremely normal about it.'},
+ {id:'torque',name:'TORQUE',          img:()=>ART.port_torq, always:true,
+  txt:'Future soldier. Eats things that are not food as a coping mechanism. Believes every problem is a door problem. Trust her and the mop swings truer.'},
+ {id:'vex',   name:'VEX',             img:()=>ART.port_vex,  always:true,
+  txt:'Future soldier, tactical. Logs everything, including feelings, as "acceptable initiative." Reroutes the graphics budget when the moment demands it.'},
+ {id:'glaze', name:'GLAZE',           img:()=>ART.glz_body,  need:'cleared.glaze',
+  txt:'The Forbidden Donut. Bouncer of the vat door. Six thousand sprinkles held together by spite and a glaze that has seen things. Ends, eventually, in MOPTALITY.'},
+ {id:'kevin', name:'K.E.V.I.N.',      img:()=>ART.kev_a,     need:'cleared.boss',
+  txt:'Kinetic Enzyme Vat, Infinitely Networked. Was built to [REDACTED]. Runs PROJECT CUSTARD. Has a second health bar and abandonment issues.'}];
+
+function renderPausePanel(){const p=$('pausePanel');
+  if(pauseTab==='stats'){
+    const s=PROF.stats||{}, rows=[
+      ['🌮 Taquito wallet',PROF.taquitos],
+      ['Boards cleared',s.boardsCleared|0],
+      ['Hostiles mopped',s.kills|0],
+      ['Timelines severed',s.deaths|0],
+      ['This shift · score',G?G.score:0],
+      ['This shift · best combo',G?G.comboBest:0]];
+    let h=rows.map(r=>'<div class="prow"><b>'+r[0]+'</b><span class="pval">'+r[1]+'</span></div>').join('');
+    const best=Object.keys(PROF.best||{});
+    h+='<div class="prow"><b>PERSONAL BESTS</b><span class="pval">'+best.length+' board'+(best.length===1?'':'s')+'</span></div>';
+    h+=best.length?STAGES.filter(st=>PROF.best[st.id]!=null).map(st=>
+        '<div class="prow"><b>'+st.name+'</b><span class="pval">'+String(PROF.best[st.id]|0).padStart(7,'0')+'</span></div>').join('')
+      :'<div class="phint">Clear a board to set one.</div>';
+    p.innerHTML=h;}
+  else if(pauseTab==='bios'){
+    p.innerHTML=BIOS.map(b=>{
+      const open=b.always||((PROF.stats||{})[b.need]|0)>0;
+      const src=open?b.img():'';
+      return '<div class="bio'+(open?'':' locked')+'">'+
+        (src?'<img src="'+src+'" alt="">':'<img alt="">')+
+        '<div><div class="bname">'+(open?b.name:'█████████')+'</div><div>'+
+        (open?b.txt:'Dossier sealed. Meet them first.')+'</div></div></div>';}).join('');}
+  else{
+    p.innerHTML='<div class="prow"><b>Difficulty</b><span><button class="btn ghost xs" id="bDiff2"><span class="diffLabel">NORMAL</span></button></span></div>'+
+      '<div class="phint diffBlurb"></div>'+
+      '<div class="prow"><b>Sound</b><span><button class="btn ghost xs" id="bSnd">'+(AU.on?'🔊 ON':'🔇 OFF')+'</button></span></div>'+
+      '<div class="phint">Volume sliders arrive with the audio pass. Difficulty applies immediately — mid-board too.</div>';
+    $('bDiff2').addEventListener('click',cycleDiff);
+    $('bSnd').addEventListener('click',()=>{AU.on=!AU.on;MUS.setOn(AU.on);
+      $('mute').textContent=AU.on?'🔊':'🔇';$('bSnd').textContent=AU.on?'🔊 ON':'🔇 OFF';AU.ui();});
+    renderDiff();}}
+
+document.querySelectorAll('.ptab').forEach(b=>
+  b.addEventListener('click',()=>{AU.ui();setPauseTab(b.dataset.tab);}));
+$('bPause').addEventListener('click',()=>{AU.ui();openPause();});
+$('bResume').addEventListener('click',()=>{AU.ui();closePause();});
+$('bPQuit').addEventListener('click',()=>{AU.ui();
+  userPaused=false;if(S)S.paused=false;
+  hudOn(false);MUS.play('title');MODE='title';refreshContinue();showScreen('title');});
 
 // Erasing is destructive, so it takes two taps.
 let eraseArmed=false;
@@ -956,7 +1064,7 @@ function gameOver(){MODE='over';hudOn(false);MUS.stop();AU.die();G.deaths++;bump
   showScreen('over');}
 $('bRetry').addEventListener('click',()=>{AU.ui();G.hp=Math.max(G.hp,TUNING.retryHp);G.energy=100;
   warp();if(G.inBattle)openBattle();else startStage(G.stage);});
-$('bQuit').addEventListener('click',()=>{AU.ui();hudOn(false);MUS.play('title');showScreen('title');MODE='title';});
+$('bQuit').addEventListener('click',()=>{AU.ui();userPaused=false;hudOn(false);MUS.play('title');refreshContinue();showScreen('title');MODE='title';});
 
 function ending(){MODE='end';hudOn(false);MUS.play('end');
   const key=G.timeline>=70?'gold':G.timeline>=35?'side':'beige';
@@ -1364,6 +1472,7 @@ bindPad($('padJ'),()=>{IN.jumpBuf=.12;},()=>{});
 bindPad($('padF'),()=>{IN.fire=true;},()=>{IN.fire=false;});
 const KEYS={};
 addEventListener('keydown',e=>{KEYS[e.code]=1;if(e.repeat)return;
+  if(e.code==='Escape'||e.code==='KeyP'){e.preventDefault();userPaused?closePause():openPause();return;}
   if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'){IN.jumpBuf=.12;e.preventDefault();}
   if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=true;});
 addEventListener('keyup',e=>{KEYS[e.code]=0;if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=false;});
@@ -2764,7 +2873,7 @@ requestAnimationFrame(loop);
 document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;});
 // portrait gate: #rot overlay covers the game; also pause the sim
 const PMQ=matchMedia('(orientation: portrait)');
-function syncRot(){if(S)S.paused=PMQ.matches;IN.fire=false;last=performance.now();}
+function syncRot(){if(S)S.paused=PMQ.matches||userPaused;IN.fire=false;last=performance.now();}
 try{PMQ.addEventListener('change',syncRot);}catch(e){PMQ.addListener(syncRot);}
 MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 
