@@ -3358,6 +3358,24 @@ MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 // unexpected throw in here cannot cost us input. SAVE.load() is internally guarded regardless.
 SAVE.load();applyAudio();applyUI();applyInstability();updateTaqHud();renderDiff();refreshContinue();
 if(HUB_ON)$('bHub').style.display=''; // the hub is opt-in; with the flag off nothing above changes
+
+/* ?board=<id> boots straight into one board, so a specific board can be reviewed without playing
+   the game up to it. Ids: ch1 ch2 race ch3 war glaze boss dungeon warp.
+   Add &fresh=1 to also wipe the saved profile first, so control cards and lore show as new.
+   Wrapped so a bad value can never stop the normal game from booting. */
+try{
+  const q=new URLSearchParams(location.search),want=q.get('board');
+  if(want){
+    const bi=stageIndexById(want);
+    if(bi<0)console.warn('?board: no such board "'+want+'". Try: '+STAGES.map(x=>x.id).join(' '));
+    else{
+      if(q.has('fresh'))SAVE.erase();
+      newGame();updateTaqHud();refreshContinue();
+      // let the first layout/fit settle so pad measurement and the canvas size are real
+      setTimeout(()=>{try{warp();startStage(bi);}catch(e){console.error(e);}},80);
+    }
+  }
+}catch(e){/* never let a URL typo break the game */}
 </script>
 </body>
 </html>

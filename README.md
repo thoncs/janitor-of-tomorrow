@@ -112,6 +112,19 @@ node tools/check.mjs index.html && node tools/smoke.mjs "$PWD/index.html"
   parses fine and still kills the whole game.
 - **`tools/sync-assets.mjs`** — checks the reskin catalog still matches the game's art, and `--fix` resyncs it.
 
+### Jumping straight to a board
+
+Playing up to a board to check it is miserable. Append `?board=<id>` to go straight there:
+
+```
+index.html?board=race
+index.html?board=race&fresh=1     # also wipes the save, so control cards and lore show as new
+```
+
+Ids: `ch1` `ch2` `race` `ch3` `war` `glaze` `boss` `dungeon` `warp`. Works over `file://` too, so you can
+open the file in Safari, add the parameter, and be on the board in one tap. A bad id is ignored and the game
+boots normally. `?hub=1` gives the facility map instead, if you want to pick from a menu.
+
 Git never tracks `.git/hooks/`, so after a clone re-arm the hooks once:
 
 ```bash
