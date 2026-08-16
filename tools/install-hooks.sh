@@ -40,6 +40,10 @@ if [ -x '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' ]; then
 else
   echo 'pre-push: Chrome not found, skipping smoke test (syntax gate passed).'
 fi
+# The public reskin catalog is a second copy of the art and has silently drifted before.
+# Warn rather than block: a stale catalog is embarrassing, not broken.
+(cd "$root" && node tools/sync-assets.mjs >/dev/null) || \
+  echo 'pre-push: NOTE assets.html has drifted from index.html — run: node tools/sync-assets.mjs --fix'
 EOF
 
 chmod +x "$hooks/pre-commit" "$hooks/pre-push"
