@@ -168,7 +168,11 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 #mute{position:absolute;top:calc(10px + var(--sat));right:calc(12px + var(--sar));z-index:65;font-size:17px;background:rgba(36,22,70,.6);border:1px solid #4b357f;border-radius:11px;width:42px;height:42px;color:var(--ink);touch-action:manipulation}
 
 /* ---------- touch pads ---------- */
-#pads{position:absolute;inset:0;z-index:46;display:none;pointer-events:none}
+/* 49, above #stick and #steer at 47 and below .screen at 50. This has to live on #pads itself:
+   #pads is positioned WITH a z-index, so it creates a stacking context and a child's z-index only
+   ranks inside it — .pad{z-index:48} alone left the FIRE pad under the race's steering layer.
+   Safe because #pads is pointer-events:none, so only the pad boxes intercept anything. */
+#pads{position:absolute;inset:0;z-index:49;display:none;pointer-events:none}
 #pads.on{display:block}
 .pad{position:absolute;bottom:calc(14px + var(--sab) + var(--padLift,0px));width:calc(138px * var(--padScale,1));height:calc(104px * var(--padScale,1));z-index:48;border-radius:24px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;letter-spacing:.1em;color:var(--ink);background:rgba(36,22,70,.5);box-shadow:inset 0 0 0 2px rgba(122,90,205,.5);backdrop-filter:blur(3px);touch-action:none;pointer-events:auto}
 #padJ{left:calc(16px + var(--sal))}
@@ -176,7 +180,11 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 /* floating flight stick zone (top-scroller only) */
 #stick{position:absolute;left:0;top:0;bottom:0;width:60%;z-index:47;display:none;touch-action:none}
 #stick.on{display:block}
-#steer{position:absolute;inset:0;z-index:47;display:none;touch-action:none}
+/* race: throttle pedal on the left half, steering wheel on the right. The FIRE pad sits at
+   z-index 48 above both, so tapping it never bleeds into steering. */
+#gas{position:absolute;left:0;top:0;bottom:0;width:50%;z-index:47;display:none;touch-action:none}
+#gas.on{display:block}
+#steer{position:absolute;left:50%;right:0;top:0;bottom:0;z-index:47;display:none;touch-action:none}
 #steer.on{display:block}
 #padJ.hot{background:rgba(33,240,255,.28);box-shadow:inset 0 0 0 2px var(--cyn)}
 #padF.hot{background:rgba(255,61,240,.28);box-shadow:inset 0 0 0 2px var(--mag)}
@@ -302,6 +310,7 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 <div id="hud"><div id="hudrow"><div id="hearts">♥♥♥♥♥</div><div id="ebarw"><div id="ebar"></div></div><div id="taq">🌮 0</div></div><div id="pbarw"><div id="pbar"></div></div></div>
 <div id="pads"><div class="pad" id="padJ">⬆ JUMP</div><div class="pad" id="padF">🔥 FIRE</div></div>
 <div id="stick"></div>
+<div id="gas"></div>
 <div id="steer"></div>
 
 <div class="screen on" id="title">
@@ -605,10 +614,11 @@ const KEV_LORE=[
 // hold-to-fire and a double jump; the kumite is tap-to-swing with a single hop).
 const HOWTO={
  race:{title:'🏁 TAQUITO GRAND PRIX',lines:[
-  'No pedals — the truck drives itself.',
-  'Touch the LEFT or RIGHT half of the screen to steer. There are no on-screen buttons here.',
+  'HOLD the LEFT half to accelerate. Let go and the truck slows down — that is your brake.',
+  'STEER on the RIGHT half: put a thumb down anywhere and slide. Where you touch becomes centre.',
+  '🔥 FIRE shoots down the road and clears traffic out of your way. Tankers take one, CHONKY takes three.',
   'Every bend drifts you outward, so lean INTO the curve or the rumble strip will find you.',
-  'Squeezing past traffic without hitting it scores. 🌮 makes you briefly unstoppable.']},
+  'Squeezing past traffic without hitting it still scores. 🌮 makes you briefly unstoppable.']},
  ch3:{title:'🚀 CUSTARD ASCENT',lines:[
   'Put a thumb down anywhere on the LEFT half — wherever you touch becomes the stick\'s centre.',
   'About half an inch of travel is full speed. Let go and you stop dead.',
@@ -908,7 +918,8 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);if(v)updateTaqHud();
   $('bPause').style.display=v?'':'none';
   $('stick').classList.toggle('on',v&&!!(S&&S.st&&(S.st.top||S.st.dungeon)));
-  $('steer').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));}
+  $('steer').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));
+  $('gas').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));}
 function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85;
   setTimeout(()=>{f.style.transition='opacity .55s';f.style.opacity=0},30);AU.warp();}
 
@@ -1802,7 +1813,7 @@ function fit(){const d=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=inn
   groundY=Math.min(H*.82,H-64);}
 addEventListener('resize',fit);fit();
 
-const IN={fire:false,jumpBuf:0,steer:0};
+const IN={fire:false,jumpBuf:0,steer:0,gas:0};
 function bindPad(el,down,up){
   el.addEventListener('pointerdown',e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(_){}
     AU.init();down();el.classList.add('hot');});
@@ -1828,18 +1839,30 @@ stickEl.addEventListener('pointermove',e=>{const s=S&&S.stick;
   s.x=dx*c/r;s.y=dy*c/r;});
 const stickUp=e=>{const s=S&&S.stick;if(s&&e.pointerId===s.id){s.on=false;s.x=0;s.y=0;}};
 stickEl.addEventListener('pointerup',stickUp);stickEl.addEventListener('pointercancel',stickUp);
-// racing: touch either half of the screen to steer (multi-touch aware)
+// --- race: throttle pedal (left half) ---
+// Speed is the player's decision now, not the game's. Hold to accelerate, release to slow for a
+// tricky stretch. Keyboard: hold Up/W.
+const gasEl=$('gas'),gasPts=new Set();
+const gasSync=()=>{IN.gas=gasPts.size?1:0;};
+gasEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
+  gasPts.add(e.pointerId);gasSync();
+  try{gasEl.setPointerCapture(e.pointerId)}catch(_){}});
+const gasUp=e=>{gasPts.delete(e.pointerId);gasSync();};
+gasEl.addEventListener('pointerup',gasUp);gasEl.addEventListener('pointercancel',gasUp);
+
+// --- race: steering wheel (right half) ---
+// Relative, like the flight stick: wherever you put your thumb becomes centre, then slide to steer.
+// That means you never have to look at where your thumb landed.
 const steerEl=$('steer'),steerPts=new Map();
-const steerSync=()=>{const v=[...steerPts.values()];IN.steer=v.length?v[v.length-1]:0;};
-// analog: how far from centre you touch is how hard you steer, with a small dead zone so you
-// can hold a straight line. Slide your thumb to trim it without lifting off.
-const steerAmt=x=>{const v=(x/innerWidth-.5)*2.4; // full lock a bit before the screen edge
-  return Math.abs(v)<.12?0:clamp(v,-1,1);};
+const STEER_THROW=64; // px of travel for full lock, scaled by the pad-size setting
+const steerSync=()=>{const v=[...steerPts.values()];
+  IN.steer=v.length?v[v.length-1].val:0;};
 steerEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
-  steerPts.set(e.pointerId,steerAmt(e.clientX));steerSync();
+  steerPts.set(e.pointerId,{ox:e.clientX,val:0});steerSync();
   try{steerEl.setPointerCapture(e.pointerId)}catch(_){}});
-steerEl.addEventListener('pointermove',e=>{if(steerPts.has(e.pointerId)){
-  steerPts.set(e.pointerId,steerAmt(e.clientX));steerSync();}});
+steerEl.addEventListener('pointermove',e=>{const g=steerPts.get(e.pointerId);if(!g)return;
+  const r=STEER_THROW*((PROF.ui&&PROF.ui.padScale)||1);
+  g.val=clamp((e.clientX-g.ox)/r,-1,1);steerSync();});
 const steerUp=e=>{steerPts.delete(e.pointerId);steerSync();};
 steerEl.addEventListener('pointerup',steerUp);steerEl.addEventListener('pointercancel',steerUp);
 addEventListener('contextmenu',e=>e.preventDefault());
@@ -1865,7 +1888,8 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   if(st.top){S.p.x=W/2;S.p.y=H-90;S.p.vx=0;S.p.vy=0;G.pattern='single';
     S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};S.banner=null;
     S.dust=[];for(let i=0;i<26;i++)S.dust.push({x:rr(60,W-60),y:rr(0,H),spd:rr(300,650),len:rr(10,26)});}
-  if(st.race){S.dist=0;S.speed=150;S.px=0;S.curve=0;S.robs=[];S.nextOb=260;S.crash=0;S.chonked=false;
+  if(st.race){S.dist=0;S.speed=120;S.px=0;S.curve=0;S.robs=[];S.nextOb=260;S.crash=0;S.chonked=false;
+    S.rshots=[];S.fireT=0; // road-clearing bolts
     S.p.x=W/2;S.p.y=H-34; // juice anchors (taquito aura wraps the truck)
     S.segs=[0,0,.6,.9,0,-.7,-1,0,.5,1,.8,0,-.9,0,1,-.6,0,.8,-.8,0];}
   if(st.fight){S.fx={phase:'intro',t:0,timer:60,fireHeld:false,
@@ -1883,7 +1907,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   // whoever you have been kinder to gets the line; ties go to Torque, who talks more
   const bk=BARKS[st.id];if(bk&&!st.boss)say(bk[G.vex>G.torque?'VEX':'TORQUE'],4.2);
   $('padJ').style.display=(st.top||st.race||st.dungeon)?'none':'';
-  $('padF').style.display=st.race?'none':'';
+  $('padF').style.display=''; // the race can shoot the road clear too
   G.energy=100;
   hudOn(true);showScreen('');updateHearts();
   // device safe-areas (notch) and the pad-size setting both shift the JUMP pad — keep Doug clear
@@ -2189,11 +2213,14 @@ function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
 function raceUpdate(dt){const st=S.st,p=S.p;
   S.t+=dt;updateJuice(dt);if(S.banner)S.banner.t-=dt;
   if(S.shake>0)S.shake-=dt;if(p.inv>0)p.inv-=dt;
-  // steering (touch halves or arrow keys)
+  // steering (right-half wheel, or arrow keys)
   const steer=IN.steer||(((KEYS.ArrowRight||KEYS.KeyD)?1:0)-((KEYS.ArrowLeft||KEYS.KeyA)?1:0));
-  // speed: ramps up, taquito overdrives, crashes stall
-  const vmax=S.taq>0?350:265;
-  S.speed+=(vmax-S.speed)*Math.min(1,dt*.35);
+  // speed is the player's call now: hold the left half (or Up/W) to accelerate, release to slow.
+  const gas=IN.gas||((KEYS.ArrowUp||KEYS.KeyW)?1:0);
+  const vmax=S.taq>0?350:265, idle=105;
+  const spdTarget=gas?vmax:idle; // not `target` — that name belongs to the curvature below
+  // gains speed deliberately, sheds it faster — lifting off is a real brake
+  S.speed+=(spdTarget-S.speed)*Math.min(1,dt*(gas?.42:.95));
   if(S.crash>0){S.crash-=dt;S.speed=Math.min(S.speed,95);}
   // road curvature from segment table
   const target=S.segs[Math.floor(S.dist/240)%S.segs.length];
@@ -2204,6 +2231,31 @@ function raceUpdate(dt){const st=S.st,p=S.p;
   if(Math.abs(S.px)>.92){S.speed=Math.max(110,S.speed-170*dt);
     S.shake=Math.max(S.shake,.07);} // rumble strips disapprove
   S.dist+=S.speed*dt;
+  // --- road-clearing bolts ---
+  S.fireT-=dt;
+  if(IN.fire&&S.fireT<=0){S.fireT=.34;
+    S.rshots.push({z:70,lane:S.px,t:0});AU.pew();
+    // every bolt costs road speed. Without this there is no reason not to hold fire the whole way,
+    // and holding fire was strictly the best play. Now clearing a lane trades away lap time.
+    S.speed=Math.max(idle,S.speed-15);}
+  for(let i=S.rshots.length-1;i>=0;i--){const sh=S.rshots[i];
+    sh.t+=dt;sh.z+=980*dt; // travels away from you, closing on traffic fast
+    if(sh.z>1500){S.rshots.splice(i,1);continue;}
+    let hit=false;
+    for(let j=S.robs.length-1;j>=0;j--){const o=S.robs[j];
+      if(o.type==='taq')continue; // never shoot the snack
+      if(Math.abs(o.z-sh.z)>80||Math.abs(o.lane-sh.lane)>.42)continue;
+      hit=true;
+      o.hp=(o.hp==null?(o.type==='chonky'?3:1):o.hp)-1;
+      if(o.hp>0){o.hitT=.12;break;} // CHONKY takes three
+      // killJuice owns the scoring and the pop (base x combo), same as topKill — do not add either
+      // separately or a tanker pays out 150 + 150xcombo.
+      // deliberately worth LESS than threading the same gap (near miss pays 50xcombo): the gun is a
+      // safety valve for a line you cannot make, not the optimal way to play
+      const sc=o.type==='chonky'?250:o.type==='tanker'?80:40;
+      killJuice(W/2+(o.lane-S.px)*120,H*.62,sc);AU.kill();
+      S.robs.splice(j,1);break;}
+    if(hit)S.rshots.splice(i,1);}
   // traffic
   if(S.dist>S.nextOb&&S.dist<st.dist-420){
     S.nextOb=S.dist+rr(180,340)-Math.min(110,S.dist/34);
@@ -2326,6 +2378,17 @@ function raceDraw(){const st=S.st,hue=st.hue;
       // cyan, not gold: against the lime traffic this is the only reward/hazard call made on hue alone
       cx.fillStyle='rgba(33,240,255,.42)';cx.beginPath();cx.arc(px2,y-18*s2,26*s2,0,7);cx.fill();cx.restore();
       cx.font=Math.max(10,30*s2)+'px sans-serif';cx.textAlign='center';cx.fillText('🌮',px2,y);}}
+  // road-clearing bolts, drawn with the obstacles' own perspective so they fly INTO the scene
+  cx.save();cx.globalCompositeOperation='lighter';
+  for(const sh of S.rshots){const t=clamp(1-sh.z/1500,0,1);if(t<=.03)continue;
+    const persp=t*t*.75+t*.25,rw=persp*roadHalf*2;
+    const y=hz+t*(H-hz);
+    const px2=W/2+S.curve*(1-t)*(1-t)*W*.85-S.px*rw*.55+sh.lane*rw*.5;
+    cx.fillStyle='rgba(33,240,255,.9)';
+    cx.fillRect(px2-2.5*persp*2,y-16*persp,5*persp*2,16*persp);
+    cx.fillStyle='rgba(255,255,255,.75)';
+    cx.fillRect(px2-1*persp*2,y-13*persp,2*persp*2,10*persp);}
+  cx.restore();
   // the truck (rear view), tilting with steer
   if(!(S.p.inv>0&&Math.sin(S.t*40)>0)){
     const tx=W/2,ty=H-16;
@@ -2337,6 +2400,11 @@ function raceDraw(){const st=S.st,hue=st.hue;
     if(S.taq>0){cx.fillStyle='#ff7a1e'; // overdrive flames
       cx.beginPath();cx.ellipse(-43,8,8,14+rr(0,6),0,0,7);cx.ellipse(43,8,8,14+rr(0,6),0,0,7);cx.fill();}
     cx.restore();}
+  // zone hints: fade out once you have clearly got the idea
+  if(S.t<14){cx.save();cx.globalAlpha=Math.max(0,Math.min(.5,(14-S.t)/6));
+    cx.font='900 12px sans-serif';cx.textAlign='center';cx.fillStyle='#eae6ff';
+    cx.fillText('⛽ HOLD = GAS',W*.25,H-24);
+    cx.fillText('◀ SLIDE = STEER ▶',W*.72,H-24);cx.restore();}
   // particles/rings/juice
   S.parts.forEach(q=>{cx.globalAlpha=Math.min(1,q.life*2.5);cx.fillStyle=q.col;
     cx.fillRect(q.x-q.sz/2,q.y-q.sz/2,q.sz,q.sz);});
@@ -2352,7 +2420,7 @@ function raceDraw(){const st=S.st,hue=st.hue;
     cx.fillStyle='#eae6ff';cx.font='900 24px sans-serif';cx.fillText(st.name,W/2,H*.36);
     cx.fillStyle='#9a8fc7';cx.font='700 14px sans-serif';cx.fillText(st.sub,W/2,H*.36+26);
     cx.fillStyle='#21f0ff';cx.font='800 15px sans-serif';
-    cx.fillText('touch & slide to steer — middle is gentle, edges are hard',W/2,H*.36+56);
+    cx.fillText('LEFT = gas · RIGHT = steer · 🔥 = shoot',W/2,H*.36+56);
     cx.globalAlpha=1;}
   cx.restore();}
 
