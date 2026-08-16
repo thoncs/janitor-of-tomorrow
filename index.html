@@ -481,7 +481,7 @@ const STAGES=[
    next:{scene:1}},
   {id:'ch2',name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:200,hue:315,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
    next:{stage:2,label:'🏁 TORQUE FOUND THE KEYS →'}},
-  {id:'race',name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2099 · ARCADE CABINET MODE',race:true,dist:3400,hue:265,
+  {id:'race',name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2099 · ARCADE CABINET MODE',race:true,dist:16000,hue:265,
    next:{scene:2},
    after:'You parallel-parked at 90 mph. Vex logged it as "a war crime, but efficient." Biocore Tower looms overhead, humming show tunes to itself.'},
   {id:'ch3',name:'CH.3 — CUSTARD ASCENT',sub:'Biocore Vat Shaft · 64-BIT MODE',dur:55,top:true,scroll:220,hue:200,mix:{wasp:[2.4,3.6],sinker:[5,8],pod:[3.6,5.6]},
@@ -1831,11 +1831,15 @@ stickEl.addEventListener('pointerup',stickUp);stickEl.addEventListener('pointerc
 // racing: touch either half of the screen to steer (multi-touch aware)
 const steerEl=$('steer'),steerPts=new Map();
 const steerSync=()=>{const v=[...steerPts.values()];IN.steer=v.length?v[v.length-1]:0;};
+// analog: how far from centre you touch is how hard you steer, with a small dead zone so you
+// can hold a straight line. Slide your thumb to trim it without lifting off.
+const steerAmt=x=>{const v=(x/innerWidth-.5)*2.4; // full lock a bit before the screen edge
+  return Math.abs(v)<.12?0:clamp(v,-1,1);};
 steerEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
-  steerPts.set(e.pointerId,e.clientX<innerWidth/2?-1:1);steerSync();
+  steerPts.set(e.pointerId,steerAmt(e.clientX));steerSync();
   try{steerEl.setPointerCapture(e.pointerId)}catch(_){}});
 steerEl.addEventListener('pointermove',e=>{if(steerPts.has(e.pointerId)){
-  steerPts.set(e.pointerId,e.clientX<innerWidth/2?-1:1);steerSync();}});
+  steerPts.set(e.pointerId,steerAmt(e.clientX));steerSync();}});
 const steerUp=e=>{steerPts.delete(e.pointerId);steerSync();};
 steerEl.addEventListener('pointerup',steerUp);steerEl.addEventListener('pointercancel',steerUp);
 addEventListener('contextmenu',e=>e.preventDefault());
@@ -2195,7 +2199,7 @@ function raceUpdate(dt){const st=S.st,p=S.p;
   const target=S.segs[Math.floor(S.dist/240)%S.segs.length];
   S.curve+=(target-S.curve)*Math.min(1,dt*1.4);
   // lateral: steering vs centrifugal drift
-  S.px+=steer*1.7*dt-S.curve*(S.speed/265)*1.15*dt;
+  S.px+=steer*2.3*dt-S.curve*(S.speed/265)*.82*dt; // authority now clearly beats the drift
   S.px=clamp(S.px,-1.2,1.2);
   if(Math.abs(S.px)>.92){S.speed=Math.max(110,S.speed-170*dt);
     S.shake=Math.max(S.shake,.07);} // rumble strips disapprove
@@ -2205,10 +2209,13 @@ function raceUpdate(dt){const st=S.st,p=S.p;
     S.nextOb=S.dist+rr(180,340)-Math.min(110,S.dist/34);
     const r=Math.random();
     S.robs.push({z:1500,lane:rr(-.75,.75),type:r<.5?'cone':r<.8?'tanker':'goo'});}
-  if(!S.chonked&&S.dist>1600){S.chonked=true;
+  // set pieces as fractions of the track, so they still land well if the length changes again
+  S.chonkAt=S.chonkAt||[.34,.72];
+  if(S.chonkAt.length&&S.dist>st.dist*S.chonkAt[0]){S.chonkAt.shift();
     S.banner={text:'🚧 CHONKY CROSSING 🚧',t:2};AU.t(70,.4,'sawtooth',.5,-20);
     S.robs.push({z:1500,lane:-1.5,type:'chonky',vx:.3});}
-  if(!S.taqSpawned&&S.dist>850){S.taqSpawned=true;
+  S.taqAt=S.taqAt||[.18,.46,.80];
+  if(S.taqAt.length&&S.dist>st.dist*S.taqAt[0]){S.taqAt.shift();
     S.robs.push({z:1500,lane:rr(-.4,.4),type:'taq'});}
   for(let i=S.robs.length-1;i>=0;i--){const o=S.robs[i];
     o.z-=(S.speed-(o.type==='tanker'?85:0))*dt;
@@ -2297,15 +2304,24 @@ function raceDraw(){const st=S.st,hue=st.hue;
     const y=hz+t*(H-hz);
     const px2=W/2+S.curve*(1-t)*(1-t)*W*.85-S.px*rw*.55+o.lane*rw*.5;
     const s2=persp;
-    if(o.type==='cone'){aBlit(AIMG.cone,px2-16*s2,y-46*s2,32*s2,46*s2,false);}
-    else if(o.type==='tanker'){aBlit(AIMG.tanker,px2-34*s2,y-52*s2,68*s2,52*s2,false);
+    if(o.type==='cone'){aBlit(AIMG.cone,px2-20*s2,y-58*s2,40*s2,58*s2,false);}
+    else if(o.type==='tanker'){
+      // a dark tanker on dark asphalt was nearly invisible — sit it on a soft pad so it reads
+      cx.save();cx.fillStyle='rgba(255,215,94,.16)';cx.beginPath();
+      cx.ellipse(px2,y-4*s2,46*s2,11*s2,0,0,7);cx.fill();cx.restore();
+      aBlit(AIMG.tanker,px2-43*s2,y-66*s2,86*s2,66*s2,false);
+      // the art is a night tanker, so it will always be dark against asphalt. Tail lights separate it
+      // from the road instead of fighting the sprite — and it has the widest hitbox of any obstacle.
+      cx.save();cx.globalCompositeOperation='lighter';cx.fillStyle='rgba(255,60,60,.75)';
+      cx.beginPath();cx.arc(px2-26*s2,y-14*s2,4.5*s2,0,7);
+      cx.arc(px2+26*s2,y-14*s2,4.5*s2,0,7);cx.fill();cx.restore();
       cx.fillStyle='#ffd75e';cx.font='900 '+Math.max(7,11*s2*2)+'px sans-serif';
-      cx.textAlign='center';cx.fillText('PUDD-CO',px2,y-24*s2);}
-    else if(o.type==='goo'){aBlit(AIMG.goo_slick,px2-30*s2,y-12*s2,60*s2,18*s2,false);}
+      cx.textAlign='center';cx.fillText('PUDD-CO',px2,y-30*s2);}
+    else if(o.type==='goo'){aBlit(AIMG.goo_slick,px2-38*s2,y-15*s2,76*s2,23*s2,false);}
     else if(o.type==='chonky'){
-      aBlit(AIMG.chonky,px2-40*s2,y-80*s2,80*s2,80*s2,false);
+      aBlit(AIMG.chonky,px2-49*s2,y-98*s2,98*s2,98*s2,false,true); // faces the way he crosses
       cx.fillStyle='#ff3df0';cx.font='900 '+Math.max(7,10*s2*2)+'px sans-serif';
-      cx.textAlign='center';cx.fillText('CHONKY BOY',px2,y-86*s2);}
+      cx.textAlign='center';cx.fillText('CHONKY BOY',px2,y-104*s2);}
     else if(o.type==='taq'){cx.save();cx.globalCompositeOperation='lighter';
       // cyan, not gold: against the lime traffic this is the only reward/hazard call made on hue alone
       cx.fillStyle='rgba(33,240,255,.42)';cx.beginPath();cx.arc(px2,y-18*s2,26*s2,0,7);cx.fill();cx.restore();
@@ -2316,10 +2332,10 @@ function raceDraw(){const st=S.st,hue=st.hue;
     cx.save();cx.translate(tx,ty);
     cx.rotate((IN.steer||0)*.06+S.curve*.05);
     if(S.taq>0){cx.save();cx.globalCompositeOperation='lighter';
-      cx.fillStyle='rgba(255,215,94,.3)';cx.beginPath();cx.ellipse(0,-34,72,46,0,0,7);cx.fill();cx.restore();}
-    aBlit(AIMG.truck_rear,-46,-58,92,60,false);
+      cx.fillStyle='rgba(255,215,94,.3)';cx.beginPath();cx.ellipse(0,-40,86,55,0,0,7);cx.fill();cx.restore();}
+    aBlit(AIMG.truck_rear,-55,-70,110,72,false); // the player's own vehicle should read clearly
     if(S.taq>0){cx.fillStyle='#ff7a1e'; // overdrive flames
-      cx.beginPath();cx.ellipse(-36,6,7,12+rr(0,5),0,0,7);cx.ellipse(36,6,7,12+rr(0,5),0,0,7);cx.fill();}
+      cx.beginPath();cx.ellipse(-43,8,8,14+rr(0,6),0,0,7);cx.ellipse(43,8,8,14+rr(0,6),0,0,7);cx.fill();}
     cx.restore();}
   // particles/rings/juice
   S.parts.forEach(q=>{cx.globalAlpha=Math.min(1,q.life*2.5);cx.fillStyle=q.col;
@@ -2336,7 +2352,7 @@ function raceDraw(){const st=S.st,hue=st.hue;
     cx.fillStyle='#eae6ff';cx.font='900 24px sans-serif';cx.fillText(st.name,W/2,H*.36);
     cx.fillStyle='#9a8fc7';cx.font='700 14px sans-serif';cx.fillText(st.sub,W/2,H*.36+26);
     cx.fillStyle='#21f0ff';cx.font='800 15px sans-serif';
-    cx.fillText('◀ touch LEFT · touch RIGHT ▶ — dodge the traffic',W/2,H*.36+56);
+    cx.fillText('touch & slide to steer — middle is gentle, edges are hard',W/2,H*.36+56);
     cx.globalAlpha=1;}
   cx.restore();}
 
