@@ -747,8 +747,11 @@ const DOUG_WALK=[AIMG.h_w0,AIMG.h_w1,AIMG.h_w2,AIMG.h_w3,AIMG.h_w4,AIMG.h_w5];
 const GOO_WALK=[AIMG.b_w0,AIMG.b_w1,AIMG.b_w2,AIMG.b_w3];
 function sBlit(a,sx,sy,sw,sh,x,y,w2,h2,fl){if(!a||!a.ok)return false;
   cx.drawImage(fl?a.flash:a.img,sx,sy,sw,sh,x,y,w2,h2);return true;}
-function aBlit(a,x,y,w2,h2,fl){if(!a.ok)return false;
-  cx.drawImage(fl?a.flash:a.img,x|0,y|0,w2,h2);return true;}
+function aBlit(a,x,y,w2,h2,fl,fx){if(!a.ok)return false;
+  const im=fl?a.flash:a.img;
+  if(fx){cx.save();cx.translate((x|0)+w2,y|0);cx.scale(-1,1);cx.drawImage(im,0,0,w2,h2);cx.restore();}
+  else cx.drawImage(im,x|0,y|0,w2,h2);
+  return true;}
 
 const PORT={DOUG:ART.port_doug,TORQUE:ART.port_torq,VEX:ART.port_vex};
 document.getElementById('cast').innerHTML=['TORQUE','DOUG','VEX']
@@ -3183,7 +3186,7 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
     if(f.big){ // CHONKY BOY looms
       if(S.stIdx===0){const sq=Math.abs(Math.sin(f.t*4))*.06;
         cx.save();cx.translate(f.x,f.y);cx.scale(1+sq,1-sq);
-        aBlit(AIMG.chonky,-32,-64,64,64,hl);cx.restore();}
+        aBlit(AIMG.chonky,-32,-64,64,64,hl,true);cx.restore();} // ditto: he lumbers left
       else{cx.save();cx.translate(f.x,f.y-34);
         cx.rotate(Math.sin(f.t*6)*.1);aBlit(AIMG.scr_blob_big,-34,-34,68,68,hl);cx.restore();}
       cx.font='900 11px sans-serif';cx.textAlign='center';
@@ -3191,7 +3194,8 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
       return;}
     if(S.stIdx===0){ // CH.1: pixel baddies
       if(f.type==='turret')aBlit(Math.sin(f.t*2)>.6?AIMG.t_idle2:AIMG.t_idle1,f.x-20,f.y-40,40,40,hl);
-      else aBlit(GOO_WALK[(f.t*7|0)%4],f.x-16,f.y-32,32,32,hl);}
+      else aBlit(GOO_WALK[(f.t*7|0)%4],f.x-16,f.y-32,32,32,hl,true); // walks left, art faces right
+    }
     else{ // CH.2: notebook doodles
       if(f.type==='drone'){cx.save();cx.translate(f.x,f.y-10);
         cx.rotate(f.t*2.5);aBlit(AIMG.scr_drone,-19,-19,38,38,hl);cx.restore();}
