@@ -474,6 +474,8 @@ const PATTERNS={
   spread:{name:'📼 POWER CHORD — 3-WAY SPREAD',angles:[-.34,0,.34],costMul:1.5},
   shred:{name:'📼 DOUBLE-NECK SHRED — 4-WAY',angles:[-.16,.16,-1.05,1.05],costMul:1.7}};
 // mix = seconds between spawns [min,max] per enemy type
+// APPEND new stages, never insert: the story chain's next:{stage:N} links are numeric, so inserting
+// mid-array silently reroutes them (inserting before dungeon sent the war room to the wrong board).
 const STAGES=[
   {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,mix:{blob:[1.6,2.6],turret:[6,9]},
    next:{scene:1}},
@@ -493,7 +495,11 @@ const STAGES=[
   {id:'boss',name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,hue:120,bossHp:64},
   {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
-   after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'}
+   after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
+  {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:210,hue:190,
+   music:'drive',stutter:true,mix:{blob:[1.2,2.0],turret:[5,7],drone:[2.2,3.4]},
+   next:{stage:5,label:'🍩 BACK TO THE DOOR →'},
+   after:'You mopped the same corridor twice, eleven years apart, in the wrong order. Vex refuses to log it. Torque says it "tasted purple."'}
 ];
 
 /* ================= DATA: story scenes ================= */
@@ -585,6 +591,7 @@ const LORE=[
  {id:'race',from:'HIGHWAY 2099 SIGNAGE LOG',txt:'Mile 41: LAST GAS BEFORE PUDDING. Mile 44: WE MEAN IT. Mile 51: TURN BACK. Mile 52: OK BUT THE TAQUITOS ARE GENUINELY GOOD. Maintenance notes the final sign was added without authorisation and has declined to remove it.'},
  {id:'ch3',from:'VAT SHAFT MAINTENANCE TAG',txt:'Do not ascend the shaft during a bloom. Do not ascend the shaft after a bloom. The shaft has expressed a preference for being ascended and that is precisely the problem. — signed, a previous janitor, no name given'},
  {id:'war',from:'FLOOR PLAN, DRAWN ON A NAPKIN',txt:'Torque has labelled the vat floor in seven colours. THE CORE is circled four times. A smaller circle in the corner reads "snack depot (mine)". Vex has added, in immaculate lettering: "this is not to scale and I have made peace with that."'},
+ {id:'warp',from:'INCIDENT REPORT, FILED TWICE',txt:'Both copies are in the same handwriting and neither is dated. The first ends: "the janitor was not present." The second ends: "the janitor was present twice." Stapled behind them is a golden wrapper nobody has managed to throw away, and a note reading — if you are reading this, check the vat BEFORE the dessert.'},
  {id:'dungeon',from:'SUPPLY INVENTORY, SUBLEVEL C',txt:'1x GOLDEN PLUNGER — do not requisition. Do not polish. Do not speak near it in a hopeful tone. It has been in this closet longer than the closet has. Previous custodians left it a small offering of taquitos, which is either superstition or good manners.'}];
 
 // K.E.V.I.N. leaks his backstory as you take him apart.
@@ -615,6 +622,10 @@ const HOWTO={
   'Drag anywhere on the LEFT half to walk in any of eight directions.',
   'You shoot the way you are MOVING — keep the stick pushed toward whatever you want to zap.',
   'Standing still cannot re-aim. 📦 crates hold taquitos; five of them wake something up.']},
+ warp:{title:'🌀 TIME WARP ZONE',lines:[
+  'Sublevel B again — but the clock is wrong.',
+  'Time speeds up and slows down on its own. Nothing you press changes it; read it and move with it.',
+  'Same pads as CH.1: jump, double jump, hold to fire. Everything else is denser than you remember.']},
  boss:{title:'⚔️ K.E.V.I.N.',lines:[
   'You cannot move here. You can only jump and shoot.',
   'The low custard wave along the floor must be jumped.',
@@ -651,6 +662,7 @@ const BARKS={
  war:{TORQUE:'"I drew the map. I used SEVEN colours. Respect the map."',VEX:'"Territory, dice, garrisons. Finally, a war with paperwork."'},
  glaze:{TORQUE:'"It\'s a DONUT and it wants to FIGHT and this is the best night of my life."',VEX:'"The bouncer is pastry. This is not a metaphor. Engage."'},
  boss:{TORQUE:'"That\'s him. That\'s the pudding. Hit the pudding."',VEX:'"K.E.V.I.N., full sixty-four bit. Whatever he says to you, he is stalling."'},
+ warp:{TORQUE:'"I have been here before. I have NOT been here before. Both! Both are true!"',VEX:'"Local time is unreliable. Do not trust your reflexes, trust the room."'},
  dungeon:{TORQUE:'"Under the core! Loot down there! I can SMELL loot!"',VEX:'"Sublevel C is unmapped. Move in eight directions and trust nothing."'}};
 const LOOT=[
  '🍕 You loot pizza rolls. Interior: lava. +1 HP.',
@@ -993,7 +1005,8 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,amb:[],vol:.
      this.ag=AU.c.createGain();this.ag.connect(out);applyAudio();}
    return true;},
  setOn(on){AU.on=on;applyAudio();},
- play(name){if(this.want===name&&this.cur===name)return;this.want=name;
+ play(name){if(name&&!SONGS[name])return; // unknown track: stay on what is playing rather than throw
+   if(this.want===name&&this.cur===name)return;this.want=name;
    if(this.ensure())this._start(name);},
  stop(){this.want=null;if(this.g)this._start(null);},
  kick(){if(this.want&&this.ensure()&&this.cur!==this.want)this._start(this.want);},
@@ -1152,10 +1165,11 @@ const HUB=[
  {id:'dungeon',n:'BONUS',     sub:'SUPPLY DUNGEON', x:66,y:12,adj:['ch3','glaze']},
  {id:'war',    n:'FLOOR PLAN',sub:'WAR ROOM',       x:70,y:70,adj:['ch3','glaze']},
  {id:'glaze',  n:'VS GLAZE',  sub:'KUMITE',         x:85,y:40,adj:['war','dungeon','boss']},
+ {id:'warp',   n:'TIME WARP', sub:'CH.1 REMIX',     x:47,y:8, adj:['ch3']},
  {id:'boss',   n:'FINAL',     sub:'K.E.V.I.N.',     x:91,y:76,adj:['glaze']}];
 // Prerequisites are things the player can actually EARN. The reverted attempt gated all three of its new
 // boards behind the item each board itself awarded — unreachable by construction.
-const HUB_NEEDS={ch1:null,ch2:'ch1',race:'ch2',ch3:'race',dungeon:'ch3',war:'ch3',glaze:'war',boss:'glaze'};
+const HUB_NEEDS={ch1:null,ch2:'ch1',race:'ch2',ch3:'race',dungeon:'ch3',war:'ch3',warp:'ch3',glaze:'war',boss:'glaze'};
 function hubCleared(id){return ((PROF.stats||{})['cleared.'+id]|0)>0;}
 function hubOpen(id){const need=HUB_NEEDS[id];return !need||hubCleared(need);}
 // Fog: a node is visible once it is open, or once the board it waits on is open. Anything further out is
@@ -1833,7 +1847,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   snapshotRun('stage',i); // checkpoint at board start — placed above the war early-return so it covers every board
   if(st.war){openWar();return;}
   MODE='action';
-  MUS.play(st.boss?'boss':st.top?'drive':st.race?'race':st.fight?'fight':st.dungeon?'dnd':['chip','punk'][i]);
+  MUS.play(st.music||(st.boss?'boss':st.top?'drive':st.race?'race':st.fight?'fight':st.dungeon?'dnd':['chip','punk'][i]||'chip'));
   S={st,stIdx:i,t:0,scroll:0,shake:0,done:false,paused:false,
      p:{x:210,y:groundY,vy:0,onG:true,jumps:0,inv:1.4,fireT:0},
      bullets:[],foes:[],shots:[],picks:[],parts:[],rings:[],timers:{},
@@ -2429,6 +2443,10 @@ function topKill(j){const f=S.foes[j];
 /* ================= ACTION: per-frame update ================= */
 function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
   tickSay(dt); // above the dispatch, so every mode ages it and hit-stop cannot strand a line
+  // TIME WARP ZONE: the board's clock breathes. One multiplier here reaches physics, spawn timers and
+  // scroll together. The wave is driven by REAL elapsed time, not the warped clock — phase it on S.t and
+  // the slow half lasts longer in wall time, dragging the average to ~0.88 and overrunning the board.
+  if(st.stutter){S.realT=(S.realT||0)+dt;S.warpF=1+.45*Math.sin(S.realT*.9);dt*=S.warpF;}
   if(S.freeze>0){S.freeze-=dt;return;} // hit-stop: the world respects a good kill
   if(st.race){raceUpdate(dt);return;}
   if(st.fight){fightUpdate(dt);return;}
