@@ -244,6 +244,22 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 #war::before{content:'';position:absolute;inset:0;pointer-events:none;background:
  repeating-linear-gradient(0deg,rgba(33,240,255,.05) 0 1px,transparent 1px 28px),
  repeating-linear-gradient(90deg,rgba(33,240,255,.05) 0 1px,transparent 1px 28px)}
+#hub{justify-content:flex-start;gap:6px}
+#htop{display:flex;gap:8px;align-items:center;width:100%;max-width:900px;padding-right:50px;flex-wrap:wrap}
+/* flex-grown and percentage-positioned on purpose: the reverted attempt used a fixed 500px-tall canvas
+   inside a 390px viewport, and drew an 800x500 coordinate space into a default 300x150 backing store. */
+#hmap{flex:1;position:relative;min-height:0;width:100%;max-width:900px}
+#hlines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hnode{position:absolute;transform:translate(-50%,-50%);font:inherit;font-size:10px;font-weight:800;
+  letter-spacing:.04em;min-width:92px;min-height:44px;padding:6px 8px;border-radius:12px;
+  border:2px solid #4b357f;background:rgba(21,12,46,.92);color:var(--ink);text-align:center;
+  touch-action:manipulation;cursor:pointer}
+.hnode small{display:block;font-size:8.5px;font-weight:700;color:var(--dim);margin-top:2px;letter-spacing:.02em}
+.hnode.open{border-color:var(--cyn);box-shadow:0 0 12px rgba(33,240,255,.4)}
+.hnode.next{border-color:var(--amb);box-shadow:0 0 14px rgba(255,176,31,.5);animation:atkp 1.2s infinite}
+.hnode.done{border-color:#3fa50f;background:rgba(23,51,18,.92)}
+.hnode.shut{border-color:#35226b;color:var(--dim);cursor:default}
+.hnode:disabled{cursor:default}
 #wtop{display:flex;gap:8px;align-items:center;width:100%;max-width:900px;padding-right:50px;flex-wrap:wrap}
 #wmain{display:flex;gap:10px;width:100%;max-width:900px;flex:1;min-height:0}
 #wmap{flex:1.5;position:relative;min-height:0}
@@ -293,7 +309,7 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
   <h1 class="glitch">Janitor of<span>Tomorrow</span></h1>
   <p class="sub">Mop tonight. Save 2099. Try not to die in a mall.</p>
   <div id="cast"></div>
-  <div class="btnrow"><button class="btn" id="bCont" style="display:none">⏱ CONTINUE</button><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button></div>
+  <div class="btnrow"><button class="btn" id="bCont" style="display:none">⏱ CONTINUE</button><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button><button class="btn ghost" id="bHub" style="display:none">🗺️ MAP</button></div>
   <p class="small dim" id="contline" style="display:none"></p>
   <p class="small dim" id="diffline">shift difficulty: <button class="btn ghost sm" id="bDiff"><span class="diffLabel">NORMAL</span></button> <span class="dim diffBlurb"></span></p>
   <p class="small dim blink" id="courage">— insert courage to begin —</p>
@@ -358,6 +374,14 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
       <button class="btn" id="bAgain">↻ NEW TIMELINE</button>
     </div>
   </div>
+</div>
+
+<div class="screen" id="hub">
+  <div id="htop"><span class="pill">Facility Map</span>
+    <span class="pill" id="hubtaq">🌮 0</span><span class="pill" id="hubprog">0/8 CLEARED</span></div>
+  <div id="hmap"><svg id="hlines" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <p class="small dim" id="hubhint">pick a board</p>
+  <div class="btnrow"><button class="btn ghost sm" id="bHubBack">⏏ BACK TO TITLE</button></div>
 </div>
 
 <div class="screen" id="war">
@@ -731,7 +755,7 @@ const pick=a=>a[(Math.random()*a.length)|0];
 let G=null;
 function newGame(){G={scene:0,stage:0,hp:5,maxHp:TUNING.maxHp,energy:100,timeline:50,torque:3,vex:3,
   weapon:'pistol',pattern:'single',regen:0,spawnMul:1,pendingAfter:'',lastDeltas:[],deaths:0,
-  score:0,comboBest:0,seenTut:false,seenTut2:false,taquitos:0,cpStage:-1,cpKind:null,cpValue:0};}
+  score:0,comboBest:0,seenTut:false,seenTut2:false,taquitos:0,cpStage:-1,cpKind:null,cpValue:0,fromHub:false};}
 newGame();
 
 /* ================= PERSISTENCE =================
@@ -1086,6 +1110,7 @@ $('bGotit').addEventListener('click',()=>{AU.ui();const f=tutNext;tutNext=null;
 $('bGotit2').addEventListener('click',()=>{AU.ui();const f=tutNext;tutNext=null;
   if(f)f();else showScreen('title');});
 $('bHow').addEventListener('click',()=>{AU.ui();tutNext=null;showScreen('tut');});
+$('bHub').addEventListener('click',()=>{AU.ui();openHub();});
 $('bStart').addEventListener('click',()=>{AU.ui();
   if(PROF.run)clearRun(); // starting fresh abandons the saved run
   newGame();updateTaqHud();refreshContinue();openScene(0);});
@@ -1111,6 +1136,74 @@ function cycleDiff(){AU.ui();
   PROF.diff=DIFFS[(i<0?1:i+1)%DIFFS.length].id;
   renderDiff();SAVE.write();}
 $('bDiff').addEventListener('click',cycleDiff);
+
+/* ================= FACILITY MAP (hub) =================
+   Behind ?hub=1 — a half-built hub must not be able to break the normal path. This is a NEW screen:
+   Operation: Floor Plan stays a self-contained board and appears here as one node, rather than being
+   overloaded into the hub itself.
+   Every node is addressed by its STAGES string id, never by array position — the reverted attempt stored
+   numeric stageIndex, so any reorder of STAGES silently rerouted the map to the wrong board. */
+const HUB_ON=(()=>{try{return new URLSearchParams(location.search).has('hub')}catch(e){return false}})();
+const HUB=[
+ {id:'ch1',    n:'CH.1',      sub:'MOP & DESTROY',  x:9, y:72,adj:['ch2']},
+ {id:'ch2',    n:'CH.2',      sub:'ESCALATOR',      x:25,y:34,adj:['ch1','race']},
+ {id:'race',   n:'CH.2.5',    sub:'GRAND PRIX',     x:41,y:74,adj:['ch2','ch3']},
+ {id:'ch3',    n:'CH.3',      sub:'CUSTARD ASCENT', x:55,y:32,adj:['race','war','dungeon']},
+ {id:'dungeon',n:'BONUS',     sub:'SUPPLY DUNGEON', x:66,y:12,adj:['ch3','glaze']},
+ {id:'war',    n:'FLOOR PLAN',sub:'WAR ROOM',       x:70,y:70,adj:['ch3','glaze']},
+ {id:'glaze',  n:'VS GLAZE',  sub:'KUMITE',         x:85,y:40,adj:['war','dungeon','boss']},
+ {id:'boss',   n:'FINAL',     sub:'K.E.V.I.N.',     x:91,y:76,adj:['glaze']}];
+// Prerequisites are things the player can actually EARN. The reverted attempt gated all three of its new
+// boards behind the item each board itself awarded — unreachable by construction.
+const HUB_NEEDS={ch1:null,ch2:'ch1',race:'ch2',ch3:'race',dungeon:'ch3',war:'ch3',glaze:'war',boss:'glaze'};
+function hubCleared(id){return ((PROF.stats||{})['cleared.'+id]|0)>0;}
+function hubOpen(id){const need=HUB_NEEDS[id];return !need||hubCleared(need);}
+// Fog: a node is visible once it is open, or once the board it waits on is open. Anything further out is
+// not rendered at all — the reverted version hid nodes with opacity:0 and left them clickable.
+function hubVisible(id){const need=HUB_NEEDS[id];return hubOpen(id)||(need&&hubOpen(need));}
+function stageIndexById(id){return STAGES.findIndex(st=>st.id===id);}
+
+function renderHub(){const map=$('hmap');
+  map.querySelectorAll('.hnode').forEach(n=>n.remove());
+  const vis={};HUB.forEach(d=>vis[d.id]=hubVisible(d.id));
+  // connectors, drawn only between two visible nodes
+  const seen=new Set();let lines='';
+  HUB.forEach(d=>d.adj.forEach(a=>{const k=[d.id,a].sort().join('-');
+    if(seen.has(k)||!vis[d.id]||!vis[a])return;seen.add(k);
+    const o=HUB.find(h=>h.id===a);if(!o)return;
+    const solid=hubCleared(d.id)&&hubCleared(a);
+    lines+='<line x1="'+d.x+'%" y1="'+d.y+'%" x2="'+o.x+'%" y2="'+o.y+'%" stroke="'+
+      (solid?'rgba(63,165,15,.6)':'rgba(122,90,205,.45)')+'" stroke-width="2"'+
+      (solid?'':' stroke-dasharray="5 4"')+'/>';}));
+  $('hlines').innerHTML=lines;
+  let done=0;
+  HUB.forEach(d=>{
+    if(!vis[d.id])return; // not rendered at all, so it cannot be tapped
+    const open=hubOpen(d.id),cleared=hubCleared(d.id);
+    if(cleared)done++;
+    const b=document.createElement('button');
+    b.className='hnode '+(cleared?'done':open?(hubNext()===d.id?'next':'open'):'shut');
+    b.style.left=d.x+'%';b.style.top=d.y+'%';
+    const best=(PROF.best||{})[d.id];
+    b.innerHTML=(cleared?'✅ ':open?'':'🔒 ')+d.n+'<small>'+
+      (open?d.sub+(best!=null?' · '+String(best|0).padStart(6,'0'):''):'clear '+(HUB_NEEDS[d.id]||'')+' first')+'</small>';
+    b.disabled=!open;
+    if(open)b.addEventListener('click',()=>{AU.ui();launchHub(d.id);});
+    map.appendChild(b);});
+  $('hubprog').textContent=done+'/'+HUB.length+' CLEARED';
+  $('hubtaq').textContent='🌮 '+PROF.taquitos;
+  const nx=hubNext();
+  $('hubhint').textContent=nx?('next up: '+(HUB.find(h=>h.id===nx)||{}).sub):'every board cleared — replay anything';}
+
+// the first open-but-uncleared board, so there is always one obvious thing to tap
+function hubNext(){const d=HUB.find(h=>hubOpen(h.id)&&!hubCleared(h.id));return d?d.id:null;}
+
+function openHub(){MODE='hub';hudOn(false);MUS.play('title');
+  if(!G)newGame();
+  renderHub();showScreen('hub');}
+function launchHub(id){const i=stageIndexById(id);if(i<0)return;
+  G.fromHub=true;G.stage=i;warp();startStage(i);}
+$('bHubBack').addEventListener('click',()=>{AU.ui();MODE='title';refreshContinue();showScreen('title');});
 
 /* ================= PAUSE ================= */
 // S.paused already gated the main loop for the portrait overlay; this reuses it for a real pause menu.
@@ -1229,7 +1322,7 @@ document.querySelectorAll('.ptab').forEach(b=>
 $('bPause').addEventListener('click',()=>{AU.ui();openPause();});
 $('bResume').addEventListener('click',()=>{AU.ui();closePause();});
 $('bPQuit').addEventListener('click',()=>{AU.ui();
-  userPaused=false;if(S)S.paused=false;
+  userPaused=false;if(S)S.paused=false;if(G)G.fromHub=false;
   hudOn(false);MUS.play('title');MODE='title';refreshContinue();showScreen('title');});
 
 // Erasing is destructive, so it takes two taps.
@@ -1270,8 +1363,10 @@ function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMe
     (preBoss?'<p class="nar">🖥️ Vex reroutes the last of the graphics budget into the boss room. "K.E.V.I.N. deserves full 64-bit," she says. It\'s the most emotion she\'s ever shown.</p>':'');
   const ch=$('choices');ch.innerHTML='';
   const b=document.createElement('button');b.className='choice';
-  b.textContent=nx.label||'CONTINUE →';
+  const viaHub=!!G.fromHub&&HUB_ON; // a run saved with the flag on must not open the hub with it off
+  b.textContent=viaHub?'🗺️ RETURN TO MAP':(nx.label||'CONTINUE →');
   b.addEventListener('click',()=>{AU.ui();
+    if(viaHub){G.fromHub=false;openHub();return;} // hub launches route back to the hub
     if(nx.scene!=null){G.scene=nx.scene;openScene(G.scene);}
     else{G.stage=nx.stage;warp();startStage(nx.stage);}});
   ch.appendChild(b);$('stext').scrollTop=0;showScreen('story');}
@@ -1283,7 +1378,8 @@ function gameOver(){MODE='over';hudOn(false);MUS.stop();AU.die();G.deaths++;bump
   showScreen('over');}
 $('bRetry').addEventListener('click',()=>{AU.ui();G.hp=Math.max(G.hp,TUNING.retryHp);G.energy=100;
   warp();if(G.inBattle)openBattle();else startStage(G.stage);});
-$('bQuit').addEventListener('click',()=>{AU.ui();userPaused=false;hudOn(false);MUS.play('title');refreshContinue();showScreen('title');MODE='title';});
+$('bQuit').addEventListener('click',()=>{AU.ui();userPaused=false;if(G)G.fromHub=false;
+  hudOn(false);MUS.play('title');refreshContinue();showScreen('title');MODE='title';});
 
 function ending(){MODE='end';hudOn(false);MUS.play('end');
   const tier=G.timeline>=70?'gold':G.timeline>=35?'side':'beige';
@@ -3144,6 +3240,7 @@ MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 // Load the profile LAST: every listener is bound and the loop is running by now, so even an
 // unexpected throw in here cannot cost us input. SAVE.load() is internally guarded regardless.
 SAVE.load();applyAudio();applyUI();applyInstability();updateTaqHud();renderDiff();refreshContinue();
+if(HUB_ON)$('bHub').style.display=''; // the hub is opt-in; with the flag off nothing above changes
 </script>
 </body>
 </html>
