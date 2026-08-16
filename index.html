@@ -2380,14 +2380,21 @@ function topUpdate(dt){const st=S.st,p=S.p;
         pierce:wp.pierce,dmg:wp.dmg,sz:wp.size,col:wp.col});});
     if(G.weapon==='railgun')AU.boom();else AU.pew();}
   $('ebar').style.width=G.energy+'%';
-  // --- spawns (density ramps in the last third) ---
-  const ramp=S.t>32?.72:1;
+  // --- spawns: pressure rises the whole way up the shaft ---
+  // multiplies the gap between spawns, so smaller = busier. 1.0 at the bottom, ~0.5 at the top.
+  // Opening density is unchanged; the climax is roughly twice the opening.
+  const ramp=1-.5*Math.min(1,S.t/st.dur);
   for(const kk in S.timers){S.timers[kk]-=dt;
     if(S.timers[kk]<=0&&S.t<st.dur-2){topSpawn(kk);
       S.timers[kk]=rr(st.mix[kk][0],st.mix[kk][1])*G.spawnMul*ramp*DF().spawn;}}
   // scripted cassette drops
   if(S.t>13&&!S.tok1){S.tok1=1;S.picks.push({x:rr(150,W-150),y:-24,t:0,kind:'spread'});}
   if(S.t>31&&!S.tok2){S.tok2=1;S.picks.push({x:rr(150,W-150),y:-24,t:0,kind:'shred'});}
+  // VAT BLOOM: one real crescendo near the top, so the 4-way shred has something to answer
+  if(!S.bloomed&&S.t>st.dur*.78){S.bloomed=true;
+    S.banner={text:'🌊 VAT BLOOM',t:2};AU.roar();
+    topSpawn('wasp');topSpawn('wasp');topSpawn('pod');
+    setTimeout(()=>{if(S&&S.st&&S.st.top&&!S.done){topSpawn('sinker');topSpawn('pod');}},900);}
   // --- bullets vs foes ---
   for(let i=S.bullets.length-1;i>=0;i--){const b=S.bullets[i];b.x+=b.vx*dt;b.y+=b.vy*dt;
     if(b.x<-40||b.x>W+40||b.y<-40||b.y>H+40){S.bullets.splice(i,1);continue;}
@@ -2401,7 +2408,7 @@ function topUpdate(dt){const st=S.st,p=S.p;
     else if(f.type==='sinker'){f.y+=115*dt;f.x+=Math.sin(f.t*1.8+f.ph)*42*dt;}
     else if(f.type==='mini'){f.y+=f.vy*dt;f.x+=f.vx*dt;}
     else if(f.type==='pod'){f.y+=170*dt;f.fireT-=dt;
-      if(f.fireT<=0&&f.y>30&&f.y<H-110){f.fireT=2.1;
+      if(f.fireT<=0&&f.y>30&&f.y<H-110){f.fireT=2.1-1.05*Math.min(1,S.t/S.st.dur); // ranged threat scales too
         const dx=p.x-f.x,dy=p.y-f.y,m=Math.hypot(dx,dy)||1;
         S.shots.push({x:f.x,y:f.y,vx:dx/m*195,vy:dy/m*195,r:9,orb:true});}}
     if(f.y>H+70||f.x<-70||f.x>W+70){S.foes.splice(i,1);continue;}
