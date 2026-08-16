@@ -182,10 +182,10 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 #stick.on{display:block}
 /* race: throttle pedal on the left half, steering wheel on the right. The FIRE pad sits at
    z-index 48 above both, so tapping it never bleeds into steering. */
-#gas{position:absolute;left:0;top:0;bottom:0;width:50%;z-index:47;display:none;touch-action:none}
-#gas.on{display:block}
-#steer{position:absolute;left:50%;right:0;top:0;bottom:0;z-index:47;display:none;touch-action:none}
+#steer{position:absolute;left:0;top:0;bottom:0;width:50%;z-index:47;display:none;touch-action:none}
 #steer.on{display:block}
+#gas{position:absolute;left:50%;right:0;top:0;bottom:0;z-index:47;display:none;touch-action:none}
+#gas.on{display:block}
 #padJ.hot{background:rgba(33,240,255,.28);box-shadow:inset 0 0 0 2px var(--cyn)}
 #padF.hot{background:rgba(255,61,240,.28);box-shadow:inset 0 0 0 2px var(--mag)}
 
@@ -614,8 +614,8 @@ const KEV_LORE=[
 // hold-to-fire and a double jump; the kumite is tap-to-swing with a single hop).
 const HOWTO={
  race:{title:'🏁 TAQUITO GRAND PRIX',lines:[
-  'HOLD the LEFT half to accelerate. Let go and the truck slows down — that is your brake.',
-  'STEER on the RIGHT half: put a thumb down anywhere and slide. Where you touch becomes centre.',
+  'STEER with the wheel on the LEFT. Put your thumb on the ring and slide — how far from the centre\n   you are is how hard you turn. Let go and it straightens up.',
+  'HOLD anywhere on the RIGHT to accelerate. Let go and the truck slows down — that is your brake.',
   '🔥 FIRE shoots down the road and clears traffic out of your way. Tankers take one, CHONKY takes three.',
   'Every bend drifts you outward, so lean INTO the curve or the rumble strip will find you.',
   'Squeezing past traffic without hitting it still scores. 🌮 makes you briefly unstoppable.']},
@@ -1850,20 +1850,25 @@ gasEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
 const gasUp=e=>{gasPts.delete(e.pointerId);gasSync();};
 gasEl.addEventListener('pointerup',gasUp);gasEl.addEventListener('pointercancel',gasUp);
 
-// --- race: steering wheel (right half) ---
-// Relative, like the flight stick: wherever you put your thumb becomes centre, then slide to steer.
-// That means you never have to look at where your thumb landed.
-const steerEl=$('steer'),steerPts=new Map();
-const STEER_THROW=64; // px of travel for full lock, scaled by the pad-size setting
-const steerSync=()=>{const v=[...steerPts.values()];
-  IN.steer=v.length?v[v.length-1].val:0;};
+// --- race: steering wheel (left half, and you can SEE it) ---
+// A fixed base rather than an invisible relative drag: the ring is always on screen so you know where
+// to put your thumb, and how far the knob sits from centre IS the turn force. WHEEL owns that geometry
+// so the input maths and the drawing can never disagree.
+const WHEEL={r:56,x:0,y:0,active:false,val:0,id:-1};
+function wheelGeom(){const sc=(PROF.ui&&PROF.ui.padScale)||1;
+  WHEEL.r=56*sc;
+  WHEEL.x=Math.max(WHEEL.r+18,W*.19);
+  WHEEL.y=H-58-((PROF.ui&&PROF.ui.padLift)||0);
+  return WHEEL;}
+const steerEl=$('steer');
+// fit() keeps one canvas unit equal to one CSS px, so clientX maps straight onto the drawn ring
+const wheelSet=px=>{const g=wheelGeom();WHEEL.val=clamp((px-g.x)/g.r,-1,1);IN.steer=WHEEL.val;};
 steerEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
-  steerPts.set(e.pointerId,{ox:e.clientX,val:0});steerSync();
+  WHEEL.active=true;WHEEL.id=e.pointerId;wheelSet(e.clientX);
   try{steerEl.setPointerCapture(e.pointerId)}catch(_){}});
-steerEl.addEventListener('pointermove',e=>{const g=steerPts.get(e.pointerId);if(!g)return;
-  const r=STEER_THROW*((PROF.ui&&PROF.ui.padScale)||1);
-  g.val=clamp((e.clientX-g.ox)/r,-1,1);steerSync();});
-const steerUp=e=>{steerPts.delete(e.pointerId);steerSync();};
+steerEl.addEventListener('pointermove',e=>{if(WHEEL.active&&e.pointerId===WHEEL.id)wheelSet(e.clientX);});
+const steerUp=e=>{if(e.pointerId!==WHEEL.id)return;
+  WHEEL.active=false;WHEEL.id=-1;WHEEL.val=0;IN.steer=0;}; // let go and the wheel self-centres
 steerEl.addEventListener('pointerup',steerUp);steerEl.addEventListener('pointercancel',steerUp);
 addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -2216,7 +2221,9 @@ function raceUpdate(dt){const st=S.st,p=S.p;
   // steering (right-half wheel, or arrow keys)
   const steer=IN.steer||(((KEYS.ArrowRight||KEYS.KeyD)?1:0)-((KEYS.ArrowLeft||KEYS.KeyA)?1:0));
   // speed is the player's call now: hold the left half (or Up/W) to accelerate, release to slow.
-  const gas=IN.gas||((KEYS.ArrowUp||KEYS.KeyW)?1:0);
+  // holding FIRE also holds the throttle: the right thumb cannot be in two places, and a bolt
+  // already costs speed, so shooting does not need a second penalty for leaving the gas.
+  const gas=IN.gas||IN.fire||((KEYS.ArrowUp||KEYS.KeyW)?1:0);
   const vmax=S.taq>0?350:265, idle=105;
   const spdTarget=gas?vmax:idle; // not `target` — that name belongs to the curvature below
   // gains speed deliberately, sheds it faster — lifting off is a real brake
@@ -2400,11 +2407,35 @@ function raceDraw(){const st=S.st,hue=st.hue;
     if(S.taq>0){cx.fillStyle='#ff7a1e'; // overdrive flames
       cx.beginPath();cx.ellipse(-43,8,8,14+rr(0,6),0,0,7);cx.ellipse(43,8,8,14+rr(0,6),0,0,7);cx.fill();}
     cx.restore();}
+  // --- the steering wheel, always on screen ---
+  {const g=wheelGeom(),v=WHEEL.val,mag=Math.abs(v);
+   cx.save();
+   // base: brighter once your thumb is down, so it reads as 'live'
+   cx.fillStyle=WHEEL.active?'rgba(36,22,70,.72)':'rgba(36,22,70,.5)';
+   cx.beginPath();cx.arc(g.x,g.y,g.r,0,7);cx.fill();
+   cx.strokeStyle=WHEEL.active?'rgba(33,240,255,.85)':'rgba(122,90,205,.6)';
+   cx.lineWidth=2;cx.beginPath();cx.arc(g.x,g.y,g.r,0,7);cx.stroke();
+   // force arc: sweeps out from top in the direction you are turning, length = how hard
+   if(mag>.02){cx.strokeStyle='rgba(33,240,255,.9)';cx.lineWidth=5;cx.beginPath();
+     const a0=-Math.PI/2,a1=a0+v*Math.PI*.8;
+     cx.arc(g.x,g.y,g.r-5,Math.min(a0,a1),Math.max(a0,a1));cx.stroke();}
+   // centre tick, so straight-ahead is unmistakable
+   cx.strokeStyle='rgba(234,230,255,.35)';cx.lineWidth=2;
+   cx.beginPath();cx.moveTo(g.x,g.y-g.r+3);cx.lineTo(g.x,g.y-g.r+11);cx.stroke();
+   // knob: sits where your thumb is, clamped to the ring
+   const kx=g.x+v*g.r,ky=g.y;
+   cx.fillStyle=WHEEL.active?'rgba(33,240,255,.55)':'rgba(122,90,205,.45)';
+   cx.beginPath();cx.arc(kx,ky,g.r*.34,0,7);cx.fill();
+   cx.strokeStyle='rgba(234,230,255,.8)';cx.lineWidth=2;
+   cx.beginPath();cx.arc(kx,ky,g.r*.34,0,7);cx.stroke();
+   if(!WHEEL.active&&S.t<14){cx.fillStyle='rgba(234,230,255,.75)';
+     cx.font='900 10px sans-serif';cx.textAlign='center';
+     cx.fillText('THUMB HERE',g.x,g.y+g.r+14);}
+   cx.restore();}
   // zone hints: fade out once you have clearly got the idea
   if(S.t<14){cx.save();cx.globalAlpha=Math.max(0,Math.min(.5,(14-S.t)/6));
     cx.font='900 12px sans-serif';cx.textAlign='center';cx.fillStyle='#eae6ff';
-    cx.fillText('⛽ HOLD = GAS',W*.25,H-24);
-    cx.fillText('◀ SLIDE = STEER ▶',W*.72,H-24);cx.restore();}
+    cx.fillText('HOLD RIGHT SIDE = GAS',W*.72,H-104);cx.restore();}
   // particles/rings/juice
   S.parts.forEach(q=>{cx.globalAlpha=Math.min(1,q.life*2.5);cx.fillStyle=q.col;
     cx.fillRect(q.x-q.sz/2,q.y-q.sz/2,q.sz,q.sz);});
@@ -2420,7 +2451,7 @@ function raceDraw(){const st=S.st,hue=st.hue;
     cx.fillStyle='#eae6ff';cx.font='900 24px sans-serif';cx.fillText(st.name,W/2,H*.36);
     cx.fillStyle='#9a8fc7';cx.font='700 14px sans-serif';cx.fillText(st.sub,W/2,H*.36+26);
     cx.fillStyle='#21f0ff';cx.font='800 15px sans-serif';
-    cx.fillText('LEFT = gas · RIGHT = steer · 🔥 = shoot',W/2,H*.36+56);
+    cx.fillText('LEFT wheel = steer · hold RIGHT = gas · 🔥 = shoot',W/2,H*.36+56);
     cx.globalAlpha=1;}
   cx.restore();}
 
