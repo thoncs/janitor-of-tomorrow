@@ -18,6 +18,7 @@
   --mag:#ff3df0; --cyn:#21f0ff; --lim:#7dff3a; --amb:#ffb01f; --red:#ff4757;
   --sab:env(safe-area-inset-bottom,0px); --sat:env(safe-area-inset-top,0px);
   --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+  --padScale:1; --padLift:0px; /* driven from PROF.ui so the pads fit the hand holding the phone */
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html,body{height:100%;overflow:hidden;background:var(--bg);overscroll-behavior:none}
@@ -169,7 +170,7 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 /* ---------- touch pads ---------- */
 #pads{position:absolute;inset:0;z-index:46;display:none;pointer-events:none}
 #pads.on{display:block}
-.pad{position:absolute;bottom:calc(14px + var(--sab));width:138px;height:104px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;letter-spacing:.1em;color:var(--ink);background:rgba(36,22,70,.5);box-shadow:inset 0 0 0 2px rgba(122,90,205,.5);backdrop-filter:blur(3px);touch-action:none;pointer-events:auto}
+.pad{position:absolute;bottom:calc(14px + var(--sab) + var(--padLift,0px));width:calc(138px * var(--padScale,1));height:calc(104px * var(--padScale,1));z-index:48;border-radius:24px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;letter-spacing:.1em;color:var(--ink);background:rgba(36,22,70,.5);box-shadow:inset 0 0 0 2px rgba(122,90,205,.5);backdrop-filter:blur(3px);touch-action:none;pointer-events:auto}
 #padJ{left:calc(16px + var(--sal))}
 #padF{right:calc(16px + var(--sar))}
 /* floating flight stick zone (top-scroller only) */
@@ -366,7 +367,7 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
     <div id="wmap"><svg id="wlines" xmlns="http://www.w3.org/2000/svg"></svg></div>
     <div id="wside">
       <div id="wlog"></div>
-      <div id="wdice"><div id="wdie">20</div><div id="wdlabel">tap a red district to attack</div></div>
+      <div id="wdice"><div id="wdie">20</div><div id="wdlabel">tap a pulsing district to attack</div></div>
     </div>
   </div>
 </div>
@@ -568,6 +569,55 @@ const KEV_LORE=[
  {at:.50,txt:'K.E.V.I.N.: "They gave me a networked mind and one job. ONE. Serving size: [REDACTED]."'},
  {at:.25,txt:'K.E.V.I.N.: "I only wanted to be finished. Every dessert wants to be finished."'}];
 
+// How each board actually controls. Shown once per board, remembered in the profile.
+// Several of these correct the old shared tutorial, which was wrong for the kumite (it promised
+// hold-to-fire and a double jump; the kumite is tap-to-swing with a single hop).
+const HOWTO={
+ race:{title:'🏁 TAQUITO GRAND PRIX',lines:[
+  'No pedals — the truck drives itself.',
+  'Touch the LEFT or RIGHT half of the screen to steer. There are no on-screen buttons here.',
+  'Every bend drifts you outward, so lean INTO the curve or the rumble strip will find you.',
+  'Squeezing past traffic without hitting it scores. 🌮 makes you briefly unstoppable.']},
+ ch3:{title:'🚀 CUSTARD ASCENT',lines:[
+  'Put a thumb down anywhere on the LEFT half — wherever you touch becomes the stick\'s centre.',
+  'About half an inch of travel is full speed. Let go and you stop dead.',
+  '🔥 FIRE on the right. 📼 cassettes change your fire pattern.']},
+ glaze:{title:'🍩 VS GLAZE — KUMITE',lines:[
+  'TAP the fire pad — do not hold it. Three taps chain into a wide third swing.',
+  'One hop only here, no double jump.',
+  'Mop in mid-air: it hits hardest, and both of Glaze\'s melee attacks only land on a grounded janitor.',
+  'When a cyan GUARD ring goes up, hold off — hitting it just wastes your swing.']},
+ dungeon:{title:'🪠 SUPPLY DUNGEON',lines:[
+  'Drag anywhere on the LEFT half to walk in any of eight directions.',
+  'You shoot the way you are MOVING — keep the stick pushed toward whatever you want to zap.',
+  'Standing still cannot re-aim. 📦 crates hold taquitos; five of them wake something up.']},
+ boss:{title:'⚔️ K.E.V.I.N.',lines:[
+  'You cannot move here. You can only jump and shoot.',
+  'The low custard wave along the floor must be jumped.',
+  'The three arcing lobs are aimed where you are standing — so do not be standing there.']},
+ war:{title:'🗺️ OPERATION: FLOOR PLAN',lines:[
+  'Tap a PULSING district to attack it from one you already hold.',
+  'Combat is a d20: your army count and Vex\'s trust add to the roll. Holy sites defend at +5.',
+  'Win and you take the district; lose and you bleed an army. Hold everything to win the floor.']},
+ battle:{title:'🎲 TABLETOP PROTOCOL',lines:[
+  'Turn-based now. Every action shows its cost under its name.',
+  'CELLS power the gun, MP powers magic, and the LIMIT bar fills as you take hits.',
+  'SUMMON: FREIGHT ELEVATOR is once per battle. Save it for the second health bar.']}};
+function hasSeen(id){return (PROF.seen||[]).indexOf(id)>=0;}
+function markSeen(id){if(!PROF.seen)PROF.seen=[];
+  if(PROF.seen.indexOf(id)<0){PROF.seen.push(id);SAVE.write();}}
+// Returns true if a card was shown, so callers can defer starting the board behind it.
+function showHowTo(id,then){const h=HOWTO[id];
+  if(!h||hasSeen(id)){if(then)then();return false;}
+  markSeen(id);
+  $('chap').textContent=h.title;
+  $('stext').innerHTML='<p class="nar">HOW THIS ONE WORKS</p>'+h.lines.map(l=>'<p>'+l+'</p>').join('');
+  const ch=$('choices');ch.innerHTML='';
+  const b=document.createElement('button');b.className='choice';b.textContent='GOT IT →';
+  b.addEventListener('click',()=>{AU.ui();if(then)then();});
+  ch.appendChild(b);$('stext').scrollTop=0;
+  MODE='story';hudOn(false);showScreen('story');return true;}
+
 // One companion line on entering a board, from whoever you have been kinder to.
 const BARKS={
  ch1:{TORQUE:'"Mop check! ...that IS your weapon? Incredible. Never change."',VEX:'"Sublevel B. Hostiles are gelatinous. Aim centre mass, Pickles."'},
@@ -697,8 +747,9 @@ const LS={
  del(k){try{localStorage.removeItem(k);return true}catch(e){return false}}};
 const SFX_TRIM=.15; // the long-standing SFX bus trim; the sfx slider scales this
 function defaultAudio(){return{master:1,music:.5,ambient:1,sfx:1};} // == the pre-Phase-D mix
-function defaultProfile(){return{ver:SAVE_VER,diff:'normal',audio:defaultAudio(),fx:{flicker:true},
-  taquitos:0,items:[],notes:[],stats:{},best:{},run:null};}
+function defaultUI(){return{padScale:1,padLift:0};}
+function defaultProfile(){return{ver:SAVE_VER,diff:'normal',audio:defaultAudio(),ui:defaultUI(),fx:{flicker:true},
+  taquitos:0,items:[],notes:[],seen:[],stats:{},best:{},run:null};}
 const clamp01=v=>Number.isFinite(v)?(v<0?0:v>1?1:v):null;
 // A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
 // truncated save can offer CONTINUE and then throw on STAGES[999]/STORY[999] inside the click handler.
@@ -727,9 +778,14 @@ const SAVE={
        for(const k in a){const v=clamp01(o.audio[k]);if(v!==null)a[k]=v;}
        return a;})(),
      fx:{flicker:o.fx&&typeof o.fx==='object'?o.fx.flicker!==false:true},
+     ui:(()=>{const u=defaultUI();if(o.ui&&typeof o.ui==='object'){
+       const sc=+o.ui.padScale;if(Number.isFinite(sc))u.padScale=Math.max(.8,Math.min(1.5,sc));
+       const lf=+o.ui.padLift;if(Number.isFinite(lf))u.padLift=Math.max(0,Math.min(60,Math.round(lf)));}
+       return u;})(),
      taquitos:Number.isFinite(o.taquitos)?Math.max(0,o.taquitos|0):d.taquitos,
      items:Array.isArray(o.items)?o.items.filter(x=>typeof x==='string'):d.items,
      notes:Array.isArray(o.notes)?o.notes.filter(x=>LORE.some(n=>n.id===x)):d.notes,
+     seen:Array.isArray(o.seen)?o.seen.filter(x=>typeof x==='string'):d.seen,
      stats:(o.stats&&typeof o.stats==='object'&&!Array.isArray(o.stats))?o.stats:d.stats,
      best:(o.best&&typeof o.best==='object'&&!Array.isArray(o.best))?o.best:d.best,
      run:validRun(o.run)};},
@@ -764,6 +820,23 @@ function applyAudio(){const a=PROF.audio||defaultAudio();
   if(MUS.g)MUS.g.gain.value=a.music;
   if(MUS.ag)MUS.ag.gain.value=a.ambient;
   MUS.vol=a.music;}
+
+// --- pad sizing ---
+function applyUI(){const u=PROF.ui||defaultUI();
+  const r=document.documentElement.style;
+  r.setProperty('--padScale',String(u.padScale));
+  r.setProperty('--padLift',u.padLift+'px');
+  padClear();}
+// Doug's spawn was clamped off the JUMP pad's measured edge once, at board start. Now the pad can be
+// resized mid-board from the pause menu, so this has to be re-runnable — otherwise a growing pad
+// swallows him again, which is exactly the bug commit a906479 fixed and eeefd75 re-derived.
+// Gated on the pad actually being VISIBLE: a hidden element measures 0, and the old `!st.top` guard
+// missed race and dungeon, silently forcing a 70px floor off an invisible pad.
+function padClear(){if(!S||!S.p||MODE!=='action')return;
+  const pj=$('padJ').getBoundingClientRect();if(pj.width<=0)return;
+  const minX=pj.right+70;S.padMinX=minX;
+  if(S.p.onG&&S.p.x<minX)S.p.x=minX; // only nudge a grounded Doug, never mid-jump
+  if(S.st&&S.st.fight&&S.fx&&S.fx.doug&&S.fx.doug.x<minX)S.fx.doug.x=minX;}
 
 // --- timeline instability ---
 // Flicker the scanline overlay as the timeline decays. Deliberately a CSS animation on an existing
@@ -1042,17 +1115,26 @@ $('bDiff').addEventListener('click',cycleDiff);
 /* ================= PAUSE ================= */
 // S.paused already gated the main loop for the portrait overlay; this reuses it for a real pause menu.
 let userPaused=false, pauseTab='stats';
-function canPause(){return MODE==='action'&&S&&!S.done;}
+// war room and the tabletop finale are DOM screens with no pads; pausing there is just showing the
+// menu over them, and without this the whole OPTIONS panel is unreachable for two entire boards.
+function canPause(){return (MODE==='action'&&S&&!S.done)||MODE==='war'||MODE==='battle';}
+// Remembers which screen was showing so the DOM-only modes (war room, tabletop) come back to
+// themselves rather than to a blank canvas. S is null in those modes, hence the guards.
+let pauseReturn='';
 function openPause(){if(!canPause()||userPaused)return;
-  userPaused=true;S.paused=true;IN.fire=false;
-  const st=S.st;$('pauseWhere').textContent=st?st.name:'PAUSED';
+  userPaused=true;if(S)S.paused=true;IN.fire=false;
+  const cur=document.querySelector('.screen.on');pauseReturn=cur?cur.id:'';
+  // MODE wins over S.st: S holds the PREVIOUS board while the war room / tabletop are up
+  const st=S&&S.st;
+  $('pauseWhere').textContent=MODE==='war'?'OPERATION: FLOOR PLAN'
+    :MODE==='battle'?'TABLETOP PROTOCOL':st?st.name:'PAUSED';
   renderPausePanel();showScreen('pause');}
 function closePause(){if(!userPaused)return;
   userPaused=false;
   // don't unpause into a portrait phone — the #rot overlay is still covering the game
   if(S)S.paused=PMQ.matches;
   last=performance.now(); // otherwise the first frame back gets a giant dt
-  showScreen('');}
+  showScreen(pauseReturn);pauseReturn='';}
 function setPauseTab(t){pauseTab=t;
   document.querySelectorAll('.ptab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   renderPausePanel();}
@@ -1101,20 +1183,35 @@ function renderPausePanel(){const p=$('pausePanel');
         '<div><div class="bname">'+(open?b.name:'█████████')+'</div><div>'+
         (open?b.txt:'Dossier sealed. Meet them first.')+'</div></div></div>';}).join('');}
   else{
-    const a=PROF.audio||defaultAudio();
+    const a=PROF.audio||defaultAudio(),u=PROF.ui||defaultUI();
     const vrow=(k,label)=>'<div class="vrow"><b>'+label+'</b>'+
       '<input class="vol" type="range" min="0" max="1" step="0.05" value="'+a[k]+'" data-mix="'+k+'" aria-label="'+label+'">'+
       '<span class="vnum" data-num="'+k+'">'+Math.round(a[k]*100)+'%</span></div>';
     p.innerHTML='<div class="prow"><b>Difficulty</b><span><button class="btn ghost xs" id="bDiff2"><span class="diffLabel">NORMAL</span></button></span></div>'+
       '<div class="phint diffBlurb"></div>'+
       vrow('master','Master')+vrow('music','Music')+vrow('ambient','Ambience')+vrow('sfx','Effects')+
+      '<div class="vrow"><b>Pad size</b><input class="vol" type="range" min="0.8" max="1.5" step="0.05" '+
+        'value="'+u.padScale+'" data-ui="padScale" aria-label="Pad size">'+
+        '<span class="vnum" data-uinum="padScale">'+Math.round(u.padScale*100)+'%</span></div>'+
+      '<div class="vrow"><b>Pad height</b><input class="vol" type="range" min="0" max="60" step="4" '+
+        'value="'+u.padLift+'" data-ui="padLift" aria-label="Pad height">'+
+        '<span class="vnum" data-uinum="padLift">+'+u.padLift+'</span></div>'+
       '<div class="prow"><b>Sound</b><span><button class="btn ghost xs" id="bSnd">'+(AU.on?'🔊 ON':'🔇 OFF')+'</button></span></div>'+
       '<div class="prow"><b>Timeline flicker</b><span><button class="btn ghost xs" id="bFlick">'+
         (PROF.fx.flicker?'ON':'OFF')+'</button></span></div>'+
       '<div class="phint">Sliders take effect as you drag. Flicker follows timeline decay; turn it off if the pulsing bothers you.</div>';
     $('bDiff2').addEventListener('click',cycleDiff);
     // live-drag the mix, then persist once the gesture ends rather than on every step
-    p.querySelectorAll('input.vol').forEach(el=>{
+    // pad sliders live-apply too, so you can size them against your actual thumb mid-board
+    p.querySelectorAll('input.vol[data-ui]').forEach(el=>{
+      const k=el.dataset.ui;
+      el.addEventListener('input',()=>{const v=parseFloat(el.value);if(!Number.isFinite(v))return;
+        PROF.ui[k]=k==='padLift'?Math.round(v):v;
+        p.querySelector('[data-uinum="'+k+'"]').textContent=
+          k==='padLift'?'+'+PROF.ui[k]:Math.round(PROF.ui[k]*100)+'%';
+        applyUI();});
+      el.addEventListener('change',()=>{SAVE.write();AU.ui();});});
+    p.querySelectorAll('input.vol[data-mix]').forEach(el=>{
       const k=el.dataset.mix;
       el.addEventListener('input',()=>{const v=clamp01(parseFloat(el.value));
         if(v===null)return;PROF.audio[k]=v;
@@ -1232,7 +1329,7 @@ function openWar(){MODE='war';G.inBattle=false;hudOn(false);MUS.play('war');
   WR={own:{dock:true},g:{},armies:10,turn:1,busy:false,over:false};
   WMAP.forEach(d=>WR.g[d.id]=d.g);
   $('wlog').innerHTML='';$('wdie').className='';setDieEl($('wdie'),20);
-  $('wdlabel').textContent='tap a red district to attack';
+  $('wdlabel').textContent='tap a pulsing district to attack';
   wlog('🗺️ <b>VEX:</b> "The vat door is powered by THE CORE. We take the floor, district by district."');
   wlog('💜 <b>TORQUE:</b> "I brought a little flag with our faces on it."');
   renderWar();showScreen('war');}
@@ -1325,7 +1422,8 @@ function blog(html){const el=$('blog'),p=document.createElement('p');p.innerHTML
   el.appendChild(p);while(el.children.length>6)el.removeChild(el.firstChild);
   el.scrollTop=el.scrollHeight;}
 
-function openBattle(){MODE='battle';G.inBattle=true;hudOn(false);MUS.play('dnd');
+function openBattle(skipCard){
+  if(!skipCard&&showHowTo('battle',()=>openBattle(true)))return;MODE='battle';G.inBattle=true;hudOn(false);MUS.play('dnd');
   const dm=20+G.hp*6;
   B={doug:{hp:dm,max:dm},tor:{hp:40,max:40,down:false},vex:{hp:34,max:34,down:false},
      kev:{hp:100,max:100},round:0,cells:4,snacks:4,guard:false,healed:false,busy:true,over:false,
@@ -1612,8 +1710,9 @@ stickEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
   try{stickEl.setPointerCapture(e.pointerId)}catch(_){}});
 stickEl.addEventListener('pointermove',e=>{const s=S&&S.stick;
   if(!s||!s.on||e.pointerId!==s.id)return;
-  const dx=e.clientX-s.ox,dy=e.clientY-s.oy,m=Math.hypot(dx,dy),r=52,c=m>r?r/m:1;
-  s.x=dx*c/52;s.y=dy*c/52;});
+  const r=52*((PROF.ui&&PROF.ui.padScale)||1); // stick throw tracks the pad-size setting
+  const dx=e.clientX-s.ox,dy=e.clientY-s.oy,m=Math.hypot(dx,dy),c=m>r?r/m:1;
+  s.x=dx*c/r;s.y=dy*c/r;});
 const stickUp=e=>{const s=S&&S.stick;if(s&&e.pointerId===s.id){s.on=false;s.x=0;s.y=0;}};
 stickEl.addEventListener('pointerup',stickUp);stickEl.addEventListener('pointercancel',stickUp);
 // racing: touch either half of the screen to steer (multi-touch aware)
@@ -1630,7 +1729,10 @@ addEventListener('contextmenu',e=>e.preventDefault());
 
 /* ================= ACTION: stage setup ================= */
 let S=null;
-function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
+function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
+  // explain the board before it starts, once ever — the old tutorial could only be reached from
+  // three story scenes, so race/kumite/dungeon/boss were never explained at all
+  if(!skipCard&&showHowTo(st.id,()=>startStage(i,true)))return;
   applyInstability();
   snapshotRun('stage',i); // checkpoint at board start — placed above the war early-return so it covers every board
   if(st.war){openWar();return;}
@@ -1667,10 +1769,8 @@ function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
   $('padF').style.display=st.race?'none':'';
   G.energy=100;
   hudOn(true);showScreen('');updateHearts();
-  // device safe-areas (notch) shift the JUMP pad right — keep Doug clear of it
-  if(!st.top){const pj=$('padJ').getBoundingClientRect();
-    S.p.x=Math.max(S.p.x,pj.right+70);
-    if(st.fight)S.fx.doug.x=Math.max(S.fx.doug.x,S.p.x);} // kumite respects the notch too
+  // device safe-areas (notch) and the pad-size setting both shift the JUMP pad — keep Doug clear
+  padClear();
   $('pbar').classList.toggle('boss',!!st.boss);}
 
 function spawnFoe(type,plain){const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:W+50,t:0,hitT:0};
@@ -1744,6 +1844,9 @@ function drawBanner(){if(S.banner&&S.banner.t>0){cx.save();
   cx.fillText(S.banner.text,W/2,H*.32);cx.restore();}}
 
 /* ================= ACTION: VS GLAZE (kumite mode) ================= */
+// Glaze must not settle behind the FIRE pad — measure it rather than trusting a literal.
+function glazeMaxX(){const pf=$('padF').getBoundingClientRect();
+  return pf.width>0?Math.min(W-150,pf.left-40):W-150;}
 function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   S.t+=dt;updateJuice(dt);if(S.banner)S.banner.t-=dt;
   if(S.shake>0)S.shake-=dt;if(p.inv>0)p.inv-=dt;
@@ -1786,22 +1889,23 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
     if(active&&!dg.landed){
       const range=dg.atk===3?150:120,dmg=!p.onG?15:dg.atk===3?12:8;
       if(dist<range&&gz.roll<=0){dg.landed=true;
-        if(gz.state==='block'){S.pops.push({x:gz.x,y:groundY-120,t:.8,txt:'GLAZED!',col:'#9a8fc7'});AU.ui();}
+        if(gz.state==='block'){S.pops.push({x:gz.x,y:groundY-120,t:.9,txt:'GLAZED! (blocked)',col:'#21f0ff'});AU.ui();}
         else{gz.hp-=dmg;gz.state='stagger';gz.sT=.32;
           killJuice(gz.x-20,groundY-90,dmg*10);
-          gz.x=Math.min(W-80,gz.x+(dg.atk===3?46:14));
+          gz.x=Math.min(glazeMaxX()+70,gz.x+(dg.atk===3?46:14));
           if(gz.hp<=0&&fx.phase==='fight'){fx.phase='finish';gz.dizzy=1;
             S.banner={text:'FINISH HIM (WITH THE MOP)',t:5};AU.roar();}}}}
     if(dg.atkT<=0){dg.landed=false;if(dg.chain===3)dg.chain=0;}}
   // spacing: Doug drifts back slightly, Glaze controls the dance
   if(dist<64){dg.x-=90*dt;}
-  dg.x=clamp(dg.x,70,W-260);p.x=dg.x;
+  const dgMin=S.padMinX||70; // respect the measured pad edge, not a literal
+  dg.x=clamp(dg.x,dgMin,Math.max(dgMin+40,W-260));p.x=dg.x;
   // ---- GLAZE AI ----
   if(fx.phase==='fight'){gz.sT-=dt;
     if(gz.roll>0){ // mid donut-roll
       gz.x+=gz.vx*dt;gz.roll-=dt;
       if(gz.x<90){gz.vx=Math.abs(gz.vx);}
-      if(gz.roll<=0){gz.state='idle';gz.sT=rr(.6,1.1);gz.x=clamp(gz.x,W-320,W-150);}
+      if(gz.roll<=0){gz.state='idle';gz.sT=rr(.6,1.1);gz.x=clamp(gz.x,W-320,glazeMaxX());}
       else if(p.onG&&p.inv<=0&&Math.abs(gz.x-dg.x)<74){hurt();dg.x-=54;}}
     else if(gz.state==='stagger'){if(gz.sT<=0){gz.state='idle';gz.sT=rr(.35,.8);}}
     else if(gz.state==='block'){if(gz.sT<=0){gz.state='idle';gz.sT=rr(.3,.7);}}
@@ -1854,8 +1958,13 @@ function drawGlaze(gz,t){cx.save();cx.translate(gz.x,groundY);
     aBlit(AIMG.glz_glove,-17,-17,34,34,false);cx.restore();
     cx.save();cx.translate(70,oy+10+Math.cos(t*5)*4);cx.scale(-15/17,15/17);
     aBlit(AIMG.glz_glove,-17,-17,34,34,false);cx.restore();
-    if(st2==='block'){cx.fillStyle='rgba(255,255,255,.25)';
-      cx.beginPath();cx.arc(0,oy,76,0,7);cx.fill();}
+    if(st2==='block'){ // a 25%-alpha white circle over a green dojo read as nothing; ring it and label it
+      cx.fillStyle='rgba(255,255,255,.30)';
+      cx.beginPath();cx.arc(0,oy,76,0,7);cx.fill();
+      cx.strokeStyle='rgba(33,240,255,.95)';cx.lineWidth=3;
+      cx.beginPath();cx.arc(0,oy,76,0,7);cx.stroke();
+      cx.fillStyle='#21f0ff';cx.font='900 12px sans-serif';cx.textAlign='center';
+      cx.fillText('GUARD',0,oy-88);}
     if(st2==='spraytel'){cx.font='14px sans-serif';cx.textAlign='center';
       cx.fillText('✨',-40,oy-64);cx.fillText('✨',-60,oy-40);}}
   cx.restore();}
@@ -2085,7 +2194,8 @@ function raceDraw(){const st=S.st,hue=st.hue;
       cx.fillStyle='#ff3df0';cx.font='900 '+Math.max(7,10*s2*2)+'px sans-serif';
       cx.textAlign='center';cx.fillText('CHONKY BOY',px2,y-86*s2);}
     else if(o.type==='taq'){cx.save();cx.globalCompositeOperation='lighter';
-      cx.fillStyle='rgba(255,215,94,.4)';cx.beginPath();cx.arc(px2,y-18*s2,26*s2,0,7);cx.fill();cx.restore();
+      // cyan, not gold: against the lime traffic this is the only reward/hazard call made on hue alone
+      cx.fillStyle='rgba(33,240,255,.42)';cx.beginPath();cx.arc(px2,y-18*s2,26*s2,0,7);cx.fill();cx.restore();
       cx.font=Math.max(10,30*s2)+'px sans-serif';cx.textAlign='center';cx.fillText('🌮',px2,y);}}
   // the truck (rear view), tilting with steer
   if(!(S.p.inv>0&&Math.sin(S.t*40)>0)){
@@ -2448,6 +2558,8 @@ function topDraw(){const st=S.st,p=S.p;
     cx.fillStyle='rgba(125,255,58,.18)';
     cx.beginPath();cx.arc(s2.x-s2.vx*.05,s2.y-s2.vy*.05,12,0,7);cx.fill();
     cx.fillStyle='rgba(125,255,58,.35)';cx.beginPath();cx.arc(s2.x,s2.y,10,0,7);cx.fill();cx.restore();
+    cx.save();cx.strokeStyle='rgba(10,6,24,.85)';cx.lineWidth=2;
+    cx.beginPath();cx.arc(s2.x,s2.y,8,0,7);cx.stroke();cx.restore();
     g=cx.createRadialGradient(s2.x-2,s2.y-3,1,s2.x,s2.y,8);
     g.addColorStop(0,'#eaffd0');g.addColorStop(1,'#3fa50f');
     cx.fillStyle=g;cx.beginPath();cx.arc(s2.x,s2.y,7,0,7);cx.fill();});
@@ -2703,7 +2815,8 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
   // turret orbs
   S.shots.forEach(s2=>{cx.save();cx.globalCompositeOperation='lighter';
     cx.fillStyle='rgba(125,255,58,.35)';cx.beginPath();cx.arc(s2.x,s2.y,11,0,7);cx.fill();cx.restore();
-    cx.fillStyle='#7dff3a';cx.beginPath();cx.arc(s2.x,s2.y,6,0,7);cx.fill();});
+    cx.fillStyle='#7dff3a';cx.beginPath();cx.arc(s2.x,s2.y,6,0,7);cx.fill();
+    cx.strokeStyle='rgba(10,6,24,.85)';cx.lineWidth=2;cx.stroke();});
   // world-space FX: particles + score pops
   S.parts.forEach(q=>{cx.globalAlpha=Math.min(1,q.life*2.5);cx.fillStyle=q.col;
     cx.fillRect(q.x-q.sz/2,q.y-q.sz/2,q.sz,q.sz);});
@@ -2948,6 +3061,7 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
       cx.quadraticCurveTo(s.x,groundY-s.h*2,s.x+s.w/2,groundY);cx.fill();
       cx.fillStyle='rgba(125,255,58,.35)';cx.fillRect(s.x-s.w/2,groundY-3,s.w,3);}
     else{cx.beginPath();cx.arc(s.x,s.y,s.w/2,0,7);cx.fill();
+      cx.strokeStyle='rgba(10,6,24,.85)';cx.lineWidth=2;cx.stroke();
       cx.fillStyle='rgba(125,255,58,.4)';cx.beginPath();cx.arc(s.x+3,s.y+4,s.w/3,0,7);cx.fill();}});
 
   // foes (per-level skins; white-flash variant while hit)
@@ -3023,13 +3137,13 @@ requestAnimationFrame(loop);
 document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;});
 // portrait gate: #rot overlay covers the game; also pause the sim
 const PMQ=matchMedia('(orientation: portrait)');
-function syncRot(){if(S)S.paused=PMQ.matches||userPaused;IN.fire=false;last=performance.now();}
+function syncRot(){if(S)S.paused=PMQ.matches||userPaused;IN.fire=false;last=performance.now();padClear();}
 try{PMQ.addEventListener('change',syncRot);}catch(e){PMQ.addListener(syncRot);}
 MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 
 // Load the profile LAST: every listener is bound and the loop is running by now, so even an
 // unexpected throw in here cannot cost us input. SAVE.load() is internally guarded regardless.
-SAVE.load();applyAudio();applyInstability();updateTaqHud();renderDiff();refreshContinue();
+SAVE.load();applyAudio();applyUI();applyInstability();updateTaqHud();renderDiff();refreshContinue();
 </script>
 </body>
 </html>

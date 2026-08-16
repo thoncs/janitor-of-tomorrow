@@ -298,10 +298,38 @@ critter enemies. Either create the location or rewrite the references.
 | C — Pause & menu shell | ✅ **Done** | In-board pause (⏸ button + Esc/P) reusing `S.paused`, with STATS / DOSSIERS / OPTIONS tabs, resume and quit-to-title. Dossiers unlock off the Phase A stats. OPTIONS holds the difficulty cycler and sound toggle — Phase D drops volume sliders in the same panel, Phase E fills out the dossier text. |
 | D — AV settings & mixing | ✅ **Done** | One master `GainNode` with the SFX, music and ambience buses routed into it, driven by four persisted sliders in the pause OPTIONS panel. Timeline decay now flickers the existing `#fx` scanline layer via CSS (no `ctx.filter` anywhere), with an off switch and `prefers-reduced-motion` respected. Defaults reproduce the pre-phase mix exactly. |
 | E — Story depth | ✅ **Done** | Six endings (timeline tier × whether you kept the crew, `BOND_MIN` 11 of a reachable 6–12), with per-ending tracking and a seen counter. Six lore notes granted on first clear of each board, readable in a new pause LORE tab. K.E.V.I.N. leaks backstory at 75/50/25% health. One companion bark per board from whoever you favoured. Dossier text expanded. |
-| F — QOL & accessibility | ⬜ Not started | |
+| F — QOL & accessibility | 🟡 **Mostly done** | Adjustable pad size (80–150%) and height, persisted and live-applied. Per-board control cards for all seven boards that had none — the shared tutorial was actively wrong about the kumite. Pause now reachable in the war room and tabletop. Four evidence-based legibility fixes (see below). **Deferred:** text scaling and a colourblind palette toggle — reasons recorded below, not an oversight. |
 | G — Hub screen | ⬜ Not started | Highest risk. Behind `?hub=1`. |
 | H — New boards | ⬜ Not started | |
 | Old Phases 7–10 | ✂️ Below cut line | Recorded as ideas, not planned. |
+
+### Deferred from Phase F, with reasons
+
+Both of these were audited before being written, and the audit changed the plan. Recorded so they are
+not mistaken for forgotten work.
+
+**Colourblind palette toggle — dropped, not deferred.** A Viénot/Brettel simulation over the nine
+semantic colours showed the pair everyone assumes is dangerous (`--red` vs `--lim`) is the *safest* in
+the file: 2.58:1 luminance ratio, and red never appears as an object competing with goo — it is a
+vignette, a particle burst, and the ♥/♡ glyph count, all of which survive greyscale. The genuinely bad
+pair was **lime hazard vs gold reward at 1.07:1**, invisible even in greyscale. Meanwhile the game
+already codes almost everything on glyph, silhouette, motion, text and audio: pickups are emoji, player
+bullets are rectangles moving away while enemy fire is circles moving toward you, the war map labels
+ownership 🧹/🍮 and pulses attackable districts. A hex-swapping toggle would have required ~120 hand
+edits (the canvas never reads the CSS variables, and gold is not even a variable) to deliver almost
+nothing. **Shipped instead:** the race taquito halo recoloured gold → cyan, the one reward/hazard call
+made on hue alone at the moment of decision; a dark outline on enemy projectiles at all three draw
+sites; Glaze's guard tell promoted from a 25%-alpha white circle to a cyan ring labelled GUARD; and
+`'tap a red district'` reworded to `'tap a pulsing district'`, the only colour-name instruction in the
+game.
+
+**Text scaling — deferred, needs its own change.** There is not one `rem` or `em` font-size in the file,
+`html`/`body` set no font-size, and the four rules that say `font:inherit` immediately override it with
+a px value — so the intuitive implementation is a silent no-op that looks fine on a desktop browser.
+Doing it honestly means a `--fs` multiplier through ~44 `calc()` declarations, the `max-height:460px`
+title block (or it does nothing on the primary device), and a canvas font helper for ~50 `cx.font`
+sites whose stacked-line offsets are hardcoded. On top of that, `#battle` and `#war` have no scroll
+backstop and fixed-size children, so both clip at +25%. Worth doing; too big to bolt onto this phase.
 
 ### Postmortem: Phases 0–2 (2026-08-15) — ATTEMPTED, REVERTED
 
