@@ -477,7 +477,7 @@ const PATTERNS={
 // APPEND new stages, never insert: the story chain's next:{stage:N} links are numeric, so inserting
 // mid-array silently reroutes them (inserting before dungeon sent the war room to the wrong board).
 const STAGES=[
-  {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,mix:{blob:[1.6,2.6],turret:[6,9]},
+  {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,pixel:true,mix:{blob:[1.6,2.6],turret:[6,9]},
    next:{scene:1}},
   {id:'ch2',name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:200,hue:315,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
    next:{stage:2,label:'🏁 TORQUE FOUND THE KEYS →'}},
@@ -496,7 +496,7 @@ const STAGES=[
   {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
    after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
-  {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:210,hue:190,
+  {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:210,hue:190,pixel:true,
    music:'drive',stutter:true,mix:{blob:[1.2,2.0],turret:[5,7],drone:[2.2,3.4]},
    next:{stage:5,label:'🍩 BACK TO THE DOOR →'},
    after:'You mopped the same corridor twice, eleven years apart, in the wrong order. Vex refuses to log it. Torque says it "tasted purple."'}
@@ -2472,7 +2472,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
   const wp=WEAPONS[G.weapon];p.fireT-=dt;
   G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*DF().regen*torqueRegenMul()*dt);
   if(IN.fire&&p.fireT<=0&&G.energy>=wp.cost){G.energy-=wp.cost;p.fireT=wp.rate;
-    S.bullets.push({x:p.x+(S.stIdx===0?8:S.st.boss?34:20),y:p.y-(S.st.boss?44:26),vx:wp.speed,vy:0,pierce:wp.pierce,dmg:wp.dmg,sz:wp.size,col:wp.col});
+    S.bullets.push({x:p.x+(S.st.pixel?8:S.st.boss?34:20),y:p.y-(S.st.boss?44:26),vx:wp.speed,vy:0,pierce:wp.pierce,dmg:wp.dmg,sz:wp.size,col:wp.col});
     if(G.weapon==='railgun')AU.boom();else AU.pew();}
   $('ebar').style.width=G.energy+'%';
 
@@ -3184,7 +3184,7 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
   // foes (per-level skins; white-flash variant while hit)
   S.foes.forEach(f=>{const hl=f.hitT>0;
     if(f.big){ // CHONKY BOY looms
-      if(S.stIdx===0){const sq=Math.abs(Math.sin(f.t*4))*.06;
+      if(S.st.pixel){const sq=Math.abs(Math.sin(f.t*4))*.06;
         cx.save();cx.translate(f.x,f.y);cx.scale(1+sq,1-sq);
         aBlit(AIMG.chonky,-32,-64,64,64,hl,true);cx.restore();} // ditto: he lumbers left
       else{cx.save();cx.translate(f.x,f.y-34);
@@ -3192,8 +3192,12 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
       cx.font='900 11px sans-serif';cx.textAlign='center';
       cx.fillStyle='#ff3df0';cx.fillText('CHONKY BOY',f.x,f.y-70-Math.abs(Math.sin(f.t*4))*5);
       return;}
-    if(S.stIdx===0){ // CH.1: pixel baddies
+    if(S.st.pixel){ // CH.1 skin (also the Time Warp remix): pixel baddies
       if(f.type==='turret')aBlit(Math.sin(f.t*2)>.6?AIMG.t_idle2:AIMG.t_idle1,f.x-20,f.y-40,40,40,hl);
+      // drones fly, so they get the pod rather than a ground-goo sprite. CH.1 has no drones; the
+      // Time Warp remix does, and without this they were floating goo critters.
+      else if(f.type==='drone'){cx.save();cx.translate(f.x,f.y-10);
+        cx.rotate(Math.sin(f.t*3)*.12);aBlit(AIMG.ufo,-20,-20,40,40,hl);cx.restore();} // symmetric, no flip
       else aBlit(GOO_WALK[(f.t*7|0)%4],f.x-16,f.y-32,32,32,hl,true); // walks left, art faces right
     }
     else{ // CH.2: notebook doodles
@@ -3211,11 +3215,11 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
   // muzzle flash
   if(S.p.fireT>WEAPONS[G.weapon].rate-.06){cx.save();cx.globalCompositeOperation='lighter';
     cx.fillStyle='rgba(255,255,255,.8)';cx.beginPath();
-    cx.arc(p.x+(S.stIdx===0?12:24),p.y-24,rr(5,9),0,7);cx.fill();cx.restore();}
+    cx.arc(p.x+(S.st.pixel?12:24),p.y-24,rr(5,9),0,7);cx.fill();cx.restore();}
 
   // Doug (per-level skin; blinks while invulnerable)
   if(!(p.inv>0&&Math.sin(S.t*40)>0)){
-    if(S.stIdx===0){ // CH.1: pixel Doug
+    if(S.st.pixel){ // CH.1 skin: pixel Doug
       const a=!p.onG?AIMG.h_jump:DOUG_WALK[(S.t*10|0)%6];
       aBlit(a,p.x-24,p.y-48,48,48,false);
       cx.fillStyle=WEAPONS[G.weapon].col;cx.fillRect(p.x+4,p.y-25,5,5);}
