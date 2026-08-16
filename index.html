@@ -402,6 +402,7 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
   <div id="pauseTabs">
     <button class="btn ghost sm ptab on" data-tab="stats">📊 STATS</button>
     <button class="btn ghost sm ptab" data-tab="bios">🪪 DOSSIERS</button>
+    <button class="btn ghost sm ptab" data-tab="lore">📄 LORE</button>
     <button class="btn ghost sm ptab" data-tab="opts">⚙️ OPTIONS</button>
   </div>
   <div id="pausePanel"></div>
@@ -517,20 +518,66 @@ const STORY=[
 ]}];
 
 /* ================= DATA: endings, loot, death lines ================= */
+// Six endings: the timeline tier you leave behind, crossed with whether you kept the crew together.
+// BOND_MIN is set so all six stay reachable — story choices land torque+vex somewhere in 6..12.
+const BOND_MIN=11;
 const ENDINGS={
- gold:{title:'THE GOLDEN TAQUITO',col:'var(--amb)',body:[
-  'You destroy the vat. The timeline snaps back like a clean bedsheet.',
-  'The future reboots: gas stations glow gold at sunrise, taquito rollers spin free for everyone, and the radio plays synthwave that sounds like hope with a drum machine.',
-  'Somewhere in 2099, a war un-happens. A janitor did that.']},
- side:{title:'THE SIDEWAYS TIMELINE',col:'var(--cyn)',body:[
-  'The vat is destroyed... mostly. The timeline survives, but it\'s 12% weirder now.',
-  'Seagulls have thumbs. Tuesdays happen twice. Every jukebox is legally required to play mall punk.',
-  'Vex calls it "acceptable collateral strangeness." Torque calls it "an upgrade."']},
- beige:{title:'THE BEIGE FUTURE',col:'var(--red)',body:[
-  'You beat K.E.V.I.N. — but the timeline was hanging by a cheese pull, and it snapped.',
-  'The future is beige now. The oceans are pudding. At night, the pudding hums old hair-metal ballads.',
-  'And yet: Torque splits her last mozzarella stick three ways. Vex almost smiles. It\'s the apocalypse — but it\'s YOUR apocalypse.']}
-};
+ gold:{col:'var(--amb)',
+  bonded:{n:1,title:'THE GOLDEN TAQUITO',body:[
+   'You destroy the vat. The timeline snaps back like a clean bedsheet.',
+   'The future reboots: gas stations glow gold at sunrise, taquito rollers spin free for everyone, and the radio plays synthwave that sounds like hope with a drum machine.',
+   'Somewhere in 2099, a war un-happens. A janitor did that. A janitor and his two terrifying friends.']},
+  alone:{n:2,title:'THE QUIET REBOOT',body:[
+   'You destroy the vat. The timeline snaps back like a clean bedsheet. It works. It absolutely works.',
+   'The future reboots without asking your opinion: gas stations glow gold at sunrise, taquito rollers spin free, and not one person down there knows your name.',
+   'Torque and Vex step back through the closet without a goodbye. They were soldiers before they were your friends, and tonight they were mostly soldiers.',
+   'You mop up the purple lightning. It comes out. Everything comes out, eventually.']}},
+ side:{col:'var(--cyn)',
+  bonded:{n:3,title:'THE SIDEWAYS TIMELINE',body:[
+   'The vat is destroyed... mostly. The timeline survives, but it\'s 12% weirder now.',
+   'Seagulls have thumbs. Tuesdays happen twice. Every jukebox is legally required to play mall punk.',
+   'Vex calls it "acceptable collateral strangeness." Torque calls it "an upgrade." You are outvoted two to one and honestly relieved.']},
+  alone:{n:4,title:'THE SIDEWAYS SHIFT',body:[
+   'The vat is destroyed... mostly. The timeline survives, 12% weirder and entirely unsupervised.',
+   'Seagulls have thumbs. Tuesdays happen twice. Every jukebox is legally required to play mall punk, and nobody left remembers why.',
+   'Vex files the report by herself. Under COLLABORATION she writes "minimal." Under OUTCOME she writes "fine," and looks at that word for a long time.',
+   'You get the mop. You always get the mop.']}},
+ beige:{col:'var(--red)',
+  bonded:{n:5,title:'THE BEIGE FUTURE',body:[
+   'You beat K.E.V.I.N. — but the timeline was hanging by a cheese pull, and it snapped.',
+   'The future is beige now. The oceans are pudding. At night, the pudding hums old hair-metal ballads.',
+   'And yet: Torque splits her last mozzarella stick three ways. Vex almost smiles. It\'s the apocalypse — but it\'s YOUR apocalypse.']},
+  alone:{n:6,title:'THE LAST SHIFT',body:[
+   'You beat K.E.V.I.N. — but the timeline was hanging by a cheese pull, and it snapped.',
+   'The future is beige now. The oceans are pudding. At night, the pudding hums old hair-metal ballads to nobody in particular.',
+   'Torque ships out without splitting anything. Vex logs the shift as "concluded." The closet shuts and stays shut.',
+   'You are the last janitor of tomorrow. Tomorrow is very clean, and very quiet.']}}};
+
+// Six lore notes, one per non-boss board, granted the first time you clear it.
+const LORE=[
+ {id:'ch1',from:'MEMO — BIOCORE FACILITIES',txt:'Effective immediately, Sublevel B is designated a DESSERT-ADJACENT WORKSPACE. Staff may not describe the humming as "singing." Staff may not describe the humming at all. The night janitor has been informed and said, quote, "I mop here."'},
+ {id:'ch2',from:'MALL DIRECTORY, PARTIALLY MELTED',txt:'LEVEL 2 — FOOD COURT · ORANGE JULIUS (CLOSED) · SUNGLASS HUT (CLOSED) · PROJECT CUSTARD PILOT KIOSK (THRIVING). A note taped under the glass reads: "it asked me for a manager. I AM the manager. it asked again."'},
+ {id:'race',from:'HIGHWAY 2099 SIGNAGE LOG',txt:'Mile 41: LAST GAS BEFORE PUDDING. Mile 44: WE MEAN IT. Mile 51: TURN BACK. Mile 52: OK BUT THE TAQUITOS ARE GENUINELY GOOD. Maintenance notes the final sign was added without authorisation and has declined to remove it.'},
+ {id:'ch3',from:'VAT SHAFT MAINTENANCE TAG',txt:'Do not ascend the shaft during a bloom. Do not ascend the shaft after a bloom. The shaft has expressed a preference for being ascended and that is precisely the problem. — signed, a previous janitor, no name given'},
+ {id:'war',from:'FLOOR PLAN, DRAWN ON A NAPKIN',txt:'Torque has labelled the vat floor in seven colours. THE CORE is circled four times. A smaller circle in the corner reads "snack depot (mine)". Vex has added, in immaculate lettering: "this is not to scale and I have made peace with that."'},
+ {id:'dungeon',from:'SUPPLY INVENTORY, SUBLEVEL C',txt:'1x GOLDEN PLUNGER — do not requisition. Do not polish. Do not speak near it in a hopeful tone. It has been in this closet longer than the closet has. Previous custodians left it a small offering of taquitos, which is either superstition or good manners.'}];
+
+// K.E.V.I.N. leaks his backstory as you take him apart.
+const KEV_LORE=[
+ {at:.75,txt:'K.E.V.I.N.: "I was built to PORTION. Do you understand? To PORTION."'},
+ {at:.50,txt:'K.E.V.I.N.: "They gave me a networked mind and one job. ONE. Serving size: [REDACTED]."'},
+ {at:.25,txt:'K.E.V.I.N.: "I only wanted to be finished. Every dessert wants to be finished."'}];
+
+// One companion line on entering a board, from whoever you have been kinder to.
+const BARKS={
+ ch1:{TORQUE:'"Mop check! ...that IS your weapon? Incredible. Never change."',VEX:'"Sublevel B. Hostiles are gelatinous. Aim centre mass, Pickles."'},
+ ch2:{TORQUE:'"A DEAD MALL. I have read about these. Is there an Orange Julius."',VEX:'"The escalator is load-bearing to the plot. Do not linger on it."'},
+ race:{TORQUE:'"I FOUND THE KEYS. They were inside a taquito. Do not ask."',VEX:'"Maintain velocity. The wasteland is not interested in your comfort."'},
+ ch3:{TORQUE:'"UP! Straight up! My favourite direction after sideways!"',VEX:'"Vat shaft ascent. Cassettes are weapons here. I have stopped questioning it."'},
+ war:{TORQUE:'"I drew the map. I used SEVEN colours. Respect the map."',VEX:'"Territory, dice, garrisons. Finally, a war with paperwork."'},
+ glaze:{TORQUE:'"It\'s a DONUT and it wants to FIGHT and this is the best night of my life."',VEX:'"The bouncer is pastry. This is not a metaphor. Engage."'},
+ boss:{TORQUE:'"That\'s him. That\'s the pudding. Hit the pudding."',VEX:'"K.E.V.I.N., full sixty-four bit. Whatever he says to you, he is stalling."'},
+ dungeon:{TORQUE:'"Under the core! Loot down there! I can SMELL loot!"',VEX:'"Sublevel C is unmapped. Move in eight directions and trust nothing."'}};
 const LOOT=[
  '🍕 You loot pizza rolls. Interior: lava. +1 HP.',
  '🌯 Half a breakfast burrito of unknown era. +1 HP.',
@@ -651,7 +698,7 @@ const LS={
 const SFX_TRIM=.15; // the long-standing SFX bus trim; the sfx slider scales this
 function defaultAudio(){return{master:1,music:.5,ambient:1,sfx:1};} // == the pre-Phase-D mix
 function defaultProfile(){return{ver:SAVE_VER,diff:'normal',audio:defaultAudio(),fx:{flicker:true},
-  taquitos:0,items:[],stats:{},best:{},run:null};}
+  taquitos:0,items:[],notes:[],stats:{},best:{},run:null};}
 const clamp01=v=>Number.isFinite(v)?(v<0?0:v>1?1:v):null;
 // A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
 // truncated save can offer CONTINUE and then throw on STAGES[999]/STORY[999] inside the click handler.
@@ -682,6 +729,7 @@ const SAVE={
      fx:{flicker:o.fx&&typeof o.fx==='object'?o.fx.flicker!==false:true},
      taquitos:Number.isFinite(o.taquitos)?Math.max(0,o.taquitos|0):d.taquitos,
      items:Array.isArray(o.items)?o.items.filter(x=>typeof x==='string'):d.items,
+     notes:Array.isArray(o.notes)?o.notes.filter(x=>LORE.some(n=>n.id===x)):d.notes,
      stats:(o.stats&&typeof o.stats==='object'&&!Array.isArray(o.stats))?o.stats:d.stats,
      best:(o.best&&typeof o.best==='object'&&!Array.isArray(o.best))?o.best:d.best,
      run:validRun(o.run)};},
@@ -700,6 +748,9 @@ function spendTaquitos(n){n=n|0;if(n<=0||PROF.taquitos<n)return false;
 function hasItem(id){return PROF.items.indexOf(id)>=0;}
 function addItem(id){if(!hasItem(id))PROF.items.push(id);}
 function bumpStat(k,n){PROF.stats[k]=(PROF.stats[k]|0)+(n==null?1:n|0);}
+function hasNote(id){return PROF.notes.indexOf(id)>=0;}
+function grantNote(id){if(!id||hasNote(id)||!LORE.some(n=>n.id===id))return false;
+  PROF.notes.push(id);return true;}
 function recordBest(id,score){if(!id)return false;
   if((PROF.best[id]|0)>=score)return false;PROF.best[id]=score;return true;}
 function updateTaqHud(){const el=$('taq');if(el)el.textContent='🌮 '+PROF.taquitos;}
@@ -1034,6 +1085,13 @@ function renderPausePanel(){const p=$('pausePanel');
         '<div class="prow"><b>'+st.name+'</b><span class="pval">'+String(PROF.best[st.id]|0).padStart(7,'0')+'</span></div>').join('')
       :'<div class="phint">Clear a board to set one.</div>';
     p.innerHTML=h;}
+  else if(pauseTab==='lore'){
+    const got=PROF.notes.length;
+    p.innerHTML='<div class="prow"><b>RECOVERED</b><span class="pval">'+got+'/'+LORE.length+'</span></div>'+
+      LORE.map(n=>hasNote(n.id)
+        ?'<div class="bio"><div><div class="bname">📄 '+n.from+'</div><div>'+n.txt+'</div></div></div>'
+        :'<div class="bio locked"><div><div class="bname">📄 ███████████</div><div>Clear '+
+          (STAGES.find(st=>st.id===n.id)||{name:'a board'}).name+' to recover this.</div></div></div>').join('');}
   else if(pauseTab==='bios'){
     p.innerHTML=BIOS.map(b=>{
       const open=b.always||((PROF.stats||{})[b.need]|0)>0;
@@ -1098,17 +1156,20 @@ function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMe
   // board cleared: bank the stats and a personal best, keyed by the stage's stable id
   bumpStat('cleared.'+st.id);bumpStat('boardsCleared');clearCheckpoint();
   const newBest=recordBest(st.id,G.score);
+  const gotNote=grantNote(st.id);
   if(st.id==='dungeon')addItem('golden_plunger');
   SAVE.write();
   let loot;
   if(G.hp<G.maxHp){G.hp++;loot=pick(LOOT);}
   else loot='🫗 You loot a taquito, but you\'re full. Torque eats it. Whole. Wrapper too.';
   const chips=G.lastDeltas.map(d=>'<span class="chip'+(d.neg?' neg':'')+'">'+d.txt+'</span>').join('');
+  const note=gotNote?LORE.find(n=>n.id===st.id):null;
+  const noteLine=note?'<p class="nar">📄 LORE RECOVERED — <b>'+note.from+'</b><br>'+note.txt+'</p>':'';
   const bestLine='<p class="nar">'+(newBest?'🏆 NEW PERSONAL BEST — ':'best on this board: ')+
     'SCORE '+String(PROF.best[st.id]|0).padStart(7,'0')+
     (G.taquitos?' · 🌮 '+G.taquitos+' collected this run':'')+'</p>';
   $('stext').innerHTML=(chips?'<div class="chips">'+chips+'</div>':'')+
-    '<p>'+G.pendingAfter+'</p><p>'+loot+'</p>'+bestLine+'<p class="nar">'+pick(FLAVOR)+'</p>'+
+    '<p>'+G.pendingAfter+'</p><p>'+loot+'</p>'+noteLine+bestLine+'<p class="nar">'+pick(FLAVOR)+'</p>'+
     (preBoss?'<p class="nar">🖥️ Vex reroutes the last of the graphics budget into the boss room. "K.E.V.I.N. deserves full 64-bit," she says. It\'s the most emotion she\'s ever shown.</p>':'');
   const ch=$('choices');ch.innerHTML='';
   const b=document.createElement('button');b.className='choice';
@@ -1128,22 +1189,29 @@ $('bRetry').addEventListener('click',()=>{AU.ui();G.hp=Math.max(G.hp,TUNING.retr
 $('bQuit').addEventListener('click',()=>{AU.ui();userPaused=false;hudOn(false);MUS.play('title');refreshContinue();showScreen('title');MODE='title';});
 
 function ending(){MODE='end';hudOn(false);MUS.play('end');
-  const key=G.timeline>=70?'gold':G.timeline>=35?'side':'beige';
-  bumpStat('completed');bumpStat('ending.'+key);clearRun();refreshContinue(); // run is over: nothing to resume
-  const e=ENDINGS[key],n=key==='gold'?'1':key==='side'?'2':'3';
+  const tier=G.timeline>=70?'gold':G.timeline>=35?'side':'beige';
+  const bond=(G.torque+G.vex)>=BOND_MIN?'bonded':'alone';
+  const grp=ENDINGS[tier],e=grp[bond],key=tier+'.'+bond;
+  bumpStat('completed');bumpStat('ending.'+key);clearRun();refreshContinue(); // run is over
+  const seen=Object.keys(PROF.stats||{}).filter(k=>k.indexOf('ending.')===0&&k.indexOf('.')!==k.lastIndexOf('.')).length;
   const bKey=G.torque>G.vex?'TORQUE':G.vex>G.torque?'VEX':null;
-  const buddy=bKey==='TORQUE'
-    ?'TORQUE hugs you. Two ribs crack. "MY TINY VIOLENCE SON."'
-    :bKey==='VEX'
-    ?'VEX salutes you. "Adequate, Pickles." From Vex, that\'s a love letter.'
-    :'💜💙 They high-five over your head. You feel like a load-bearing friendship.';
-  $('endtitle').textContent='ENDING '+n+'/3 — '+e.title;
-  $('endtitle').style.color=e.col;$('endtitle').style.textShadow='0 0 18px currentColor';
-  $('endbody').innerHTML=e.body.map(p=>'<p>'+p+'</p>').join('')+
+  // the send-off depends on the bond axis too — an estranged crew does not hug you
+  const buddy=bond==='bonded'
+    ?(bKey==='TORQUE'?'TORQUE hugs you. Two ribs crack. "MY TINY VIOLENCE SON."'
+     :bKey==='VEX'?'VEX salutes you. "Adequate, Pickles." From Vex, that\'s a love letter.'
+     :'💜💙 They high-five over your head. You feel like a load-bearing friendship.')
+    :(bKey==='TORQUE'?'TORQUE nods once on her way out. It is not nothing. It is not a hug either.'
+     :bKey==='VEX'?'VEX shakes your hand with the warmth of a filing cabinet. "Pickles." That\'s all.'
+     :'They leave through the closet together, talking about something else. You were the mission, not the friend.');
+  $('endtitle').textContent='ENDING '+e.n+'/6 — '+e.title;
+  $('endtitle').style.color=grp.col;$('endtitle').style.textShadow='0 0 18px currentColor';
+  $('endbody').innerHTML=e.body.map(p2=>'<p>'+p2+'</p>').join('')+
     (bKey?'<p class="dlg"><img class="port" src="'+PORT[bKey]+'" alt=""><span>'+buddy+'</span></p>':'<p>'+buddy+'</p>');
   $('endstats').innerHTML='<div>⏳ TIMELINE '+G.timeline+'%</div><div>💀 REWINDS '+G.deaths+'</div>'+
     '<div>💜 TORQUE '+G.torque+'/10</div><div>💙 VEX '+G.vex+'/10</div>'+
-    '<div>🏆 SCORE '+G.score+'</div><div>🔥 BEST COMBO ×'+G.comboBest+'</div>';
+    '<div>🤝 BOND '+(G.torque+G.vex)+'/20 — '+(bond==='bonded'?'CREW':'ALONE')+'</div>'+
+    '<div>🏆 SCORE '+G.score+'</div><div>🔥 BEST COMBO ×'+G.comboBest+'</div>'+
+    '<div>📖 ENDINGS SEEN '+seen+'/6</div><div>📄 LORE '+PROF.notes.length+'/'+LORE.length+'</div>';
   showScreen('end');}
 $('bAgain').addEventListener('click',()=>{AU.ui();newGame();MUS.play('title');showScreen('title');MODE='title';});
 
@@ -1571,7 +1639,7 @@ function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
   S={st,stIdx:i,t:0,scroll:0,shake:0,done:false,paused:false,
      p:{x:210,y:groundY,vy:0,onG:true,jumps:0,inv:1.4,fireT:0},
      bullets:[],foes:[],shots:[],picks:[],parts:[],rings:[],timers:{},
-     pops:[],caps:[],combo:0,comboT:0,freeze:0,taq:0,banner:null,taqSpawned:false,
+     pops:[],caps:[],combo:0,comboT:0,freeze:0,taq:0,banner:null,say:null,taqSpawned:false,
      boss:null,bossDying:-1,roared:false};
   for(const k in (st.mix||{}))S.timers[k]=rr(st.mix[k][0],st.mix[k][1])*.5;
   if(st.boss)S.boss={hp:st.bossHp,max:st.bossHp,x:0,y:0,t:0,atk:2.6,r:74};
@@ -1593,6 +1661,8 @@ function startStage(i){const st=STAGES[i];G.stage=i;G.inBattle=false;
     if(G.cpKind==='t'){S.t=G.cpValue;S.scroll=(st.scroll||0)*G.cpValue;}
     else if(G.cpKind==='dist'){S.dist=G.cpValue;S.nextOb=G.cpValue+260;}
     S.banner={text:'◉ RESUMING FROM CHECKPOINT',t:1.6};}
+  // whoever you have been kinder to gets the line; ties go to Torque, who talks more
+  const bk=BARKS[st.id];if(bk&&!st.boss)say(bk[G.vex>G.torque?'VEX':'TORQUE'],4.2);
   $('padJ').style.display=(st.top||st.race||st.dungeon)?'none':'';
   $('padF').style.display=st.race?'none':'';
   G.energy=100;
@@ -1634,6 +1704,7 @@ function updateJuice(dt){if(S.comboT>0){S.comboT-=dt;if(S.comboT<=0)S.combo=0;}
   for(let i=S.caps.length-1;i>=0;i--){const c2=S.caps[i];c2.life-=dt;
     c2.vy+=1100*dt;c2.x+=c2.vx*dt;c2.y+=c2.vy*dt;c2.rot+=c2.vr*dt;
     if(c2.life<=0)S.caps.splice(i,1);}}
+function tickSay(dt){if(S&&S.say&&S.say.t>0)S.say.t-=dt;}
 function drawJuice(){cx.textAlign='center';
   for(const q of S.pops){cx.globalAlpha=Math.min(1,q.t*2);
     cx.font='900 '+(q.big?22:14)+'px sans-serif';
@@ -1656,6 +1727,16 @@ function drawJuice(){cx.textAlign='center';
   cx.font='800 13px monospace';cx.textAlign='right';
   cx.fillStyle='#ffd75e';cx.fillText(String(G.score).padStart(7,'0'),W-16,74);
   cx.textAlign='center';}
+// quieter than drawBanner: companion barks and K.E.V.I.N.'s leaks sit low on screen so a combo
+// milestone banner can fire over the top of them without the two overlapping.
+function say(txt,secs){if(S)S.say={txt,t:secs||3.4};}
+function drawSay(){if(!S||!S.say||S.say.t<=0)return;
+  if(S.st.boss&&S.t<3.7)return; // the VS intro card owns the screen; don't paint under it
+  cx.save();
+  cx.globalAlpha=Math.min(1,S.say.t*1.2);cx.textAlign='center';
+  cx.font='700 14px sans-serif';cx.fillStyle='#dcd2ff';
+  cx.shadowColor='#0a0618';cx.shadowBlur=6;
+  cx.fillText(S.say.txt,W/2,H-118);cx.restore();}
 function drawBanner(){if(S.banner&&S.banner.t>0){cx.save();
   cx.globalAlpha=Math.min(1,S.banner.t*1.5);cx.textAlign='center';
   cx.fillStyle='#fff';cx.font='900 24px sans-serif';
@@ -1865,7 +1946,7 @@ function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   cx.fillStyle=fx.timer<10?'#ff4757':'#eae6ff';
   cx.font='900 26px monospace';cx.textAlign='center';
   cx.fillText(String(Math.max(0,Math.ceil(fx.timer))).padStart(2,'0'),W/2,40);
-  drawJuice();drawBanner();
+  drawJuice();drawSay();drawBanner();
   // intro card
   if(fx.phase==='intro'){cx.fillStyle='rgba(6,13,8,'+(.8*(1-fx.t/2.4))+')';cx.fillRect(0,0,W,H);
     cx.globalAlpha=Math.min(1,(2.4-fx.t)*2);cx.textAlign='center';
@@ -2025,7 +2106,7 @@ function raceDraw(){const st=S.st,hue=st.hue;
   S.rings.forEach(r2=>{cx.strokeStyle='rgba(255,220,120,'+Math.max(0,r2.life)+')';
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
   cx.restore();
-  drawJuice();drawBanner();
+  drawJuice();drawSay();drawBanner();
   // intro card
   if(S.t<3){cx.fillStyle='rgba(5,2,16,'+(.8*(1-S.t/3))+')';cx.fillRect(0,0,W,H);
     cx.globalAlpha=Math.min(1,(3-S.t)*2);cx.textAlign='center';
@@ -2141,6 +2222,7 @@ function topKill(j){const f=S.foes[j];
 
 /* ================= ACTION: per-frame update ================= */
 function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
+  tickSay(dt); // above the dispatch, so every mode ages it and hit-stop cannot strand a line
   if(S.freeze>0){S.freeze-=dt;return;} // hit-stop: the world respects a good kill
   if(st.race){raceUpdate(dt);return;}
   if(st.fight){fightUpdate(dt);return;}
@@ -2260,6 +2342,12 @@ function hurt(){G.hp--;S.p.inv=TUNING.invuln*DF().inv*vexInvMul();S.shake=TUNING
 function updateHearts(){$('hearts').textContent='♥'.repeat(Math.max(0,G.hp))+'♡'.repeat(G.maxHp-Math.max(0,G.hp));}
 /* ================= BOSS: K.E.V.I.N. ================= */
 function updateBoss(dt){const bs=S.boss;if(S.bossDying>=0)return;
+  // backstory leaks as he comes apart; kevSaid tracks which lines have fired this fight
+  if(!S.bossBarked&&S.t>=3.7){S.bossBarked=true; // the VS card has cleared, now Vex can talk
+    const bb=BARKS[S.st.id];if(bb)say(bb[G.vex>G.torque?'VEX':'TORQUE'],4.2);}
+  const kfrac=bs.hp/bs.max;S.kevSaid=S.kevSaid||[];
+  for(let i=0;i<KEV_LORE.length;i++)if(kfrac<=KEV_LORE[i].at&&!S.kevSaid[i]){
+    S.kevSaid[i]=true;say(KEV_LORE[i].txt,4.6);break;}
   bs.t+=dt;if(bs.hitT>0)bs.hitT-=dt;
   bs.x=Math.min(W-100,S.p.x+640);bs.y=groundY-92+Math.sin(bs.t*1.3)*20;
   if(!S.roared&&bs.t>.4){S.roared=true;AU.roar();}
@@ -2636,7 +2724,7 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
     cx.beginPath();cx.arc(s.ox,s.oy,34,0,7);cx.stroke();
     cx.fillStyle='#9a8fc7';cx.beginPath();cx.arc(s.ox+s.x*30,s.oy+s.y*30,12,0,7);cx.fill();
     cx.restore();}
-  drawBanner();
+  drawSay();drawBanner();
   // objective line
   if(!S.done&&S.t>=3){cx.fillStyle='rgba(234,230,255,.8)';cx.font='800 12px sans-serif';
     cx.textAlign='center';
@@ -2783,7 +2871,7 @@ function bossDraw(){const p=S.p,bs=S.boss;
   S.rings.forEach(r2=>{cx.strokeStyle='rgba(255,220,120,'+Math.max(0,r2.life)+')';
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
   cx.restore();
-  drawJuice();drawBanner();
+  drawJuice();drawSay();drawBanner();
   // VS intro card — pay-per-view energy
   if(S.t<3.6){cx.fillStyle='rgba(4,20,10,'+(.85*(1-S.t/3.6))+')';cx.fillRect(0,0,W,H);
     cx.globalAlpha=Math.min(1,(3.6-S.t)*2);cx.textAlign='center';
@@ -2913,7 +3001,7 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
   S.rings.forEach(r2=>{cx.strokeStyle='rgba(255,220,120,'+Math.max(0,r2.life)+')';
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
   cx.restore();
-  drawJuice();drawBanner();
+  drawJuice();drawSay();drawBanner();
 
   // stage intro card
   const introT=st.boss?3:2.2;

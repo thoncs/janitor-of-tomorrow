@@ -297,7 +297,7 @@ critter enemies. Either create the location or rewrite the references.
 | B — Gameplay refinement | ✅ **Done** | Four difficulty tiers (picker on the title, persisted) scaling spawn interval, mercy window and regen — never player damage. Mid-board checkpoints on the three timed boards and the race. Trust now pays off in action boards (Torque ≥7 regen, Vex ≥7 mercy). Juice constants gathered into `TUNING.juice`. |
 | C — Pause & menu shell | ✅ **Done** | In-board pause (⏸ button + Esc/P) reusing `S.paused`, with STATS / DOSSIERS / OPTIONS tabs, resume and quit-to-title. Dossiers unlock off the Phase A stats. OPTIONS holds the difficulty cycler and sound toggle — Phase D drops volume sliders in the same panel, Phase E fills out the dossier text. |
 | D — AV settings & mixing | ✅ **Done** | One master `GainNode` with the SFX, music and ambience buses routed into it, driven by four persisted sliders in the pause OPTIONS panel. Timeline decay now flickers the existing `#fx` scanline layer via CSS (no `ctx.filter` anywhere), with an off switch and `prefers-reduced-motion` respected. Defaults reproduce the pre-phase mix exactly. |
-| E — Story depth | ⬜ Not started | |
+| E — Story depth | ✅ **Done** | Six endings (timeline tier × whether you kept the crew, `BOND_MIN` 11 of a reachable 6–12), with per-ending tracking and a seen counter. Six lore notes granted on first clear of each board, readable in a new pause LORE tab. K.E.V.I.N. leaks backstory at 75/50/25% health. One companion bark per board from whoever you favoured. Dossier text expanded. |
 | F — QOL & accessibility | ⬜ Not started | |
 | G — Hub screen | ⬜ Not started | Highest risk. Behind `?hub=1`. |
 | H — New boards | ⬜ Not started | |
