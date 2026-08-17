@@ -1861,8 +1861,12 @@ function wheelGeom(){const sc=(PROF.ui&&PROF.ui.padScale)||1;
   WHEEL.y=H-58-((PROF.ui&&PROF.ui.padLift)||0);
   return WHEEL;}
 const steerEl=$('steer');
-// fit() keeps one canvas unit equal to one CSS px, so clientX maps straight onto the drawn ring
-const wheelSet=px=>{const g=wheelGeom();WHEEL.val=clamp((px-g.x)/g.r,-1,1);IN.steer=WHEEL.val;};
+// The ring is drawn in canvas units and the touch arrives in CSS pixels. fit() normally keeps those
+// 1:1, but if it has not re-run yet after a resize they diverge and the visible wheel stops matching
+// where you have to touch. Convert through the canvas rect so the two can never disagree.
+const wheelSet=px=>{const g=wheelGeom(),r=cv.getBoundingClientRect();
+  const u=r.width?(px-r.left)*(W/r.width):px; // CSS px -> canvas units
+  WHEEL.val=clamp((u-g.x)/g.r,-1,1);IN.steer=WHEEL.val;};
 steerEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
   WHEEL.active=true;WHEEL.id=e.pointerId;wheelSet(e.clientX);
   try{steerEl.setPointerCapture(e.pointerId)}catch(_){}});
