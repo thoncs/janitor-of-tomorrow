@@ -616,7 +616,6 @@ const HOWTO={
  race:{title:'🏁 TAQUITO GRAND PRIX',lines:[
   'STEER with the wheel on the LEFT. Put your thumb on the ring and slide — how far from the centre\n   you are is how hard you turn. Let go and it straightens up.',
   'HOLD anywhere on the RIGHT to accelerate. Let go and the truck slows down — that is your brake.',
-  '🔥 FIRE shoots down the road and clears traffic out of your way. Tankers take one, CHONKY takes three.',
   'Every bend drifts you outward, so lean INTO the curve or the rumble strip will find you.',
   'Squeezing past traffic without hitting it still scores. 🌮 makes you briefly unstoppable.']},
  ch3:{title:'🚀 CUSTARD ASCENT',lines:[
@@ -1898,9 +1897,8 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
     S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};S.banner=null;
     S.dust=[];for(let i=0;i<26;i++)S.dust.push({x:rr(60,W-60),y:rr(0,H),spd:rr(300,650),len:rr(10,26)});}
   if(st.race){S.dist=0;S.speed=120;S.px=0;S.curve=0;S.robs=[];S.nextOb=260;S.crash=0;S.chonked=false;
-    S.rshots=[];S.fireT=0; // road-clearing bolts
-    S.p.x=W/2;S.p.y=H-34; // juice anchors (taquito aura wraps the truck)
-    S.segs=[0,0,.6,.9,0,-.7,-1,0,.5,1,.8,0,-.9,0,1,-.6,0,.8,-.8,0];}
+    S.track=buildTrack(st.dist);
+    S.p.x=W/2;S.p.y=H-34;} // juice anchors (taquito aura wraps the truck)
   if(st.fight){S.fx={phase:'intro',t:0,timer:60,fireHeld:false,
     doug:{x:200,atk:0,atkT:0,chain:0,range:118},
     glz:{x:W-230,hp:130,max:130,state:'idle',sT:1.6,vx:0,roll:0,dizzy:0}};
@@ -1916,7 +1914,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   // whoever you have been kinder to gets the line; ties go to Torque, who talks more
   const bk=BARKS[st.id];if(bk&&!st.boss)say(bk[G.vex>G.torque?'VEX':'TORQUE'],4.2);
   $('padJ').style.display=(st.top||st.race||st.dungeon)?'none':'';
-  $('padF').style.display=''; // the race can shoot the road clear too
+  $('padF').style.display=st.race?'none':''; // nothing to shoot on the race
   G.energy=100;
   hudOn(true);showScreen('');updateHearts();
   // device safe-areas (notch) and the pad-size setting both shift the JUMP pad — keep Doug clear
@@ -2219,54 +2217,61 @@ function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   cx.restore();}
 
 /* ================= ACTION: TAQUITO GRAND PRIX (pseudo-3D racer) ================= */
+/* ================= RACE: pseudo-3D road =================
+   The old renderer faked perspective with persp=t*t*.75+t*.25 and bent the whole road as a single arc
+   off one `curve` scalar. That is why it read as the road sliding sideways rather than curving away,
+   and why the horizon could never move. This is the real thing: a segment list with per-segment
+   curvature and hill height, projected with scale = camDepth/dz.
+   Road, scenery and traffic all go through rProject, so they cannot drift apart. */
+const R={camD:.84,camH:120,roadW:108,seg:25,drawZ:3000,pitch:.11};
+function buildTrack(dist){
+  const need=Math.ceil((dist+R.drawZ*2)/R.seg),t=[];
+  const ease=u=>u*u*(3-2*u); // smooth in/out so sections blend instead of snapping
+  let y=0;
+  // opening straight, so the first thing you see is readable
+  for(let i=0;i<28;i++)t.push({curve:0,y:0});
+  while(t.length<need){
+    const L=26+((Math.random()*40)|0);
+    const flat=Math.random()<.3;
+    const c=flat?0:(Math.random()<.5?-1:1)*(.7+Math.random()*2.6);
+    const dy=(Math.random()<.45?0:(Math.random()<.5?-1:1)*(90+Math.random()*220));
+    for(let k=0;k<L&&t.length<need;k++){
+      const u=(k+1)/L,e=ease(u);
+      // curvature eases in and back out across the section, so bends have entry and exit
+      t.push({curve:c*Math.sin(u*Math.PI),y:y+dy*e});
+    }
+    y+=dy;
+  }
+  return t;
+}
+const rSeg=z=>S.track[Math.max(0,Math.min(S.track.length-1,Math.floor(z/R.seg)))];
+// dz must stay positive; dx/dy are world offsets from the camera
+function rProject(dx,dy,dz){const sc=R.camD/Math.max(1,dz);
+  return {x:W/2+sc*dx*(W/2), y:H/2-sc*dy*(H/2)-R.pitch*H, w:sc*R.roadW*(W/2), sc};}
+// height of the road under the camera, so the car sits on the hills instead of through them
+function rCamY(){return rSeg(S.dist).y+R.camH;}
+
 function raceUpdate(dt){const st=S.st,p=S.p;
   S.t+=dt;updateJuice(dt);if(S.banner)S.banner.t-=dt;
   if(S.shake>0)S.shake-=dt;if(p.inv>0)p.inv-=dt;
   // steering (right-half wheel, or arrow keys)
   const steer=IN.steer||(((KEYS.ArrowRight||KEYS.KeyD)?1:0)-((KEYS.ArrowLeft||KEYS.KeyA)?1:0));
   // speed is the player's call now: hold the left half (or Up/W) to accelerate, release to slow.
-  // holding FIRE also holds the throttle: the right thumb cannot be in two places, and a bolt
-  // already costs speed, so shooting does not need a second penalty for leaving the gas.
-  const gas=IN.gas||IN.fire||((KEYS.ArrowUp||KEYS.KeyW)?1:0);
+  const gas=IN.gas||((KEYS.ArrowUp||KEYS.KeyW)?1:0);
   const vmax=S.taq>0?350:265, idle=105;
   const spdTarget=gas?vmax:idle; // not `target` — that name belongs to the curvature below
   // gains speed deliberately, sheds it faster — lifting off is a real brake
   S.speed+=(spdTarget-S.speed)*Math.min(1,dt*(gas?.42:.95));
   if(S.crash>0){S.crash-=dt;S.speed=Math.min(S.speed,95);}
-  // road curvature from segment table
-  const target=S.segs[Math.floor(S.dist/240)%S.segs.length];
-  S.curve+=(target-S.curve)*Math.min(1,dt*1.4);
+  // curvature of the road actually under the car, smoothed so the drift does not snap
+  const target=rSeg(S.dist).curve;
+  S.curve+=(target-S.curve)*Math.min(1,dt*3.2);
   // lateral: steering vs centrifugal drift
   S.px+=steer*2.3*dt-S.curve*(S.speed/265)*.82*dt; // authority now clearly beats the drift
   S.px=clamp(S.px,-1.2,1.2);
   if(Math.abs(S.px)>.92){S.speed=Math.max(110,S.speed-170*dt);
     S.shake=Math.max(S.shake,.07);} // rumble strips disapprove
   S.dist+=S.speed*dt;
-  // --- road-clearing bolts ---
-  S.fireT-=dt;
-  if(IN.fire&&S.fireT<=0){S.fireT=.34;
-    S.rshots.push({z:70,lane:S.px,t:0});AU.pew();
-    // every bolt costs road speed. Without this there is no reason not to hold fire the whole way,
-    // and holding fire was strictly the best play. Now clearing a lane trades away lap time.
-    S.speed=Math.max(idle,S.speed-15);}
-  for(let i=S.rshots.length-1;i>=0;i--){const sh=S.rshots[i];
-    sh.t+=dt;sh.z+=980*dt; // travels away from you, closing on traffic fast
-    if(sh.z>1500){S.rshots.splice(i,1);continue;}
-    let hit=false;
-    for(let j=S.robs.length-1;j>=0;j--){const o=S.robs[j];
-      if(o.type==='taq')continue; // never shoot the snack
-      if(Math.abs(o.z-sh.z)>80||Math.abs(o.lane-sh.lane)>.42)continue;
-      hit=true;
-      o.hp=(o.hp==null?(o.type==='chonky'?3:1):o.hp)-1;
-      if(o.hp>0){o.hitT=.12;break;} // CHONKY takes three
-      // killJuice owns the scoring and the pop (base x combo), same as topKill — do not add either
-      // separately or a tanker pays out 150 + 150xcombo.
-      // deliberately worth LESS than threading the same gap (near miss pays 50xcombo): the gun is a
-      // safety valve for a line you cannot make, not the optimal way to play
-      const sc=o.type==='chonky'?250:o.type==='tanker'?80:40;
-      killJuice(W/2+(o.lane-S.px)*120,H*.62,sc);AU.kill();
-      S.robs.splice(j,1);break;}
-    if(hit)S.rshots.splice(i,1);}
   // traffic
   if(S.dist>S.nextOb&&S.dist<st.dist-420){
     S.nextOb=S.dist+rr(180,340)-Math.min(110,S.dist/34);
@@ -2318,13 +2323,29 @@ function raceUpdate(dt){const st=S.st,p=S.p;
 function raceDraw(){const st=S.st,hue=st.hue;
   cx.clearRect(0,0,W,H);cx.save();cx.imageSmoothingEnabled=true;
   if(S.shake>0)cx.translate(rr(-5,5)*S.shake,rr(-3,3)*S.shake);
-  const hz=H*.42;
+  // ---- the road: walk segments far to near, accumulating curvature ----
+  // dx/ddx is what makes a bend actually bend: each segment's curve adds to the rate of lateral
+  // drift, so the road leans away from you instead of sliding as one piece.
+  const camX=S.px*R.roadW, camY=rCamY(), base=Math.floor(S.dist/R.seg);
+  const n=Math.ceil(R.drawZ/R.seg);
+  const pts=[];
+  let x=0,dx=0;
+  for(let i=0;i<=n;i++){
+    const seg=S.track[Math.min(S.track.length-1,base+i)];
+    const segZ=(base+i)*R.seg;
+    const dz=segZ-S.dist+R.seg; // keep it ahead of the camera
+    const pr=rProject(x-camX,seg.y-camY,dz);
+    pts.push({x:pr.x,y:pr.y,w:pr.w,sc:pr.sc,idx:base+i,curve:seg.curve});
+    x+=dx;dx+=seg.curve;
+  }
+  // horizon: wherever the furthest segment landed, so hills really move the skyline
+  const hz=clamp(pts[pts.length-1].y,H*.12,H*.78);
   // sky
   let g=cx.createLinearGradient(0,0,0,hz);
   g.addColorStop(0,'hsl('+hue+',55%,8%)');g.addColorStop(1,'hsl('+(hue+40)+',65%,22%)');
-  cx.fillStyle=g;cx.fillRect(0,0,W,hz);
-  // synthwave sun on the horizon, offset opposite the curve
-  const sunX=W/2-S.curve*140-S.px*60;
+  cx.fillStyle=g;cx.fillRect(0,0,W,hz+2);
+  // synthwave sun, drifting against the bend and the hill
+  const sunX=W/2-x*.05-S.px*60;
   g=cx.createLinearGradient(0,hz-120,0,hz);
   g.addColorStop(0,'#ff3df0');g.addColorStop(1,'#ffb01f');
   cx.save();cx.beginPath();cx.arc(sunX,hz-8,95,Math.PI,0);cx.clip();
@@ -2332,74 +2353,77 @@ function raceDraw(){const st=S.st,hue=st.hue;
   cx.fillStyle='hsl('+hue+',55%,10%)';
   for(let i=0;i<4;i++)cx.fillRect(sunX-100,hz-40+i*-14,200,5);
   cx.restore();
-  // mountain silhouettes
-  cx.fillStyle='hsl('+hue+',45%,13%)';cx.beginPath();cx.moveTo(0,hz);
-  for(let i=0;i<=8;i++){const mx=i*W/8-((S.curve*220+S.px*90)%(W/8));
-    cx.lineTo(mx,hz-18-seed(i+3)*46);}
-  cx.lineTo(W,hz);cx.closePath();cx.fill();
-  // road scanlines
-  const roadHalf=W*.42;
-  for(let y=Math.ceil(hz);y<H;y+=2){
-    const t=(y-hz)/(H-hz),persp=t*t*.75+t*.25;
-    const rw=persp*roadHalf*2;
-    const cxr=W/2+S.curve*(1-t)*(1-t)*W*.85-S.px*rw*.55;
-    const band=Math.floor(6/(t+.03)+S.dist*.045)%2;
-    cx.fillStyle=band?'hsl('+hue+',40%,'+(10+t*5)+'%)':'hsl('+hue+',45%,'+(13+t*6)+'%)';
-    cx.fillRect(0,y,W,2); // desert
-    cx.fillStyle=band?'#2b2634':'#332e3e';cx.fillRect(cxr-rw/2,y,rw,2); // asphalt
-    cx.fillStyle=band?'#ff3df0':'#f4f4ff'; // rumble strips
-    cx.fillRect(cxr-rw/2,y,rw*.05,2);cx.fillRect(cxr+rw/2-rw*.05,y,rw*.05,2);
-    if(band){cx.fillStyle='#21f0ff';cx.fillRect(cxr-rw*.01,y,rw*.02,2);} // center dash
+  // mountains, parallaxing with the accumulated bend
+  cx.fillStyle='hsl('+hue+',45%,13%)';cx.beginPath();cx.moveTo(0,hz+2);
+  for(let i=0;i<=8;i++){const mx=i*W/8-((x*.12+S.px*90)%(W/8));
+    cx.lineTo(mx,hz-16-seed(i+3)*46);}
+  cx.lineTo(W,hz+2);cx.closePath();cx.fill();
+  // ground + road, near to far so nearer bands paint over farther ones
+  const band=i=>(i>>2)&1; // stripe cadence tied to segment index = a true speed cue
+  const quad=(x1,y1,w1,x2,y2,w2)=>{cx.beginPath();
+    cx.moveTo(x1-w1,y1);cx.lineTo(x1+w1,y1);cx.lineTo(x2+w2,y2);cx.lineTo(x2-w2,y2);
+    cx.closePath();cx.fill();};
+  for(let i=pts.length-2;i>=0;i--){
+    const a=pts[i],b=pts[i+1];
+    if(b.y>=a.y)continue;            // skip segments hidden behind a crest
+    const bd=band(a.idx),t=1-(a.y-hz)/Math.max(1,H-hz);
+    // desert
+    cx.fillStyle=bd?'hsl('+hue+',42%,11%)':'hsl('+hue+',46%,14%)';
+    cx.fillRect(0,b.y,W,Math.ceil(a.y-b.y)+1);
+    // rumble strips (a wider band under the asphalt)
+    cx.fillStyle=bd?'#ff3df0':'#f4f4ff';
+    quad(a.x,a.y,a.w*1.14,b.x,b.y,b.w*1.14);
+    // asphalt
+    cx.fillStyle=bd?'#2b2634':'#332e3e';
+    quad(a.x,a.y,a.w,b.x,b.y,b.w);
+    // centre dashes, only on alternate bands
+    if(bd){cx.fillStyle='rgba(33,240,255,.85)';
+      quad(a.x,a.y,a.w*.018,b.x,b.y,b.w*.018);}
   }
-  // roadside glow poles
-  for(let i=0;i<7;i++){const zz=((i*230-S.dist)%1610+1610)%1610;
-    const t=1-zz/1610;if(t<=.02)continue;
-    const persp=t*t*.75+t*.25,rw=persp*roadHalf*2;
-    const y=hz+t*(H-hz),side=i%2?1:-1;
-    const px2=W/2+S.curve*(1-t)*(1-t)*W*.85-S.px*rw*.55+side*rw*.62;
-    cx.fillStyle='#35226b';cx.fillRect(px2-1.5*persp*4,y-38*persp,3*persp*4,38*persp);
+  // roadside pylons, planted on the segment grid so they stream past at the right rate
+  for(let i=pts.length-2;i>=0;i--){
+    const a=pts[i];
+    if((a.idx&3)!==0)continue;
+    const side=(a.idx>>2)&1?1:-1;
+    const px2=a.x+side*a.w*1.5,ph=a.sc*(H/2)*38;
+    if(ph<.6)continue;
+    cx.fillStyle='#35226b';cx.fillRect(px2-ph*.07,a.y-ph,ph*.14,ph);
     cx.fillStyle=side>0?'#21f0ff':'#ff3df0';
-    cx.beginPath();cx.arc(px2,y-40*persp,6*persp,0,7);cx.fill();}
-  // obstacles, far to near
+    cx.beginPath();cx.arc(px2,a.y-ph,Math.max(.8,ph*.13),0,7);cx.fill();
+  }
+  // traffic, projected on the same segments it is standing on.
+  // Sprite scale is deliberately FLATTER than true perspective: 15.2*sc^0.55 rather than a straight
+  // multiple of sc. Measured under honest 1/z, a tanker with 2.3s of warning is 14px wide and one at
+  // 5.7s is 6px — you cannot react to that. Arcade cabinets oversized distant traffic for the same
+  // reason. The road itself stays true; only the sprites are compressed.
+  const sprScale=sc=>15.2*Math.pow(sc,.55);
   const obs=[...S.robs].sort((a,b)=>b.z-a.z);
-  for(const o of obs){const t=clamp(1-o.z/1500,0,1);if(t<=.03)continue;
-    const persp=t*t*.75+t*.25,rw=persp*roadHalf*2;
-    const y=hz+t*(H-hz);
-    const px2=W/2+S.curve*(1-t)*(1-t)*W*.85-S.px*rw*.55+o.lane*rw*.5;
-    const s2=persp;
+  for(const o of obs){
+    const i=Math.max(0,Math.round(o.z/R.seg)-1);
+    if(i>=pts.length-1)continue;
+    const a=pts[i];
+    const px2=a.x+o.lane*a.w,y=a.y,s2=sprScale(a.sc);
+    if(s2<.05)continue;
     if(o.type==='cone'){aBlit(AIMG.cone,px2-20*s2,y-58*s2,40*s2,58*s2,false);}
     else if(o.type==='tanker'){
       // a dark tanker on dark asphalt was nearly invisible — sit it on a soft pad so it reads
       cx.save();cx.fillStyle='rgba(255,215,94,.16)';cx.beginPath();
       cx.ellipse(px2,y-4*s2,46*s2,11*s2,0,0,7);cx.fill();cx.restore();
       aBlit(AIMG.tanker,px2-43*s2,y-66*s2,86*s2,66*s2,false);
-      // the art is a night tanker, so it will always be dark against asphalt. Tail lights separate it
-      // from the road instead of fighting the sprite — and it has the widest hitbox of any obstacle.
       cx.save();cx.globalCompositeOperation='lighter';cx.fillStyle='rgba(255,60,60,.75)';
       cx.beginPath();cx.arc(px2-26*s2,y-14*s2,4.5*s2,0,7);
       cx.arc(px2+26*s2,y-14*s2,4.5*s2,0,7);cx.fill();cx.restore();
-      cx.fillStyle='#ffd75e';cx.font='900 '+Math.max(7,11*s2*2)+'px sans-serif';
-      cx.textAlign='center';cx.fillText('PUDD-CO',px2,y-30*s2);}
+      if(s2>.35){cx.fillStyle='#ffd75e';cx.font='900 '+Math.max(7,11*s2*2)+'px sans-serif';
+        cx.textAlign='center';cx.fillText('PUDD-CO',px2,y-30*s2);}}
     else if(o.type==='goo'){aBlit(AIMG.goo_slick,px2-38*s2,y-15*s2,76*s2,23*s2,false);}
     else if(o.type==='chonky'){
       aBlit(AIMG.chonky,px2-49*s2,y-98*s2,98*s2,98*s2,false,true); // faces the way he crosses
-      cx.fillStyle='#ff3df0';cx.font='900 '+Math.max(7,10*s2*2)+'px sans-serif';
-      cx.textAlign='center';cx.fillText('CHONKY BOY',px2,y-104*s2);}
+      if(s2>.3){cx.fillStyle='#ff3df0';cx.font='900 '+Math.max(7,10*s2*2)+'px sans-serif';
+        cx.textAlign='center';cx.fillText('CHONKY BOY',px2,y-104*s2);}}
     else if(o.type==='taq'){cx.save();cx.globalCompositeOperation='lighter';
       // cyan, not gold: against the lime traffic this is the only reward/hazard call made on hue alone
       cx.fillStyle='rgba(33,240,255,.42)';cx.beginPath();cx.arc(px2,y-18*s2,26*s2,0,7);cx.fill();cx.restore();
       cx.font=Math.max(10,30*s2)+'px sans-serif';cx.textAlign='center';cx.fillText('🌮',px2,y);}}
-  // road-clearing bolts, drawn with the obstacles' own perspective so they fly INTO the scene
-  cx.save();cx.globalCompositeOperation='lighter';
-  for(const sh of S.rshots){const t=clamp(1-sh.z/1500,0,1);if(t<=.03)continue;
-    const persp=t*t*.75+t*.25,rw=persp*roadHalf*2;
-    const y=hz+t*(H-hz);
-    const px2=W/2+S.curve*(1-t)*(1-t)*W*.85-S.px*rw*.55+sh.lane*rw*.5;
-    cx.fillStyle='rgba(33,240,255,.9)';
-    cx.fillRect(px2-2.5*persp*2,y-16*persp,5*persp*2,16*persp);
-    cx.fillStyle='rgba(255,255,255,.75)';
-    cx.fillRect(px2-1*persp*2,y-13*persp,2*persp*2,10*persp);}
-  cx.restore();
   // the truck (rear view), tilting with steer
   if(!(S.p.inv>0&&Math.sin(S.t*40)>0)){
     const tx=W/2,ty=H-16;
@@ -2455,7 +2479,7 @@ function raceDraw(){const st=S.st,hue=st.hue;
     cx.fillStyle='#eae6ff';cx.font='900 24px sans-serif';cx.fillText(st.name,W/2,H*.36);
     cx.fillStyle='#9a8fc7';cx.font='700 14px sans-serif';cx.fillText(st.sub,W/2,H*.36+26);
     cx.fillStyle='#21f0ff';cx.font='800 15px sans-serif';
-    cx.fillText('LEFT wheel = steer · hold RIGHT = gas · 🔥 = shoot',W/2,H*.36+56);
+    cx.fillText('LEFT wheel = steer · hold RIGHT = gas',W/2,H*.36+56);
     cx.globalAlpha=1;}
   cx.restore();}
 
