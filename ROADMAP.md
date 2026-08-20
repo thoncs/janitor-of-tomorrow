@@ -301,7 +301,48 @@ critter enemies. Either create the location or rewrite the references.
 | F — QOL & accessibility | 🟡 **Mostly done** | Adjustable pad size (80–150%) and height, persisted and live-applied. Per-board control cards for all seven boards that had none — the shared tutorial was actively wrong about the kumite. Pause now reachable in the war room and tabletop. Four evidence-based legibility fixes (see below). **Deferred:** text scaling and a colourblind palette toggle — reasons recorded below, not an oversight. |
 | G — Hub screen | ✅ **Done** (first cut) | Behind `?hub=1`. A NEW screen built on the `renderWar` pattern — DOM buttons at percentage positions with an inset SVG, so there is no canvas backing store to get wrong and no fixed pixel height. All 8 boards reachable, addressed by string id (verified against a fully reversed `STAGES`). Fog hides unreached nodes entirely rather than making them invisible-but-clickable. Launching from the hub returns to the hub on clear; the linear story spine is untouched. |
 | H — New boards | 🟡 **1 of 3** | **Time Warp Zone** shipped — a CH.1 remix on the existing side-scroller with one new mechanic (the board's clock speeds up and slows down). Reachable from the hub, so it needs `?hub=1`. Fixed the music selector first: it was indexed by stage number and any 9th stage crashed on it. **Remaining:** Ventilation Shafts (stealth) and Custard Storage (puzzle) — both are genuinely new mechanics, one commit series each, not started. |
+| Race board rebuild | ✅ **Done**, wants play-testing | Not a roadmap phase — driven by play feedback. Throttle (right half) and a visible steering wheel (left), track 3400 → 16000 units (~65s), road rewritten as a real pseudo-3D projection with per-segment curvature and hills. Shooting was added and then removed at request. Knobs listed under **Open knobs** below. |
 | Old Phases 7–10 | ✂️ Below cut line | Recorded as ideas, not planned. |
+
+### Where things stand (last session: 2026-08-17)
+
+Live at `18a6b0b`. Everything through Phase G is shipped; Phase H is 1 of 3. The title still
+reads **v0.9**, which is now stale — it predates F, G, H and the race rebuild. Worth bumping on the
+next release, since that indicator is how you tell whether Safari served you a cached copy.
+
+**Test any board in one tap** — this is the thing to reach for first:
+`?board=race&fresh=1` (ids: `ch1 ch2 race ch3 war glaze boss dungeon warp`), or `?hub=1` for the map.
+
+**Open knobs on the race** — all single numbers, all flagged as "needs a human's hands":
+
+| What | Where | Now |
+|---|---|---|
+| Camera pitch (sky vs road on screen) | `R.pitch` in the `R={...}` block | `.11` |
+| Bend strength | `buildTrack`, the `c=` line | `0.7`–`3.3` |
+| Visible road depth | `R.drawZ` | `3000` |
+| Sprite size compression (see note below) | `sprScale` in `raceDraw` | `15.2 * sc^0.55` |
+| Steering authority vs centrifugal drift | `raceUpdate`, the `S.px+=` line | `2.3` vs `.82` |
+| Wheel travel for full lock | `wheelGeom`, `WHEEL.r` | `56 * padScale` |
+
+**Sprite scale is deliberately not true perspective.** Under honest 1/z a tanker with 2.3s of warning
+measures 14px and one at 5.7s measures 6px — unreactable. The old broken perspective had been
+accidentally helping gameplay by inflating distant objects. The road geometry is now true; only sprite
+sizes are compressed, which is what the real cabinets did. Don't "fix" it back.
+
+**Decisions waiting on you:**
+- Does the hub graduate from `?hub=1` to the default way in? Play it first.
+- Phase H's remaining two boards are new mechanics (stealth, puzzle), one commit series each.
+- Text scaling is deferred with reasons recorded above — still worth doing, still its own change.
+
+**Codebase traps that have each cost real time:**
+- One `<script>`: any syntax error is a *silent total* outage that still paints the title screen. Run the gate.
+- **Append** to `STAGES`, never insert — the story chain uses numeric `next:{stage:N}` links.
+- `killJuice` already awards score *and* pushes the pop. Never add either alongside it.
+- `S.taq` is the TAQUITO TIME timer in seconds, not a count. The wallet is `PROF.taquitos`.
+- `#pads` needs the z-index, not `.pad` — a positioned parent with a z-index makes its own stacking
+  context, so a child's z-index only ranks inside it. This made the FIRE pad untappable once already.
+- Never bump `SAVE_VER`: `migrate` returns a clean profile for any unrecognised version, which would
+  erase every player's taquitos, lore and saved run. Field-by-field merge already tolerates new keys.
 
 ### Deferred from Phase F, with reasons
 
