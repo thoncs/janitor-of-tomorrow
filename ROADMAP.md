@@ -301,19 +301,22 @@ critter enemies. Either create the location or rewrite the references.
 | F — QOL & accessibility | 🟡 **Mostly done** | Adjustable pad size (80–150%) and height, persisted and live-applied. Per-board control cards for all seven boards that had none — the shared tutorial was actively wrong about the kumite. Pause now reachable in the war room and tabletop. Four evidence-based legibility fixes (see below). **Deferred:** text scaling and a colourblind palette toggle — reasons recorded below, not an oversight. |
 | G — Hub screen | ✅ **Done** (first cut) | Behind `?hub=1`. A NEW screen built on the `renderWar` pattern — DOM buttons at percentage positions with an inset SVG, so there is no canvas backing store to get wrong and no fixed pixel height. All 8 boards reachable, addressed by string id (verified against a fully reversed `STAGES`). Fog hides unreached nodes entirely rather than making them invisible-but-clickable. Launching from the hub returns to the hub on clear; the linear story spine is untouched. |
 | H — New boards | 🟡 **1 of 3** | **Time Warp Zone** shipped — a CH.1 remix on the existing side-scroller with one new mechanic (the board's clock speeds up and slows down). Reachable from the hub, so it needs `?hub=1`. Fixed the music selector first: it was indexed by stage number and any 9th stage crashed on it. **Remaining:** Ventilation Shafts (stealth) and Custard Storage (puzzle) — both are genuinely new mechanics, one commit series each, not started. |
-| Race board rebuild | ✅ **Done**, wants play-testing | Not a roadmap phase — driven by play feedback. Throttle (right half) and a visible steering wheel (left), track 3400 → 16000 units (~65s), road rewritten as a real pseudo-3D projection with per-segment curvature and hills. Shooting was added and then removed at request. Knobs listed under **Open knobs** below. |
+| Race board rebuild | ⏸ **PARKED** 2026-08-30 | Play-tested and it still isn't fun, so it is out of the story chain and off the hub map — `disabled:true` on the STAGES entry, CH.2 now leads straight to the ACT 3 scene. **No race code was deleted**; `raceUpdate`/`raceDraw`/`buildTrack` are untouched and it still boots at `?board=race` for tuning. Re-enabling is three edits, listed in the comment above the STAGES entry. A save sitting on the race forwards to the next scene rather than stranding. Knobs still listed under **Open knobs** below. |
+| Stomp kills (CH.1 / CH.2) | ✅ **Done** 2026-08-30 | Landing on a foe kills it, scores it and bounces, with one air-jump handed back so stomps chain. Fixes the real complaint: ground goo sits *under* the line of fire, so jumping was pure avoidance with no payoff. Opt-in per board via `stomp:true` — on CH.1 and CH.2 only. |
 | Old Phases 7–10 | ✂️ Below cut line | Recorded as ideas, not planned. |
 
-### Where things stand (last session: 2026-08-17)
+### Where things stand (last session: 2026-08-30)
 
-Live at `18a6b0b`. Everything through Phase G is shipped; Phase H is 1 of 3. The title still
-reads **v0.9**, which is now stale — it predates F, G, H and the race rebuild. Worth bumping on the
-next release, since that indicator is how you tell whether Safari served you a cached copy.
+Everything through Phase G is shipped; Phase H is 1 of 3. **The race is parked** — the story spine is now
+CH.1 → CH.2 → ACT 3 → CH.3, and the hub map runs CH.2 straight into CH.3. The title still
+reads **v0.9**, which is now stale — it predates F, G, H, the race rebuild and its parking. Worth bumping on
+the next release, since that indicator is how you tell whether Safari served you a cached copy.
 
 **Test any board in one tap** — this is the thing to reach for first:
 `?board=race&fresh=1` (ids: `ch1 ch2 race ch3 war glaze boss dungeon warp`), or `?hub=1` for the map.
 
-**Open knobs on the race** — all single numbers, all flagged as "needs a human's hands":
+**Open knobs on the race** — the board is parked, but these survive for whenever it is picked back up.
+All single numbers, all flagged as "needs a human's hands". Test with `?board=race`:
 
 | What | Where | Now |
 |---|---|---|
@@ -330,6 +333,11 @@ accidentally helping gameplay by inflating distant objects. The road geometry is
 sizes are compressed, which is what the real cabinets did. Don't "fix" it back.
 
 **Decisions waiting on you:**
+- The race: rebuild it a third time, cut it for good, or replace CH.2.5 with something else entirely?
+  It is parked, not deleted, so there is no deadline on answering.
+- Should the stomp reach the Time Warp Zone too? It is literally CH.1 remixed and currently the only
+  side-scroller without it — one word (`stomp:true` on the `warp` entry). Left off because the ask was
+  the first two boards, and warp's whole pitch is "CH.1, remembered wrong."
 - Does the hub graduate from `?hub=1` to the default way in? Play it first.
 - Phase H's remaining two boards are new mechanics (stealth, puzzle), one commit series each.
 - Text scaling is deferred with reasons recorded above — still worth doing, still its own change.
@@ -337,7 +345,10 @@ sizes are compressed, which is what the real cabinets did. Don't "fix" it back.
 **Codebase traps that have each cost real time:**
 - One `<script>`: any syntax error is a *silent total* outage that still paints the title screen. Run the gate.
 - **Append** to `STAGES`, never insert — the story chain uses numeric `next:{stage:N}` links.
-- `killJuice` already awards score *and* pushes the pop. Never add either alongside it.
+- `killJuice` already awards score *and* pushes the pop. Never add either alongside it. (The stomp
+  calls `killFoe`, which calls `killJuice` — its `STOMP!` pop is a label at a different height, not a score.)
+- The ground clamp in `update` zeroes `p.vy` and sets `onG`, so anything that needs to know the player
+  was *falling* has to read it before that line — `py0`/`falling` are captured there for exactly this.
 - `S.taq` is the TAQUITO TIME timer in seconds, not a count. The wallet is `PROF.taquitos`.
 - `#pads` needs the z-index, not `.pad` — a positioned parent with a z-index makes its own stacking
   context, so a child's z-index only ranks inside it. This made the FIRE pad untappable once already.
@@ -423,4 +434,4 @@ and reverted.
 
 ---
 
-*Last updated: 2026-08-15*
+*Last updated: 2026-08-30*

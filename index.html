@@ -347,7 +347,8 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
   <div class="trow"><b>👟</b><span><b>DOUG AUTO-RUNS.</b> He's scared. It helps.</span></div>
   <div class="trow"><b>⬆️</b><span><b>LEFT PAD — JUMP.</b> Tap again mid-air to double-jump.</span></div>
   <div class="trow"><b>🔥</b><span><b>RIGHT PAD — HOLD TO FIRE.</b> Burns NACHO CELLS ⚡. They recharge. Nacho physics.</span></div>
-  <div class="trow"><b>🍮</b><span><b>DON'T TOUCH ANYTHING.</b> Goo, drones, turret spit — touching is death-adjacent.</span></div>
+  <div class="trow"><b>👟</b><span><b>LAND ON THEM.</b> Come down on a goo blob's head and it pops. Bounce, and go again.</span></div>
+  <div class="trow"><b>🍮</b><span><b>OTHERWISE, DON'T TOUCH.</b> Walking into goo, drones or turret spit is still death-adjacent.</span></div>
   <div class="trow"><b>🌭</b><span><b>GRAB SNACKS.</b> Snacks are health. This universe is fair like that.</span></div>
   </div>
   <button class="btn" id="bGotit">GOT IT →</button>
@@ -450,7 +451,7 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 <script>
 'use strict';
 /* ================= DATA: tuning, weapons, enemies, stages ================= */
-const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1,
+const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,stompV:-620,stompGrace:8,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1,
  // juice, gathered from the call sites so it can be tuned in one place
  juice:{killShake:.4,killFreeze:.045,comboFreeze:.09,hurtShake:.3,hurtFreeze:.1,
    bossDieShake:.6,bossDieFreeze:.18,boomShake:.6,plungerShake:.5}};
@@ -486,11 +487,17 @@ const PATTERNS={
 // APPEND new stages, never insert: the story chain's next:{stage:N} links are numeric, so inserting
 // mid-array silently reroutes them (inserting before dungeon sent the war room to the wrong board).
 const STAGES=[
-  {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,pixel:true,mix:{blob:[1.6,2.6],turret:[6,9]},
+  {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,pixel:true,stomp:true,mix:{blob:[1.6,2.6],turret:[6,9]},
    next:{scene:1}},
-  {id:'ch2',name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:200,hue:315,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
-   next:{stage:2,label:'🏁 TORQUE FOUND THE KEYS →'}},
-  {id:'race',name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2099 · ARCADE CABINET MODE',race:true,dist:16000,hue:265,
+  {id:'ch2',name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:200,hue:315,stomp:true,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
+   next:{scene:2,label:'🏢 BIOCORE TOWER LOOMS →'}}, // race parked: was {stage:2,label:'🏁 TORQUE FOUND THE KEYS →'}
+  // ⏸ PARKED 2026-08-30 — the race does not play well enough to ship, so it is out of the story
+  // chain and off the hub map. Nothing about the board was deleted: raceUpdate/raceDraw/buildTrack are
+  // untouched and it still boots at ?board=race for tuning. To bring it back: drop `disabled:true`
+  // below, point ch2's `next` back at the commented value above, and uncomment the two race lines in
+  // HUB / HUB_NEEDS. Do NOT delete this entry — next:{stage:N} links are positional and every board
+  // after it would shift.
+  {id:'race',disabled:true,name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2099 · ARCADE CABINET MODE',race:true,dist:16000,hue:265,
    next:{scene:2},
    after:'You parallel-parked at 90 mph. Vex logged it as "a war crime, but efficient." Biocore Tower looms overhead, humming show tunes to itself.'},
   {id:'ch3',name:'CH.3 — CUSTARD ASCENT',sub:'Biocore Vat Shaft · 64-BIT MODE',dur:55,top:true,scroll:220,hue:200,mix:{wasp:[2.4,3.6],sinker:[5,8],pod:[3.6,5.6]},
@@ -804,7 +811,14 @@ const clamp01=v=>Number.isFinite(v)?(v<0?0:v>1?1:v):null;
 function validRun(r){
   if(!r||typeof r!=='object'||!r.g||typeof r.g!=='object')return null;
   const idx=r.idx|0;
-  if(r.at==='stage')return STAGES[idx]?{g:r.g,at:'stage',idx}:null;
+  if(r.at==='stage'){const st=STAGES[idx];if(!st)return null;
+    // A parked board must not strand a save that is sitting on it — forward the run to wherever that
+    // board used to lead, so CONTINUE keeps working instead of quietly vanishing.
+    if(st.disabled){const nx=st.next||{};
+      if(nx.scene!=null&&STORY[nx.scene])return{g:r.g,at:'scene',idx:nx.scene};
+      if(nx.stage!=null&&STAGES[nx.stage]&&!STAGES[nx.stage].disabled)return{g:r.g,at:'stage',idx:nx.stage};
+      return null;}
+    return{g:r.g,at:'stage',idx};}
   if(r.at==='scene')return STORY[idx]?{g:r.g,at:'scene',idx}:null;
   return null;}
 let PROF=defaultProfile();
@@ -1172,9 +1186,9 @@ $('bDiff').addEventListener('click',cycleDiff);
 const HUB_ON=(()=>{try{return new URLSearchParams(location.search).has('hub')}catch(e){return false}})();
 const HUB=[
  {id:'ch1',    n:'CH.1',      sub:'MOP & DESTROY',  x:9, y:72,adj:['ch2']},
- {id:'ch2',    n:'CH.2',      sub:'ESCALATOR',      x:25,y:34,adj:['ch1','race']},
- {id:'race',   n:'CH.2.5',    sub:'GRAND PRIX',     x:41,y:74,adj:['ch2','ch3']},
- {id:'ch3',    n:'CH.3',      sub:'CUSTARD ASCENT', x:55,y:32,adj:['race','war','dungeon']},
+ {id:'ch2',    n:'CH.2',      sub:'ESCALATOR',      x:25,y:34,adj:['ch1','ch3']},              // race parked: was ['ch1','race']
+//{id:'race',  n:'CH.2.5',    sub:'GRAND PRIX',     x:41,y:74,adj:['ch2','ch3']},              // ⏸ PARKED — restore with the STAGES entry
+ {id:'ch3',    n:'CH.3',      sub:'CUSTARD ASCENT', x:55,y:32,adj:['ch2','war','dungeon']},    // race parked: was ['race','war','dungeon']
  {id:'dungeon',n:'BONUS',     sub:'SUPPLY DUNGEON', x:66,y:12,adj:['ch3','glaze']},
  {id:'war',    n:'FLOOR PLAN',sub:'WAR ROOM',       x:70,y:70,adj:['ch3','glaze']},
  {id:'glaze',  n:'VS GLAZE',  sub:'KUMITE',         x:85,y:40,adj:['war','dungeon','boss']},
@@ -1182,7 +1196,8 @@ const HUB=[
  {id:'boss',   n:'FINAL',     sub:'K.E.V.I.N.',     x:91,y:76,adj:['glaze']}];
 // Prerequisites are things the player can actually EARN. The reverted attempt gated all three of its new
 // boards behind the item each board itself awarded — unreachable by construction.
-const HUB_NEEDS={ch1:null,ch2:'ch1',race:'ch2',ch3:'race',dungeon:'ch3',war:'ch3',warp:'ch3',glaze:'war',boss:'glaze'};
+// race parked: was {... race:'ch2', ch3:'race' ...} — CH.3 now waits on CH.2 directly.
+const HUB_NEEDS={ch1:null,ch2:'ch1',ch3:'ch2',dungeon:'ch3',war:'ch3',warp:'ch3',glaze:'war',boss:'glaze'};
 function hubCleared(id){return ((PROF.stats||{})['cleared.'+id]|0)>0;}
 function hubOpen(id){const need=HUB_NEEDS[id];return !need||hubCleared(need);}
 // Fog: a node is visible once it is open, or once the board it waits on is open. Anything further out is
@@ -2612,7 +2627,12 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
     S.picks.push({x:W+40,y:groundY-46,t:0,kind:'taq'});}
 
   // --- player physics (auto-run: world scrolls, Doug stays put) ---
-  p.vy+=TUNING.gravity*dt;p.y+=p.vy*dt;
+  p.vy+=TUNING.gravity*dt;
+  // Both read BEFORE the ground clamp below, which zeroes vy and would hide a stomp that lands on the
+  // same frame as the floor. py0 is where the feet STARTED the frame, so a fast drop is swept rather
+  // than sampled — at 780px/s the feet cross a 22px blob inside one frame.
+  const py0=p.y,falling=p.vy>0;
+  p.y+=p.vy*dt;
   if(p.y>=groundY){p.y=groundY;p.vy=0;p.onG=true;p.jumps=0;}else p.onG=false;
   if(IN.jumpBuf>0){IN.jumpBuf-=dt;
     if(p.onG||p.jumps<2){p.vy=p.jumps===0?TUNING.jumpV:TUNING.djV;p.jumps++;p.onG=false;IN.jumpBuf=0;AU.jump();}}
@@ -2657,6 +2677,12 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
     if(f.x<-60){S.foes.splice(i,1);continue;}
     if(f.x-f.w/2<p.x+11&&f.x+f.w/2>p.x-11&&f.y>p.y-38&&f.y-f.h<p.y){
       if(S.taq>0)killFoe(i); // TAQUITO TIME: touch of death
+      // STOMP: you came down on its head. Only a descent counts — the feet must have started the frame
+      // at or above the foe's crown, so running into one is still a hit. killFoe already scores it
+      // through killJuice, so nothing is added here. The bounce hands back one air-jump to chain with.
+      else if(st.stomp&&falling&&py0<=f.y-f.h+TUNING.stompGrace){
+        killFoe(i);p.vy=TUNING.stompV;p.onG=false;p.jumps=1;AU.jump();
+        S.pops.push({x:p.x,y:p.y-84,t:.9,txt:'STOMP!',col:'#21f0ff'});}
       else if(p.inv<=0)hurt();}}
 
   // --- enemy shots (goo lobs + boss waves) ---
