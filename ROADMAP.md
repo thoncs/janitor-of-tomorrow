@@ -307,6 +307,26 @@ critter enemies. Either create the location or rewrite the references.
 | Stomp kills (CH.1 / CH.2) | ✅ **Done** 2026-08-30 | Landing on a foe kills it, scores it and bounces, with one air-jump handed back so stomps chain. Fixes the real complaint: ground goo sits *under* the line of fire, so jumping was pure avoidance with no payoff. Opt-in per board via `stomp:true` — on CH.1 and CH.2 only. |
 | Old Phases 7–10 | ✂️ Below cut line | Recorded as ideas, not planned. |
 
+### DIRECTION CHANGE (2026-08-30): kid-first, and the whole game goes handheld
+
+The owner's call: the game should be **Super Fun and playable by 5–10 year-olds** (and everyone older),
+with a short learning curve — and the whole game should probably move into the portrait Game Boy
+paradigm the dungeon pioneered. This supersedes earlier assumptions. The full phased plan (P0 plumbing →
+P1 shmup → P2 side-scrollers → P3 boss → P4 everything-else + gate flip) lives in the Supply Boy Plan
+artifact and is grounded in measured draw-anchor counts. The control law everywhere: **d-pad = move/point,
+A = ATTACK, B = BODY (jump/scoot/focus/cancel)** — taught once, honored on every board.
+
+Shipped for the pivot so far: dungeon v2 (A auto-aims w/ line-of-sight + tracer, B = SCOOT dash with
+i-frames, objective compass, knock-apart shove, shootable orbs, cardinal-biased 156px d-pad with a
+half-slab hit zone, SOUND/PAUSE slabs), ROOKIE tier (free retries, full-heart restarts), CHILL default
+for fresh profiles, dynamic per-board mercy (G.deathsHere stretches invuln 25%/death, cap 4, reset via
+G.lastBoard in startStage), CH.3 ramp eased .5 → .35.
+
+Known plumbing debt for P0 (from the implementation-risk audit): `gbFit` reads a garbage rect when the
+#gb slab is hidden; `body.gb` carries two meanings that must split (orientation contract vs shell-active)
+before the shell goes game-wide, or the DOM boards lose pause/mute with no replacement; drawSay/drawBanner
+gate on `S.st.dungeon` and must gate on `GBV.on` instead.
+
 ### Where things stand (last session: 2026-08-30)
 
 Everything through Phase G is shipped; Phase H is 1 of 3. **The race is parked** — the story spine is now

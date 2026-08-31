@@ -193,33 +193,35 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
    the palette. Shown only while body.gb is set — hudOn manages that, dungeon only. Container is
    pointer-events:none per the z-order contract above; only the controls themselves take touches. */
 #gb{position:absolute;left:0;right:0;bottom:0;z-index:49;display:none;flex-direction:column;justify-content:flex-end;gap:8px;
-  padding:0 12px calc(10px + var(--sab)) 12px;height:calc(196px * var(--padScale,1) + var(--sab));pointer-events:none}
+  padding:0 12px calc(10px + var(--sab)) 12px;height:calc(216px * var(--padScale,1) + var(--sab));pointer-events:none}
 body.gb #gb{display:flex}
 /* portrait chrome: the hud spans the shell instead of 56vw-of-a-narrow-phone, and the top-right
    mute/pause buttons hide — SELECT and START on the shell are those two buttons */
 body.gb #hud{width:calc(100% - 28px - var(--sal) - var(--sar))}
 body.gb #bPause,body.gb #mute{display:none}
-#gbrow{display:flex;align-items:center;justify-content:space-between}
-#dpad{position:relative;width:calc(132px * var(--padScale,1));height:calc(132px * var(--padScale,1));
-  perspective:260px;touch-action:none;pointer-events:auto}
-#dcross{position:absolute;inset:0;transition:transform .06s}
+#gbrow{flex:1;display:flex;align-items:flex-end;justify-content:space-between} /* fills the band so the d-pad catcher is real */
+/* the HIT zone is the whole lower-left of the slab — a 40px miss below the cross still walks.
+   Direction is computed off the visible cross's centre, so the plastic stays honest. */
+#dpad{position:relative;width:48%;align-self:stretch;perspective:260px;touch-action:none;pointer-events:auto}
+#dcross{position:absolute;left:4px;bottom:2px;width:calc(156px * var(--padScale,1));height:calc(156px * var(--padScale,1));transition:transform .06s}
 #dcross i{position:absolute;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f,0 3px 0 rgba(0,0,0,.45)}
 #dcross .v{left:34.5%;top:0;width:31%;height:100%;border-radius:7px}
 #dcross .h{top:34.5%;left:0;height:31%;width:100%;border-radius:7px}
 #dcross b{position:absolute;color:#4b357f;font-size:10px;line-height:1;pointer-events:none}
 /* A/B on the classic diagonal: the whole pair leans, letters and all, like the printed shell did */
 #gbab{display:flex;gap:16px;align-items:center;transform:rotate(-24deg);margin-right:6px}
-.gbb{width:calc(66px * var(--padScale,1));height:calc(66px * var(--padScale,1));border-radius:50%;border:0;
+.gbb{position:relative;z-index:2;width:calc(72px * var(--padScale,1));height:calc(72px * var(--padScale,1));border-radius:50%;border:0; /* buttons win any overlap — mashing B must never pause */
   background:radial-gradient(circle at 34% 30%,#ff62f4,var(--mag) 55%,#8f1f8a);
   box-shadow:0 4px 0 #5c1157,0 0 14px rgba(255,61,240,.35);color:#fff;font:900 20px/1 sans-serif;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   touch-action:none;pointer-events:auto}
 .gbb small{font:800 8px/1 sans-serif;letter-spacing:.06em;opacity:.85}
 .gbb.hot{transform:translateY(3px);box-shadow:0 1px 0 #5c1157,0 0 22px rgba(255,61,240,.6)}
-#gbsl{display:flex;gap:20px;justify-content:center}
-.gbslab{width:70px;height:19px;border-radius:10px;border:0;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f;
+#gbsl{display:flex;gap:20px;justify-content:center;padding-right:32%} /* clear of the B thumb */
+.gbslab{position:relative;width:74px;height:20px;border-radius:10px;border:0;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f;
   color:var(--dim);font:800 8px/1 sans-serif;letter-spacing:.08em;transform:rotate(-24deg);
   touch-action:manipulation;pointer-events:auto}
+.gbslab::after{content:'';position:absolute;inset:-6px -10px -16px} /* generous below, tight above — a low d-pad thumb must never mute */
 .gbslab:active{background:#241646}
 
 /* ---------- tabletop battle ---------- */
@@ -489,9 +491,9 @@ body.gb #rot{display:none}
     <div id="dpad"><div id="dcross"><i class="v"></i><i class="h"></i>
       <b style="left:45%;top:8%">▲</b><b style="left:45%;bottom:8%">▼</b><b style="left:9%;top:46%">◀</b><b style="right:9%;top:46%">▶</b>
     </div></div>
-    <div id="gbab"><button class="gbb" id="gbB">B<small>AIM</small></button><button class="gbb" id="gbA">A<small>ZAP</small></button></div>
+    <div id="gbab"><button class="gbb" id="gbB">B<small>SCOOT</small></button><button class="gbb" id="gbA">A<small>ZAP</small></button></div>
   </div>
-  <div id="gbsl"><button class="gbslab" id="gbSel">SELECT</button><button class="gbslab" id="gbSta">START</button></div>
+  <div id="gbsl"><button class="gbslab" id="gbSel">SOUND</button><button class="gbslab" id="gbSta">PAUSE</button></div>
 </div>
 <div id="rot"><b>📱</b><h2>Rotate your phone</h2><p class="sub">This time-war is landscape-only. Doug needs the legroom.</p></div>
 <div id="rotD"><b>📱</b><h2>Turn your phone upright</h2><p class="sub">The Supply Dungeon plays TALL. Very 1989 down here.</p></div>
@@ -507,11 +509,12 @@ const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,stompV:-620,stompGrace:8,
 // `inv` scales the mercy window after a hit, `regen` scales energy regen. Nothing here touches the
 // player's own weapon damage — scaling that is how the reverted build made easy mode do zero damage.
 const DIFFS=[
+ {id:'rookie',   name:'ROOKIE',    spawn:2.1,inv:2.2,regen:1.6,blurb:'Extra mercy, polite goo, free retries.'},
  {id:'chill',    name:'CHILL',     spawn:1.45,inv:1.45,regen:1.30,blurb:'Fewer hostiles, longer mercy.'},
  {id:'normal',   name:'NORMAL',    spawn:1,   inv:1,   regen:1,   blurb:'The intended shift.'},
  {id:'spicy',    name:'SPICY',     spawn:.80, inv:.90, regen:.95, blurb:'More hostiles, less mercy.'},
  {id:'nightmare',name:'NIGHTMARE', spawn:.62, inv:.72, regen:.85, blurb:'Doug did not consent to this.'}];
-function DF(){return DIFFS.find(d=>d.id===PROF.diff)||DIFFS[1];}
+function DF(){return DIFFS.find(d=>d.id===PROF.diff)||DIFFS.find(d=>d.id==='normal');}
 // Trust pays off in the action boards, on the real 0-10 meter scale.
 function torqueRegenMul(){return G&&G.torque>=7?1.15:1;}
 function vexInvMul(){return G&&G.vex>=7?1.2:1;}
@@ -548,7 +551,7 @@ const STAGES=[
   {id:'race',disabled:true,name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2076 · ARCADE CABINET MODE',race:true,dist:16000,hue:265,
    next:{scene:2},
    after:'You parallel-parked at 90 mph. Vex logged it as "a war crime, but efficient." Biocore Tower looms overhead, humming show tunes to itself.'},
-  {id:'ch3',name:'CH.3 — CUSTARD ASCENT',sub:'Biocore Vat Shaft · 64-BIT MODE',dur:55,top:true,scroll:220,hue:200,mix:{wasp:[2.4,3.6],sinker:[5,8],pod:[3.6,5.6]},
+  {id:'ch3',name:'CH.3 — CUSTARD ASCENT',sub:'Biocore Vat Shaft · 64-BIT MODE',dur:55,top:true,scroll:220,hue:200,mix:{wasp:[2.7,4.0],sinker:[5,8],pod:[3.6,5.6]},
    next:{stage:4,label:'🗺️ VEX UNROLLS A MAP →'}},
   {id:'war',name:'OPERATION: FLOOR PLAN',sub:'The Vat Floor · TURN-BASED TERRITORY MODE',war:true,
    next:{stage:7,label:'🪠 A HATCH OPENS UNDER THE CORE →'},
@@ -684,9 +687,9 @@ const HOWTO={
   'When a cyan GUARD ring goes up, hold off — hitting it just wastes your swing.']},
  dungeon:{title:'🪠 SUPPLY DUNGEON',lines:[
   'TURN YOUR PHONE UPRIGHT 📱 — this floor plays TALL, on a certain grey brick from 1989.',
-  'D-PAD walks in eight directions. You shoot the way you are FACING.',
-  'A = ZAP. Hold B to LOCK your aim, so you can strafe while shooting. New janitorial tech.',
-  '📦 crates hold taquitos; five of them wake something up. START pauses, SELECT mutes.']},
+  'D-PAD walks. A = ZAP — it aims itself at the nearest baddie. Even the glowing goo balls pop.',
+  'B = SCOOT: a quick dash that slips you out of trouble. Mash it, it forgives.',
+  'Follow the cyan arrow: 📦 crates first, then claim the 🪠. PAUSE and SOUND live on the shell.']},
  warp:{title:'🌀 TIME WARP ZONE',lines:[
   'Sublevel B again — but the clock is wrong.',
   'Time speeds up and slows down on its own. Nothing you press changes it; read it and move with it.',
@@ -856,7 +859,8 @@ const LS={
 const SFX_TRIM=.15; // the long-standing SFX bus trim; the sfx slider scales this
 function defaultAudio(){return{master:1,music:.5,ambient:1,sfx:1};} // == the pre-Phase-D mix
 function defaultUI(){return{padScale:1,padLift:0};}
-function defaultProfile(){return{ver:SAVE_VER,diff:'normal',audio:defaultAudio(),ui:defaultUI(),fx:{flicker:true},
+// fresh installs start on CHILL — one tap up for veterans, one tap down for rookies
+function defaultProfile(){return{ver:SAVE_VER,diff:'chill',audio:defaultAudio(),ui:defaultUI(),fx:{flicker:true},
   taquitos:0,items:[],notes:[],seen:[],stats:{},best:{},run:null};}
 const clamp01=v=>Number.isFinite(v)?(v<0?0:v>1?1:v):null;
 // A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
@@ -1227,7 +1231,7 @@ function renderDiff(){const d=DF();
   document.querySelectorAll('.diffBlurb').forEach(el=>el.textContent=d.blurb);}
 function cycleDiff(){AU.ui();
   const i=DIFFS.findIndex(d=>d.id===PROF.diff);
-  PROF.diff=DIFFS[(i<0?1:i+1)%DIFFS.length].id;
+  PROF.diff=DIFFS[(i<0?DIFFS.findIndex(d=>d.id==='normal'):(i+1))%DIFFS.length].id;
   renderDiff();SAVE.write();}
 $('bDiff').addEventListener('click',cycleDiff);
 
@@ -1479,13 +1483,17 @@ function gameOver(){
   // MODE wins over S.st (same rule the pause menu uses): the war room and tabletop run with S still
   // holding the PREVIOUS canvas board, so S.st.dungeon alone would give a war defeat the shell.
   const inDungeon=MODE==='action'&&!!(S&&S.st&&S.st.dungeon);
+  if(MODE==='action')G.deathsHere=(G.deathsHere||0)+1; // canvas boards only — a war-room rout is not this ledger's business
   MODE='over';hudOn(false);
   if(inDungeon)document.body.classList.add('gb');MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
-  G.timeline=clamp(G.timeline-TUNING.retryTimelineCost,0,100);
+  const rcost=DF().id==='rookie'?0:TUNING.retryTimelineCost; // rookies retry free
+  G.timeline=clamp(G.timeline-rcost,0,100);
   $('overline').textContent=pick(DEATHLINES);
-  $('overstats').textContent='-'+TUNING.retryTimelineCost+' TIMELINE · rewinds annoy time itself';
+  $('overstats').textContent=rcost?'-'+rcost+' TIMELINE · rewinds annoy time itself'
+    :'FREE REWIND · rookie janitors have warranty coverage';
   showScreen('over');}
-$('bRetry').addEventListener('click',()=>{AU.ui();G.hp=Math.max(G.hp,TUNING.retryHp);G.energy=100;
+$('bRetry').addEventListener('click',()=>{AU.ui();
+  G.hp=Math.max(G.hp,DF().id==='rookie'?G.maxHp:TUNING.retryHp);G.energy=100;
   warp();if(G.inBattle)openBattle();else startStage(G.stage);});
 $('bQuit').addEventListener('click',()=>{AU.ui();userPaused=false;if(G)G.fromHub=false;
   hudOn(false);MUS.play('title');refreshContinue();showScreen('title');MODE='title';});
@@ -1907,7 +1915,7 @@ function gbFit(){GBV.on=document.body.classList.contains('gb');
   GBV.w=GBV.h=side;GBV.x=(W-side)/2;GBV.y=top+24;}
 addEventListener('resize',gbFit); // fit() registered first, so W/H are fresh when this runs
 
-const IN={fire:false,jumpBuf:0,steer:0,gas:0,lock:false}; // lock: dungeon B — hold to keep facing while strafing
+const IN={fire:false,jumpBuf:0,steer:0,gas:0,dashBuf:0}; // dashBuf: dungeon B — a buffered SCOOT, same idiom as jumpBuf
 function bindPad(el,down,up){
   const pts=new Set(); // per-pointer, like the throttle's gasPts: a second thumb's release
   el.addEventListener('pointerdown',e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(_){}
@@ -1922,9 +1930,8 @@ addEventListener('keydown',e=>{KEYS[e.code]=1;if(e.repeat)return;
   if(e.code==='Escape'||e.code==='KeyP'){e.preventDefault();userPaused?closePause():openPause();return;}
   if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'){IN.jumpBuf=.12;e.preventDefault();}
   if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=true;
-  if(e.code==='KeyZ'||e.code==='KeyK')IN.lock=true;});
-addEventListener('keyup',e=>{KEYS[e.code]=0;if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=false;
-  if(e.code==='KeyZ'||e.code==='KeyK')IN.lock=false;});
+  if(e.code==='KeyZ'||e.code==='KeyK')IN.dashBuf=.15;});
+addEventListener('keyup',e=>{KEYS[e.code]=0;if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=false;});
 // floating flight stick (top-scroller): touch anywhere left, drag to fly
 const stickEl=$('stick');
 // Several fingers can land on the zone; the NEWEST one steers. Last-touch-wins is how the fast
@@ -1958,15 +1965,24 @@ stickEl.addEventListener('pointerup',stickUp);stickEl.addEventListener('pointerc
 // already reads S.stick, so no new input path. Sliding the thumb re-aims without lifting.
 const dpadEl=$('dpad'),dcrossEl=$('dcross');
 const dpadPts=new Map(); // same ownership model as the flight stick: newest finger drives
+let dpadCx=0,dpadCy=0; // cross centre, cached while untilted — a live rect wobbles with the press tilt
+function dpadCenter(){const r=dcrossEl.getBoundingClientRect();dpadCx=r.left+r.width/2;dpadCy=r.top+r.height/2;}
 function dpadSet(cxp,cyp){const s=S&&S.stick;if(!s)return;
-  const r=dpadEl.getBoundingClientRect();
-  const dx=cxp-(r.left+r.width/2),dy=cyp-(r.top+r.height/2);
-  if(Math.hypot(dx,dy)<r.width*.09){s.x=0;s.y=0;dcrossEl.style.transform='';return;} // dead centre
-  const a=(Math.round(Math.atan2(dy,dx)/(Math.PI/4))&7)*(Math.PI/4);
+  const dx=cxp-dpadCx,dy=cyp-dpadCy;
+  if(Math.hypot(dx,dy)<14){s.x=0;s.y=0;dcrossEl.style.transform='';return;} // dead centre stays small
+  // Cardinal-biased 8-way: small thumbs mean "up" far more often than "up-right", and this maze is
+  // corridors. Cardinals get 52-degree sectors, diagonals keep the 38 degrees between them.
+  let deg=Math.atan2(dy,dx)*180/Math.PI;if(deg<0)deg+=360;
+  const mod=deg%90;let oct;
+  if(mod<=26)oct=(Math.round(deg/90)*2)&7;
+  else if(mod>=64)oct=(Math.round((deg+26)/90)*2)&7;
+  else oct=(Math.floor(deg/90)*2+1)&7;
+  const a=oct*(Math.PI/4);
   s.x=Math.cos(a);s.y=Math.sin(a);
   dcrossEl.style.transform='rotate3d('+(-s.y).toFixed(2)+','+s.x.toFixed(2)+',0,10deg)';} // presses toward the thumb
 dpadEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
   const s=S&&S.stick;if(!s)return;
+  if(!dpadPts.size)dpadCenter(); // first finger of the gesture measures the resting cross
   dpadPts.set(e.pointerId,{cx:e.clientX,cy:e.clientY});
   s.on=true;s.id=e.pointerId;dpadSet(e.clientX,e.clientY);
   try{dpadEl.setPointerCapture(e.pointerId)}catch(_){}});
@@ -1980,7 +1996,7 @@ const dpadUp=e=>{const s=S&&S.stick;dpadPts.delete(e.pointerId);
   else{s.on=false;s.x=0;s.y=0;dcrossEl.style.transform='';}};
 dpadEl.addEventListener('pointerup',dpadUp);dpadEl.addEventListener('pointercancel',dpadUp);
 bindPad($('gbA'),()=>{IN.fire=true;},()=>{IN.fire=false;});   // A = ZAP
-bindPad($('gbB'),()=>{IN.lock=true;},()=>{IN.lock=false;});   // B = hold to lock aim
+bindPad($('gbB'),()=>{IN.dashBuf=.15;},()=>{});               // B = SCOOT (buffered dash)
 $('gbSel').addEventListener('click',()=>{$('mute').click();});
 $('gbSta').addEventListener('click',()=>{AU.ui();openPause();});
 // --- race: throttle pedal (left half) ---
@@ -2027,6 +2043,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   // three story scenes, so race/kumite/dungeon/boss were never explained at all
   if(!skipCard&&showHowTo(st.id,()=>startStage(i,true)))return;
   applyInstability();
+  if(G.lastBoard!==st.id){G.deathsHere=0;G.lastBoard=st.id;} // new board, fresh mercy ledger
   snapshotRun('stage',i); // checkpoint at board start — placed above the war early-return so it covers every board
   if(st.war){openWar();return;}
   MODE='action';
@@ -2049,7 +2066,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
     doug:{x:200,atk:0,atkT:0,chain:0,range:118},
     glz:{x:W-230,hp:130,max:130,state:'idle',sT:1.6,vx:0,roll:0,dizzy:0}};
     S.p.x=200;S.p.y=groundY;}
-  if(st.dungeon){S.p.x=0;S.p.y=0;S.p.vx=0;S.p.vy=0;
+  if(st.dungeon){S.p.x=0;S.p.y=0;S.p.vx=0;S.p.vy=0;S.p.dashT=0;S.p.dashCd=0;
     S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};dungeonInit();}
   // Resume from a mid-board checkpoint if this is the board we banked one on. Done after all the
   // per-mode setup above, so it overrides those defaults rather than being overwritten by them.
@@ -2092,6 +2109,7 @@ function killJuice(x,y,base){S.freeze=Math.max(S.freeze,TUNING.juice.killFreeze)
   if(MILESTONES[S.combo]){S.banner={text:MILESTONES[S.combo]+' ×'+S.combo,t:1.7};
     S.freeze=Math.max(S.freeze,TUNING.juice.comboFreeze);AU.pickup();}}
 function updateJuice(dt){if(S.comboT>0){S.comboT-=dt;if(S.comboT<=0)S.combo=0;}
+  if(IN.dashBuf>0)IN.dashBuf-=dt; // decays in EVERY mode, so a stray Z on the title can't scoot you later
   if(S.taq>0){S.taq-=dt;
     if(Math.random()<.5)S.parts.push({x:S.p.x+rr(-16,16),y:S.p.y-rr(0,44),
       vx:rr(-40,40),vy:rr(-90,-20),life:rr(.25,.5),sz:rr(2,4),
@@ -2668,9 +2686,10 @@ function topUpdate(dt){const st=S.st,p=S.p;
     if(G.weapon==='railgun')AU.boom();else AU.pew();}
   $('ebar').style.width=G.energy+'%';
   // --- spawns: pressure rises the whole way up the shaft ---
-  // multiplies the gap between spawns, so smaller = busier. 1.0 at the bottom, ~0.5 at the top.
-  // Opening density is unchanged; the climax is roughly twice the opening.
-  const ramp=1-.5*Math.min(1,S.t/st.dur);
+  // multiplies the gap between spawns, so smaller = busier. 1.0 at the bottom, ~0.65 at the top.
+  // Opening density is unchanged; the climax is ~1.5x the opening (was 2x — play-tested as
+  // "a little tougher than I'd like" on 2026-08-30, so the whole ramp eased).
+  const ramp=1-.35*Math.min(1,S.t/st.dur);
   for(const kk in S.timers){S.timers[kk]-=dt;
     if(S.timers[kk]<=0&&S.t<st.dur-2){topSpawn(kk);
       S.timers[kk]=rr(st.mix[kk][0],st.mix[kk][1])*G.spawnMul*ramp*DF().spawn;}}
@@ -2880,7 +2899,12 @@ function killFoe(j){const f=S.foes[j];boom(f.x,f.y-f.h/2,f.type==='drone'?'#ff3d
     for(let k2=0;k2<3;k2++){spawnFoe('blob',true);const nb=S.foes[S.foes.length-1];
       nb.x=f.x+(k2-1)*34;nb.t=k2*.2;}}}
 
-function hurt(){G.hp--;S.p.inv=TUNING.invuln*DF().inv*vexInvMul();S.shake=TUNING.juice.hurtShake;AU.hit();updateHearts();
+function hurt(){G.hp--;
+  // dynamic mercy: every death on THIS board stretches the invuln window a bit further, on every
+  // tier — the Nintendo pattern. Resets the moment the board changes (startStage tracks it).
+  const mercy=1+.25*Math.min(4,G.deathsHere||0);
+  S.p.inv=Math.min(3.2,TUNING.invuln*DF().inv*vexInvMul()*mercy); // ceiling: mercy, not ghost mode
+  S.shake=TUNING.juice.hurtShake;AU.hit();updateHearts();
   boom(S.p.x,S.p.y-20,'#ff4757',8);
   S.combo=0;S.comboT=0; // the combo dies with your dignity
   S.caps.push({x:S.p.x,y:S.p.y-46,vx:rr(-160,-60),vy:rr(-380,-260),rot:0,vr:rr(-9,9),life:1.1});
@@ -3078,7 +3102,7 @@ const DROW=[2,1,0,7,6,5,4,3];
 const WANG=Array.from({length:16},(_,i)=>[i%4,i>>2]);
 
 function dungeonInit(){
-  S.dg={crates:[],turrets:[],goos:[],spawners:[],got:0,plunger:null,exit:null,
+  S.dg={crates:[],turrets:[],goos:[],spawners:[],got:0,plunger:null,exit:null,zap:null,
     plungerGot:false,spawnT:2,orbT:0};
   for(let ty=0;ty<DROWS;ty++)for(let tx=0;tx<DCOLS;tx++){
     const ch=DMAP[ty][tx],x=(tx+.5)*DTS,y=(ty+.5)*DTS;
@@ -3111,38 +3135,64 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
     const m=Math.hypot(ix,iy);if(m>1){ix/=m;iy/=m;}}
   const MAXV=205,k=Math.min(1,dt*10); // was 235 — the whole board runs a beat slower now
   p.vx+=(ix*MAXV-p.vx)*k;p.vy+=(iy*MAXV-p.vy)*k;
+  if(p.dashT>0){p.vx=p.dashX*MAXV*2.2;p.vy=p.dashY*MAXV*2.2;} // override AFTER the lerp, BEFORE the move — full speed every frame
   dgMove(p,13,dt);
-  // B (or Z/K) holds the aim: facing freezes so you can strafe past what you're shooting at —
-  // the old card admitted "standing still cannot re-aim"; now moving doesn't have to re-aim either
-  if(!IN.lock&&Math.hypot(ix,iy)>.3)S.dir=Math.round(Math.atan2(p.vy,p.vx)/(Math.PI/4))&7;
+  if(Math.hypot(ix,iy)>.3)S.dir=Math.round(Math.atan2(p.vy,p.vx)/(Math.PI/4))&7;
+  // --- SCOOT: B (or Z/K) dashes along the stick — quick, invulnerable, mashable ---
+  if(p.dashCd>0)p.dashCd-=dt;
+  if(IN.dashBuf>0){ // decay lives in updateJuice; here we only consume
+    if(p.dashCd<=0&&p.dashT<=0){const m=Math.hypot(ix,iy);
+      const da=m>.3?Math.atan2(iy,ix):S.dir*(Math.PI/4); // idle scoot goes where Doug faces
+      p.dashX=Math.cos(da);p.dashY=Math.sin(da);
+      p.dashT=.22;p.dashCd=.55;p.inv=Math.max(p.inv,.4);IN.dashBuf=0;
+      AU.jump();boom(p.x,p.y-10,'#21f0ff',6);}}
+  if(p.dashT>0)p.dashT-=dt;
   // --- fire in facing direction ---
   const wp=WEAPONS[G.weapon];p.fireT-=dt;
   G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*DF().regen*torqueRegenMul()*dt);
   if(IN.fire&&p.fireT<=0&&G.energy>=wp.cost){G.energy-=wp.cost;p.fireT=wp.rate;
-    const a=S.dir*(Math.PI/4);
+    // A aims itself: the nearest live baddie within reach and line of sight wins; with nothing in
+    // reach the shot goes where Doug faces, so the button never feels dead. Doug glances at what he
+    // zaps, and a tracer draws the aim — instant "I did that" for the small janitor holding the phone.
+    let a=S.dir*(Math.PI/4);
+    {const R=260;let bd=R*R,bt=null;
+     const cand=dg.goos.concat(dg.turrets.filter(t2=>t2.hp>0));
+     for(const c of cand){const dx=c.x-p.x,dy=(c.y-14)-(p.y-12),d2=dx*dx+dy*dy;
+       if(d2>=bd)continue;
+       let clear=true;const n=Math.ceil(Math.sqrt(d2)/12); // 12px steps: corners count as walls
+       for(let k2=1;k2<n;k2++){const sx=p.x+dx*k2/n,sy=(p.y-12)+dy*k2/n;
+         if(DWALL((sx/DTS)|0,(sy/DTS)|0)){clear=false;break;}}
+       if(clear){bd=d2;bt=c;}}
+     if(bt){a=Math.atan2((bt.y-14)-(p.y-12),bt.x-p.x);
+       if(Math.hypot(p.vx,p.vy)<40)S.dir=Math.round(a/(Math.PI/4))&7; // glance only at rest — walking keeps its facing
+       dg.zap={x1:p.x,y1:p.y-12,x2:bt.x,y2:bt.y-14,t:.09};}}
     S.bullets.push({x:p.x+Math.cos(a)*18,y:p.y+Math.sin(a)*10-12,
       vx:Math.cos(a)*wp.speed,vy:Math.sin(a)*wp.speed,life:.9,
       pierce:wp.pierce,dmg:wp.dmg,sz:wp.size,col:wp.col});
     if(G.weapon==='railgun')AU.boom();else AU.pew();}
+  if(dg.zap&&dg.zap.t>0)dg.zap.t-=dt;
   $('ebar').style.width=G.energy+'%';
   $('pbar').style.width=(dg.plungerGot?100:dg.got*18)+'%';
   // --- goo spawns (nearest spawner rotation, cap 7 alive) ---
   dg.spawnT-=dt;
-  if(dg.spawnT<=0&&dg.goos.length<7){dg.spawnT=rr(2.2,3.4);
+  if(dg.spawnT<=0&&dg.goos.length<5){dg.spawnT=rr(2.2,3.4); // cap was 7
     const sp=pick(dg.spawners.filter(s=>Math.hypot(s.x-p.x,s.y-p.y)>170));
     if(sp)dg.goos.push({x:sp.x,y:sp.y,vx:0,vy:0,hp:2,t:Math.random()*6,hitT:0});}
   // --- goos chase ---
   dg.goos.forEach(g2=>{g2.t+=dt;if(g2.hitT>0)g2.hitT-=dt;
-    const d=Math.hypot(p.x-g2.x,p.y-g2.y)||1,sp=90; // was 105
+    const d=Math.hypot(p.x-g2.x,p.y-g2.y)||1,sp=75; // was 105, then 90 — kid pace now
     g2.vx+=((p.x-g2.x)/d*sp-g2.vx)*Math.min(1,dt*4);
     g2.vy+=((p.y-g2.y)/d*sp-g2.vy)*Math.min(1,dt*4);
     dgMove(g2,11,dt);
-    if(d<26&&p.inv<=0)hurt();});
+    if(d<26&&p.inv<=0){hurt();
+      // shove the two apart: without separation a cornered kid re-hurts every mercy cycle
+      const nx=(p.x-g2.x)/d,ny=(p.y-g2.y)/d;
+      p.vx=nx*430;p.vy=ny*430;g2.vx=-nx*220;g2.vy=-ny*220;}});
   // --- turrets fire goo orbs ---
   dg.turrets.forEach(t2=>{if(t2.hp<=0)return;t2.t-=dt;if(t2.hitT>0)t2.hitT-=dt;
     const d=Math.hypot(p.x-t2.x,p.y-t2.y);
-    if(t2.t<=0&&d<320){t2.t=2.2; // range was 360 — the Game Boy window is small, fewer off-screen snipes
-      S.shots.push({x:t2.x,y:t2.y-14,vx:(p.x-t2.x)/d*145,vy:(p.y-t2.y)/d*145,r:8});}}); // orb was 165
+    if(t2.t<=0&&d<260){t2.t=2.2; // range 360 -> 320 -> 260: nothing launches from off the glass
+      S.shots.push({x:t2.x,y:t2.y-14,vx:(p.x-t2.x)/d*110,vy:(p.y-t2.y)/d*110,r:8});}}); // orb 165 -> 110
   for(let i=S.shots.length-1;i>=0;i--){const s2=S.shots[i];
     s2.x+=s2.vx*dt;s2.y+=s2.vy*dt;
     if(DWALL((s2.x/DTS)|0,(s2.y/DTS)|0)){boom(s2.x,s2.y,'#7dff3a',4);S.shots.splice(i,1);continue;}
@@ -3153,7 +3203,11 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
     if(b.life<=0||DWALL((b.x/DTS)|0,(b.y/DTS)|0)){
       if(b.life>0)boom(b.x,b.y,b.col,4);S.bullets.splice(i,1);continue;}
     let hit=false;
-    for(const g2 of dg.goos){if(Math.hypot(b.x-g2.x,b.y-g2.y)<16){
+    for(let j=S.shots.length-1;j>=0;j--){const s2=S.shots[j]; // zapping an incoming orb pops it
+      if(Math.hypot(b.x-s2.x,b.y-s2.y)<13){S.shots.splice(j,1);hit=true;
+        boom(b.x,b.y,'#7dff3a',6);AU.kill();G.score+=50;
+        S.pops.push({x:s2.x,y:s2.y-10,t:.8,txt:'+50',col:'#7dff3a'});break;}}
+    if(!hit)for(const g2 of dg.goos){if(Math.hypot(b.x-g2.x,b.y-g2.y)<16){
       g2.hp-=b.dmg;g2.hitT=.12;hit=true;
       if(g2.hp<=0){boom(g2.x,g2.y,'#7dff3a',8);AU.kill();G.score+=100;
         S.pops.push({x:g2.x,y:g2.y-20,t:.8,txt:'+100',col:'#7dff3a'});
@@ -3258,7 +3312,7 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
     if(gw&&gw.ok)sBlit(gw,((g2.t*6|0)%4)*64,row*64,64,64,-18,-30,36,36,g2.hitT>0);
     else{cx.fillStyle=g2.hitT>0?'#fff':'#7dff3a';cx.beginPath();cx.arc(0,-12,14,0,7);cx.fill();}
     cx.restore();};
-  const drawDoug=()=>{if(p.inv>0&&Math.sin(S.t*40)>0)return;
+  const drawDoug=()=>{if(p.inv>0&&!(p.dashT>0)&&Math.sin(S.t*40)>0)return; // a SCOOT is not a wound
     const moving=Math.hypot(p.vx,p.vy)>40,row=DROW[S.dir];
     const dw=AIMG.dd_walk,di=AIMG.dd_idle;
     if(moving&&dw&&dw.ok)sBlit(dw,((S.t*8|0)%4)*64,row*64,64,64,p.x-24,p.y-40,48,48,false);
@@ -3278,6 +3332,11 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
     cx.globalCompositeOperation='source-over';
     cx.fillStyle=b.col;cx.fillRect(-8,-2.5,16,5);
     cx.fillStyle='#fff';cx.fillRect(-3,-1.2,8,2.4);cx.restore();});
+  // the zap tracer: one bright line from Doug to whatever the A button decided to hit
+  if(dg.zap&&dg.zap.t>0&&!S.done){cx.save();cx.globalCompositeOperation='lighter';
+    cx.globalAlpha=Math.min(1,dg.zap.t*11);
+    cx.strokeStyle=G.weapon==='railgun'?'#ff3df0':'#21f0ff';cx.lineWidth=2;
+    cx.beginPath();cx.moveTo(dg.zap.x1,dg.zap.y1);cx.lineTo(dg.zap.x2,dg.zap.y2);cx.stroke();cx.restore();}
   // turret orbs
   S.shots.forEach(s2=>{cx.save();cx.globalCompositeOperation='lighter';
     cx.fillStyle='rgba(125,255,58,.35)';cx.beginPath();cx.arc(s2.x,s2.y,11,0,7);cx.fill();cx.restore();
@@ -3296,7 +3355,22 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
   cx.font='800 13px monospace';cx.textAlign='right';
   cx.fillStyle='#ffd75e';cx.fillText(String(G.score).padStart(7,'0'),V.x+V.w-10,V.y+20);
   cx.textAlign='center';
-  // (the old drag-stick ring is gone — the d-pad is DOM now)
+  // --- objective compass: a kid should never wonder where to go. Nearest crate, then the plunger,
+  // then the exit; a bobbing marker when it's on the glass, an edge arrow when it's off. ---
+  {const tgt=dg.plungerGot?dg.exit
+      :dg.got>=5?dg.pedestal
+      :(()=>{let bd=1e18,bt=null;
+        for(const c of dg.crates){const d2=(c.x-p.x)*(c.x-p.x)+(c.y-p.y)*(c.y-p.y);
+          if(d2<bd){bd=d2;bt=c;}}return bt;})();
+   if(tgt&&!S.done){const sx=tgt.x+V.x-camX,sy=tgt.y+V.y-camY,m2=16;
+    cx.save();cx.fillStyle='#21f0ff';cx.shadowColor='#21f0ff';cx.shadowBlur=8;
+    if(sx>V.x+m2&&sx<V.x+V.w-m2&&sy>V.y+m2&&sy<V.y+V.h-m2){
+      cx.font='13px sans-serif';cx.fillText('▼',sx,Math.max(V.y+14,sy-34)+Math.sin(S.t*5)*3);}
+    else{const aa=Math.atan2(tgt.y-p.y,tgt.x-p.x);
+      const ex=clamp(sx,V.x+20,V.x+V.w-20),ey=clamp(sy,V.y+20,V.y+V.h-20),pu=Math.sin(S.t*6)*2;
+      cx.translate(ex,ey);cx.rotate(aa);
+      cx.beginPath();cx.moveTo(11+pu,0);cx.lineTo(-4+pu,-8);cx.lineTo(-4+pu,8);cx.closePath();cx.fill();}
+    cx.restore();}}
   drawSay();drawBanner();
   // objective line, pinned to the bottom edge of the glass
   if(!S.done&&S.t>=3){cx.fillStyle='rgba(234,230,255,.8)';cx.font='800 12px sans-serif';
@@ -3308,8 +3382,8 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
     cx.fillStyle='#eae6ff';cx.font='900 20px sans-serif';cx.fillText(st.name,V.x+V.w/2,V.y+V.h*.36);
     cx.fillStyle='#9a8fc7';cx.font='700 13px sans-serif';cx.fillText(st.sub,V.x+V.w/2,V.y+V.h*.36+24);
     cx.fillStyle='#21f0ff';cx.font='800 13px sans-serif';
-    cx.fillText('✚ walk · A = ZAP · B holds your AIM',V.x+V.w/2,V.y+V.h*.36+50);
-    cx.fillText('loot 5 🌮 crates, claim the 🪠',V.x+V.w/2,V.y+V.h*.36+70);
+    cx.fillText('✚ walk · A = ZAP (aims itself) · B = SCOOT',V.x+V.w/2,V.y+V.h*.36+50);
+    cx.fillText('follow the arrow · loot 5 🌮 crates',V.x+V.w/2,V.y+V.h*.36+70);
     cx.globalAlpha=1;}}
 
 function bossDraw(){const p=S.p,bs=S.boss;
@@ -3600,7 +3674,7 @@ function loop(ts){requestAnimationFrame(loop);
   const dt=Math.max(0,Math.min(.033,(ts-last)/1000||0));last=ts; // clamp both ends: visibilitychange/syncRot reset last from performance.now(), which can read ahead of ts
   if(MODE==='action'&&S&&!S.paused&&!document.hidden){update(dt);draw();}}
 requestAnimationFrame(loop);
-document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;IN.lock=false;});
+document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;IN.dashBuf=0;});
 // portrait gate: #rot overlay covers the game; also pause the sim. The dungeon (body.gb) is the
 // one board that WANTS portrait, so its wrong-way is landscape-on-a-touch-device (#rotD) — desktops
 // are exempt, since you cannot rotate a monitor and the square layout works either way.
@@ -3608,7 +3682,7 @@ const PMQ=matchMedia('(orientation: portrait)');
 const CMQ=matchMedia('(pointer: coarse)');
 const HMQ=matchMedia('(any-hover: none)'); // a keyboard-docked tablet hovers — treat it like a desktop
 function wrongWay(){return document.body.classList.contains('gb')?(!PMQ.matches&&CMQ.matches&&HMQ.matches):PMQ.matches;}
-function syncRot(){if(S)S.paused=wrongWay()||userPaused;IN.fire=false;IN.lock=false;last=performance.now();padClear();gbFit();}
+function syncRot(){if(S)S.paused=wrongWay()||userPaused;IN.fire=false;IN.dashBuf=0;last=performance.now();padClear();gbFit();}
 try{PMQ.addEventListener('change',syncRot);}catch(e){PMQ.addListener(syncRot);}
 MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 
