@@ -1927,37 +1927,57 @@ addEventListener('keyup',e=>{KEYS[e.code]=0;if(e.code==='KeyX'||e.code==='KeyJ')
   if(e.code==='KeyZ'||e.code==='KeyK')IN.lock=false;});
 // floating flight stick (top-scroller): touch anywhere left, drag to fly
 const stickEl=$('stick');
+// Several fingers can land on the zone; the NEWEST one steers. Last-touch-wins is how the fast
+// re-plant plays on CH.3 — tap the other thumb down and the stick recentres there instantly, no
+// lift first. When the steering finger lifts, control falls back to a finger still down instead of
+// going dead. (A one-owner guard shipped briefly on 2026-08-30 and ignored the second finger
+// entirely — on CH.3 that read as dropped inputs. The real two-finger bug was only ever the
+// dead-stick on the usurper's release, which the fallback below fixes for real.)
+const stickPts=new Map(); // pointerId -> {ox,oy,cx,cy}: each finger keeps its own centre
+function stickVal(s,p){const r=52*((PROF.ui&&PROF.ui.padScale)||1); // throw tracks the pad-size setting
+  const dx=p.cx-p.ox,dy=p.cy-p.oy,m=Math.hypot(dx,dy),c=m>r?r/m:1;
+  s.x=dx*c/r;s.y=dy*c/r;}
+function stickAdopt(id){const s=S&&S.stick,p=stickPts.get(id);if(!s||!p)return;
+  s.on=true;s.id=id;s.ox=p.ox;s.oy=p.oy;stickVal(s,p);}
 stickEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
-  const s=S&&S.stick;if(!s||s.on)return; // second finger doesn't usurp the stick either
-  s.on=true;s.id=e.pointerId;s.ox=e.clientX;s.oy=e.clientY;s.x=0;s.y=0;
+  if(!(S&&S.stick))return;
+  stickPts.set(e.pointerId,{ox:e.clientX,oy:e.clientY,cx:e.clientX,cy:e.clientY});
+  stickAdopt(e.pointerId);
   try{stickEl.setPointerCapture(e.pointerId)}catch(_){}});
-stickEl.addEventListener('pointermove',e=>{const s=S&&S.stick;
-  if(!s||!s.on||e.pointerId!==s.id)return;
-  const r=52*((PROF.ui&&PROF.ui.padScale)||1); // stick throw tracks the pad-size setting
-  const dx=e.clientX-s.ox,dy=e.clientY-s.oy,m=Math.hypot(dx,dy),c=m>r?r/m:1;
-  s.x=dx*c/r;s.y=dy*c/r;});
-const stickUp=e=>{const s=S&&S.stick;if(s&&e.pointerId===s.id){s.on=false;s.x=0;s.y=0;}};
+stickEl.addEventListener('pointermove',e=>{const s=S&&S.stick,p=stickPts.get(e.pointerId);
+  if(!s||!p)return;p.cx=e.clientX;p.cy=e.clientY;
+  if(e.pointerId===s.id)stickVal(s,p);});
+const stickUp=e=>{const s=S&&S.stick;stickPts.delete(e.pointerId);
+  if(!s||e.pointerId!==s.id)return;
+  const last=[...stickPts.keys()].pop(); // newest remaining finger inherits the stick
+  if(last!=null)stickAdopt(last);else{s.on=false;s.x=0;s.y=0;}};
 stickEl.addEventListener('pointerup',stickUp);stickEl.addEventListener('pointercancel',stickUp);
 // --- dungeon: the Game Boy controls ---
 // The d-pad is ONE touch surface (the cross is decoration): where the thumb sits relative to its
 // centre picks one of eight directions, written into S.stick as a unit vector — dungeonUpdate
 // already reads S.stick, so no new input path. Sliding the thumb re-aims without lifting.
 const dpadEl=$('dpad'),dcrossEl=$('dcross');
-function dpadSet(e){const s=S&&S.stick;if(!s)return;
+const dpadPts=new Map(); // same ownership model as the flight stick: newest finger drives
+function dpadSet(cxp,cyp){const s=S&&S.stick;if(!s)return;
   const r=dpadEl.getBoundingClientRect();
-  const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+  const dx=cxp-(r.left+r.width/2),dy=cyp-(r.top+r.height/2);
   if(Math.hypot(dx,dy)<r.width*.09){s.x=0;s.y=0;dcrossEl.style.transform='';return;} // dead centre
   const a=(Math.round(Math.atan2(dy,dx)/(Math.PI/4))&7)*(Math.PI/4);
   s.x=Math.cos(a);s.y=Math.sin(a);
   dcrossEl.style.transform='rotate3d('+(-s.y).toFixed(2)+','+s.x.toFixed(2)+',0,10deg)';} // presses toward the thumb
 dpadEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
-  const s=S&&S.stick;if(!s||s.on)return; // one finger owns the pad; a second is ignored, not a takeover
-  s.on=true;s.id=e.pointerId;dpadSet(e);
+  const s=S&&S.stick;if(!s)return;
+  dpadPts.set(e.pointerId,{cx:e.clientX,cy:e.clientY});
+  s.on=true;s.id=e.pointerId;dpadSet(e.clientX,e.clientY);
   try{dpadEl.setPointerCapture(e.pointerId)}catch(_){}});
-dpadEl.addEventListener('pointermove',e=>{const s=S&&S.stick;
-  if(!s||!s.on||e.pointerId!==s.id)return;dpadSet(e);});
-const dpadUp=e=>{const s=S&&S.stick;if(s&&e.pointerId===s.id){s.on=false;s.x=0;s.y=0;
-  dcrossEl.style.transform='';}};
+dpadEl.addEventListener('pointermove',e=>{const s=S&&S.stick,p=dpadPts.get(e.pointerId);
+  if(!s||!p)return;p.cx=e.clientX;p.cy=e.clientY;
+  if(e.pointerId===s.id)dpadSet(e.clientX,e.clientY);});
+const dpadUp=e=>{const s=S&&S.stick;dpadPts.delete(e.pointerId);
+  if(!s||e.pointerId!==s.id)return;
+  const last=[...dpadPts.entries()].pop(); // hand the pad to the newest finger still down
+  if(last){s.id=last[0];dpadSet(last[1].cx,last[1].cy);}
+  else{s.on=false;s.x=0;s.y=0;dcrossEl.style.transform='';}};
 dpadEl.addEventListener('pointerup',dpadUp);dpadEl.addEventListener('pointercancel',dpadUp);
 bindPad($('gbA'),()=>{IN.fire=true;},()=>{IN.fire=false;});   // A = ZAP
 bindPad($('gbB'),()=>{IN.lock=true;},()=>{IN.lock=false;});   // B = hold to lock aim
@@ -2016,6 +2036,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
      bullets:[],foes:[],shots:[],picks:[],parts:[],rings:[],timers:{},
      pops:[],caps:[],combo:0,comboT:0,freeze:0,taq:0,banner:null,say:null,taqSpawned:false,
      boss:null,bossDying:-1,roared:false};
+  stickPts.clear();dpadPts.clear(); // fingers from the previous board are nobody's owner now
   for(const k in (st.mix||{}))S.timers[k]=rr(st.mix[k][0],st.mix[k][1])*.5;
   if(st.boss)S.boss={hp:st.bossHp,max:st.bossHp,x:0,y:0,t:0,atk:2.6,r:74};
   if(st.top){S.p.x=W/2;S.p.y=H-90;S.p.vx=0;S.p.vy=0;G.pattern='single';
