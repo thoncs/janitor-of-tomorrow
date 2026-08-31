@@ -188,6 +188,39 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 #gas.on{display:block}
 #padJ.hot{background:rgba(33,240,255,.28);box-shadow:inset 0 0 0 2px var(--cyn)}
 #padF.hot{background:rgba(255,61,240,.28);box-shadow:inset 0 0 0 2px var(--mag)}
+/* ---------- game boy shell (dungeon only) ---------- */
+/* The bottom slab of plastic. The matching screen bezel is canvas-drawn (gbShell) so the two share
+   the palette. Shown only while body.gb is set — hudOn manages that, dungeon only. Container is
+   pointer-events:none per the z-order contract above; only the controls themselves take touches. */
+#gb{position:absolute;left:0;right:0;bottom:0;z-index:49;display:none;flex-direction:column;justify-content:flex-end;gap:8px;
+  padding:0 12px calc(10px + var(--sab)) 12px;height:calc(196px * var(--padScale,1) + var(--sab));pointer-events:none}
+body.gb #gb{display:flex}
+/* portrait chrome: the hud spans the shell instead of 56vw-of-a-narrow-phone, and the top-right
+   mute/pause buttons hide — SELECT and START on the shell are those two buttons */
+body.gb #hud{width:calc(100% - 28px - var(--sal) - var(--sar))}
+body.gb #bPause,body.gb #mute{display:none}
+#gbrow{display:flex;align-items:center;justify-content:space-between}
+#dpad{position:relative;width:calc(132px * var(--padScale,1));height:calc(132px * var(--padScale,1));
+  perspective:260px;touch-action:none;pointer-events:auto}
+#dcross{position:absolute;inset:0;transition:transform .06s}
+#dcross i{position:absolute;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f,0 3px 0 rgba(0,0,0,.45)}
+#dcross .v{left:34.5%;top:0;width:31%;height:100%;border-radius:7px}
+#dcross .h{top:34.5%;left:0;height:31%;width:100%;border-radius:7px}
+#dcross b{position:absolute;color:#4b357f;font-size:10px;line-height:1;pointer-events:none}
+/* A/B on the classic diagonal: the whole pair leans, letters and all, like the printed shell did */
+#gbab{display:flex;gap:16px;align-items:center;transform:rotate(-24deg);margin-right:6px}
+.gbb{width:calc(66px * var(--padScale,1));height:calc(66px * var(--padScale,1));border-radius:50%;border:0;
+  background:radial-gradient(circle at 34% 30%,#ff62f4,var(--mag) 55%,#8f1f8a);
+  box-shadow:0 4px 0 #5c1157,0 0 14px rgba(255,61,240,.35);color:#fff;font:900 20px/1 sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  touch-action:none;pointer-events:auto}
+.gbb small{font:800 8px/1 sans-serif;letter-spacing:.06em;opacity:.85}
+.gbb.hot{transform:translateY(3px);box-shadow:0 1px 0 #5c1157,0 0 22px rgba(255,61,240,.6)}
+#gbsl{display:flex;gap:20px;justify-content:center}
+.gbslab{width:70px;height:19px;border-radius:10px;border:0;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f;
+  color:var(--dim);font:800 8px/1 sans-serif;letter-spacing:.08em;transform:rotate(-24deg);
+  touch-action:manipulation;pointer-events:auto}
+.gbslab:active{background:#241646}
 
 /* ---------- tabletop battle ---------- */
 #battle{justify-content:flex-start;gap:8px;background:radial-gradient(140% 100% at 50% 0%,#101c3a 0%,#0a0f24 62%)}
@@ -297,10 +330,15 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
 #wdlabel{font-size:12px;font-weight:800;color:var(--dim);text-align:left}
 
 /* ---------- portrait gate ---------- */
-#rot{position:absolute;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--bg);text-align:center;padding:24px}
-#rot b{font-size:52px;animation:rotp 2.2s infinite}
+#rot,#rotD{position:absolute;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--bg);text-align:center;padding:24px}
+#rot b,#rotD b{font-size:52px;animation:rotp 2.2s infinite}
+#rotD b{animation-direction:reverse}
 @keyframes rotp{0%,50%{transform:rotate(0)}65%,100%{transform:rotate(90deg)}}
 @media (orientation:portrait){#rot{display:flex}}
+/* The dungeon inverts the gate: body.gb marks the one board that WANTS portrait. #rot stands down,
+   and #rotD asks touch devices to turn upright instead (desktops are exempt — no touch, no demand). */
+body.gb #rot{display:none}
+@media (orientation:landscape) and (pointer:coarse) and (any-hover:none){body.gb #rotD{display:flex}}
 </style>
 </head>
 <body>
@@ -322,7 +360,7 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
   <p class="small dim" id="contline" style="display:none"></p>
   <p class="small dim" id="diffline">shift difficulty: <button class="btn ghost sm" id="bDiff"><span class="diffLabel">NORMAL</span></button> <span class="dim diffBlurb"></span></p>
   <p class="small dim blink" id="courage">— insert courage to begin —</p>
-  <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab · v0.9<button class="btn ghost xs" id="bErase" style="display:none;margin-left:8px">🧽 erase save</button></p>
+  <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab · v0.10<button class="btn ghost xs" id="bErase" style="display:none;margin-left:8px">🧽 erase save</button></p>
 </div>
 
 <div class="screen" id="story">
@@ -446,12 +484,22 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
     <button class="btn ghost sm" id="bPQuit">⏏ QUIT TO TITLE</button>
   </div>
 </div>
+<div id="gb">
+  <div id="gbrow">
+    <div id="dpad"><div id="dcross"><i class="v"></i><i class="h"></i>
+      <b style="left:45%;top:8%">▲</b><b style="left:45%;bottom:8%">▼</b><b style="left:9%;top:46%">◀</b><b style="right:9%;top:46%">▶</b>
+    </div></div>
+    <div id="gbab"><button class="gbb" id="gbB">B<small>AIM</small></button><button class="gbb" id="gbA">A<small>ZAP</small></button></div>
+  </div>
+  <div id="gbsl"><button class="gbslab" id="gbSel">SELECT</button><button class="gbslab" id="gbSta">START</button></div>
+</div>
 <div id="rot"><b>📱</b><h2>Rotate your phone</h2><p class="sub">This time-war is landscape-only. Doug needs the legroom.</p></div>
+<div id="rotD"><b>📱</b><h2>Turn your phone upright</h2><p class="sub">The Supply Dungeon plays TALL. Very 1989 down here.</p></div>
 </div>
 <script>
 'use strict';
 /* ================= DATA: tuning, weapons, enemies, stages ================= */
-const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,stompV:-620,stompGrace:8,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1,
+const TUNING={maxHp:5,gravity:2150,jumpV:-780,djV:-650,stompV:-620,stompGrace:8,taqWarn:1.5,baseRegen:19,invuln:1.1,retryHp:4,retryTimelineCost:5,pickupHeal:1,
  // juice, gathered from the call sites so it can be tuned in one place
  juice:{killShake:.4,killFreeze:.045,comboFreeze:.09,hurtShake:.3,hurtFreeze:.1,
    bossDieShake:.6,bossDieFreeze:.18,boomShake:.6,plungerShake:.5}};
@@ -635,9 +683,10 @@ const HOWTO={
   'Mop in mid-air: it hits hardest, and both of Glaze\'s melee attacks only land on a grounded janitor.',
   'When a cyan GUARD ring goes up, hold off — hitting it just wastes your swing.']},
  dungeon:{title:'🪠 SUPPLY DUNGEON',lines:[
-  'Drag anywhere on the LEFT half to walk in any of eight directions.',
-  'You shoot the way you are MOVING — keep the stick pushed toward whatever you want to zap.',
-  'Standing still cannot re-aim. 📦 crates hold taquitos; five of them wake something up.']},
+  'TURN YOUR PHONE UPRIGHT 📱 — this floor plays TALL, on a certain grey brick from 1989.',
+  'D-PAD walks in eight directions. You shoot the way you are FACING.',
+  'A = ZAP. Hold B to LOCK your aim, so you can strafe while shooting. New janitorial tech.',
+  '📦 crates hold taquitos; five of them wake something up. START pauses, SELECT mutes.']},
  warp:{title:'🌀 TIME WARP ZONE',lines:[
   'Sublevel B again — but the clock is wrong.',
   'Time speeds up and slows down on its own. Nothing you press changes it; read it and move with it.',
@@ -667,7 +716,11 @@ function showHowTo(id,then){const h=HOWTO[id];
   const b=document.createElement('button');b.className='choice';b.textContent='GOT IT →';
   b.addEventListener('click',()=>{AU.ui();if(then)then();});
   ch.appendChild(b);$('stext').scrollTop=0;
-  MODE='story';hudOn(false);showScreen('story');return true;}
+  MODE='story';hudOn(false);
+  // the dungeon's card says TURN YOUR PHONE UPRIGHT — so the landscape-only gate must already be
+  // inverted while the card is up, or obeying the card summons #rot over the GOT IT button
+  document.body.classList.toggle('gb',id==='dungeon');
+  showScreen('story');return true;}
 
 // One companion line on entering a board, from whoever you have been kinder to.
 const BARKS={
@@ -888,7 +941,7 @@ function applyUI(){const u=PROF.ui||defaultUI();
   const r=document.documentElement.style;
   r.setProperty('--padScale',String(u.padScale));
   r.setProperty('--padLift',u.padLift+'px');
-  padClear();}
+  padClear();gbFit();} // padScale drives the #gb slab height, so the Game Boy screen moves with it
 // Doug's spawn was clamped off the JUMP pad's measured edge once, at board start. Now the pad can be
 // resized mid-board from the pause menu, so this has to be re-runnable — otherwise a growing pad
 // swallows him again, which is exactly the bug commit a906479 fixed and eeefd75 re-derived.
@@ -930,7 +983,8 @@ let MODE='title'; // title | story | conseq | action | over | end
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
 function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);if(v)updateTaqHud();
   $('bPause').style.display=v?'':'none';
-  $('stick').classList.toggle('on',v&&!!(S&&S.st&&(S.st.top||S.st.dungeon)));
+  $('stick').classList.toggle('on',v&&!!(S&&S.st&&S.st.top)); // dungeon moved off the drag-stick to the d-pad
+  document.body.classList.toggle('gb',v&&!!(S&&S.st&&S.st.dungeon)); // the Game Boy shell + inverted rotate gate
   $('steer').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));
   $('gas').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));}
 function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85;
@@ -1266,8 +1320,8 @@ function openPause(){if(!canPause()||userPaused)return;
   renderPausePanel();showScreen('pause');}
 function closePause(){if(!userPaused)return;
   userPaused=false;
-  // don't unpause into a portrait phone — the #rot overlay is still covering the game
-  if(S)S.paused=PMQ.matches;
+  // don't unpause into a wrongly-held phone — the #rot/#rotD overlay is still covering the game
+  if(S)S.paused=wrongWay();
   last=performance.now(); // otherwise the first frame back gets a giant dt
   showScreen(pauseReturn);pauseReturn='';}
 function setPauseTab(t){pauseTab=t;
@@ -1382,7 +1436,13 @@ $('bCont').addEventListener('click',()=>{AU.ui();
   else{G.scene=r.idx;openScene(G.scene);}});
 
 /* ================= CONSEQUENCE / GAMEOVER / ENDING ================= */
-function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
+function showConsequence(){
+  // clearing the dungeon keeps body.gb too — same deal as gameOver: the reward screen fits portrait,
+  // and the rotate demand can wait until the player taps onward. Same MODE guard, same stale-S reason.
+  const gbWin=MODE==='action'&&!!(S&&S.st&&S.st.dungeon);
+  MODE='conseq';hudOn(false);
+  if(gbWin)document.body.classList.add('gb');
+  MUS.play('title');renderMeters();
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
   // board cleared: bank the stats and a personal best, keyed by the stage's stable id
@@ -1413,7 +1473,14 @@ function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMe
     else{G.stage=nx.stage;warp();startStage(nx.stage);}});
   ch.appendChild(b);$('stext').scrollTop=0;showScreen('story');}
 
-function gameOver(){MODE='over';hudOn(false);MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
+function gameOver(){
+  // dying ON the dungeon board keeps body.gb: the over screen fits portrait fine, and without this
+  // the player would be told to rotate to landscape just to tap RETRY, then rotate straight back.
+  // MODE wins over S.st (same rule the pause menu uses): the war room and tabletop run with S still
+  // holding the PREVIOUS canvas board, so S.st.dungeon alone would give a war defeat the shell.
+  const inDungeon=MODE==='action'&&!!(S&&S.st&&S.st.dungeon);
+  MODE='over';hudOn(false);
+  if(inDungeon)document.body.classList.add('gb');MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
   G.timeline=clamp(G.timeline-TUNING.retryTimelineCost,0,100);
   $('overline').textContent=pick(DEATHLINES);
   $('overstats').textContent='-'+TUNING.retryTimelineCost+' TIMELINE · rewinds annoy time itself';
@@ -1827,11 +1894,26 @@ function fit(){const d=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=inn
   groundY=Math.min(H*.82,H-64);}
 addEventListener('resize',fit);fit();
 
-const IN={fire:false,jumpBuf:0,steer:0,gas:0};
+/* The Game Boy 'screen': the square of canvas the dungeon renders into. The #gb slab of DOM
+   controls pins the bottom; the screen takes the biggest near-square that fits above it, centred.
+   Recomputed on resize, UI-scale changes and board start — one rect read, never per-frame. */
+const GBV={x:0,y:0,w:0,h:0,on:false};
+function gbFit(){GBV.on=document.body.classList.contains('gb');
+  if(!GBV.on)return;
+  const slab=$('gb').getBoundingClientRect();
+  const sat=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||0;
+  const top=sat+24; // the hud rows end ~sat+46; the glass starts below them, not under them
+  const side=Math.max(120,Math.min(W-36,slab.top-top-30)); // 30 = bezel label strip above the glass
+  GBV.w=GBV.h=side;GBV.x=(W-side)/2;GBV.y=top+24;}
+addEventListener('resize',gbFit); // fit() registered first, so W/H are fresh when this runs
+
+const IN={fire:false,jumpBuf:0,steer:0,gas:0,lock:false}; // lock: dungeon B — hold to keep facing while strafing
 function bindPad(el,down,up){
+  const pts=new Set(); // per-pointer, like the throttle's gasPts: a second thumb's release
   el.addEventListener('pointerdown',e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(_){}
-    AU.init();down();el.classList.add('hot');});
-  const u=()=>{up();el.classList.remove('hot');};
+    AU.init();pts.add(e.pointerId);down();el.classList.add('hot');});
+  const u=e=>{pts.delete(e.pointerId);if(pts.size)return; // ...must not lift a button still held
+    up();el.classList.remove('hot');};
   el.addEventListener('pointerup',u);el.addEventListener('pointercancel',u);}
 bindPad($('padJ'),()=>{IN.jumpBuf=.12;},()=>{});
 bindPad($('padF'),()=>{IN.fire=true;},()=>{IN.fire=false;});
@@ -1839,12 +1921,15 @@ const KEYS={};
 addEventListener('keydown',e=>{KEYS[e.code]=1;if(e.repeat)return;
   if(e.code==='Escape'||e.code==='KeyP'){e.preventDefault();userPaused?closePause():openPause();return;}
   if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'){IN.jumpBuf=.12;e.preventDefault();}
-  if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=true;});
-addEventListener('keyup',e=>{KEYS[e.code]=0;if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=false;});
+  if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=true;
+  if(e.code==='KeyZ'||e.code==='KeyK')IN.lock=true;});
+addEventListener('keyup',e=>{KEYS[e.code]=0;if(e.code==='KeyX'||e.code==='KeyJ')IN.fire=false;
+  if(e.code==='KeyZ'||e.code==='KeyK')IN.lock=false;});
 // floating flight stick (top-scroller): touch anywhere left, drag to fly
 const stickEl=$('stick');
 stickEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
-  const s=S&&S.stick;if(!s)return;s.on=true;s.id=e.pointerId;s.ox=e.clientX;s.oy=e.clientY;s.x=0;s.y=0;
+  const s=S&&S.stick;if(!s||s.on)return; // second finger doesn't usurp the stick either
+  s.on=true;s.id=e.pointerId;s.ox=e.clientX;s.oy=e.clientY;s.x=0;s.y=0;
   try{stickEl.setPointerCapture(e.pointerId)}catch(_){}});
 stickEl.addEventListener('pointermove',e=>{const s=S&&S.stick;
   if(!s||!s.on||e.pointerId!==s.id)return;
@@ -1853,6 +1938,31 @@ stickEl.addEventListener('pointermove',e=>{const s=S&&S.stick;
   s.x=dx*c/r;s.y=dy*c/r;});
 const stickUp=e=>{const s=S&&S.stick;if(s&&e.pointerId===s.id){s.on=false;s.x=0;s.y=0;}};
 stickEl.addEventListener('pointerup',stickUp);stickEl.addEventListener('pointercancel',stickUp);
+// --- dungeon: the Game Boy controls ---
+// The d-pad is ONE touch surface (the cross is decoration): where the thumb sits relative to its
+// centre picks one of eight directions, written into S.stick as a unit vector — dungeonUpdate
+// already reads S.stick, so no new input path. Sliding the thumb re-aims without lifting.
+const dpadEl=$('dpad'),dcrossEl=$('dcross');
+function dpadSet(e){const s=S&&S.stick;if(!s)return;
+  const r=dpadEl.getBoundingClientRect();
+  const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+  if(Math.hypot(dx,dy)<r.width*.09){s.x=0;s.y=0;dcrossEl.style.transform='';return;} // dead centre
+  const a=(Math.round(Math.atan2(dy,dx)/(Math.PI/4))&7)*(Math.PI/4);
+  s.x=Math.cos(a);s.y=Math.sin(a);
+  dcrossEl.style.transform='rotate3d('+(-s.y).toFixed(2)+','+s.x.toFixed(2)+',0,10deg)';} // presses toward the thumb
+dpadEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
+  const s=S&&S.stick;if(!s||s.on)return; // one finger owns the pad; a second is ignored, not a takeover
+  s.on=true;s.id=e.pointerId;dpadSet(e);
+  try{dpadEl.setPointerCapture(e.pointerId)}catch(_){}});
+dpadEl.addEventListener('pointermove',e=>{const s=S&&S.stick;
+  if(!s||!s.on||e.pointerId!==s.id)return;dpadSet(e);});
+const dpadUp=e=>{const s=S&&S.stick;if(s&&e.pointerId===s.id){s.on=false;s.x=0;s.y=0;
+  dcrossEl.style.transform='';}};
+dpadEl.addEventListener('pointerup',dpadUp);dpadEl.addEventListener('pointercancel',dpadUp);
+bindPad($('gbA'),()=>{IN.fire=true;},()=>{IN.fire=false;});   // A = ZAP
+bindPad($('gbB'),()=>{IN.lock=true;},()=>{IN.lock=false;});   // B = hold to lock aim
+$('gbSel').addEventListener('click',()=>{$('mute').click();});
+$('gbSta').addEventListener('click',()=>{AU.ui();openPause();});
 // --- race: throttle pedal (left half) ---
 // Speed is the player's decision now, not the game's. Hold to accelerate, release to slow for a
 // tricky stretch. Keyboard: hold Up/W.
@@ -1929,11 +2039,13 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   // whoever you have been kinder to gets the line; ties go to Torque, who talks more
   const bk=BARKS[st.id];if(bk&&!st.boss)say(bk[G.vex>G.torque?'VEX':'TORQUE'],4.2);
   $('padJ').style.display=(st.top||st.race||st.dungeon)?'none':'';
-  $('padF').style.display=st.race?'none':''; // nothing to shoot on the race
+  $('padF').style.display=(st.race||st.dungeon)?'none':''; // race: nothing to shoot · dungeon: A button does it
   G.energy=100;
   hudOn(true);showScreen('');updateHearts();
   // device safe-areas (notch) and the pad-size setting both shift the JUMP pad — keep Doug clear
   padClear();
+  gbFit();   // hudOn just set body.gb (or cleared it) — size the Game Boy screen off the fresh slab
+  syncRot(); // and pause immediately if the phone is held the wrong way for THIS board
   $('pbar').classList.toggle('boss',!!st.boss);}
 
 function spawnFoe(type,plain){const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:W+50,t:0,hitT:0};
@@ -1961,7 +2073,8 @@ function killJuice(x,y,base){S.freeze=Math.max(S.freeze,TUNING.juice.killFreeze)
 function updateJuice(dt){if(S.comboT>0){S.comboT-=dt;if(S.comboT<=0)S.combo=0;}
   if(S.taq>0){S.taq-=dt;
     if(Math.random()<.5)S.parts.push({x:S.p.x+rr(-16,16),y:S.p.y-rr(0,44),
-      vx:rr(-40,40),vy:rr(-90,-20),life:rr(.25,.5),sz:rr(2,4),col:pick(['#ffd75e','#ffb01f','#fff'])});}
+      vx:rr(-40,40),vy:rr(-90,-20),life:rr(.25,.5),sz:rr(2,4),
+      col:pick(S.taq<TUNING.taqWarn?['#ff4757','#fff']:['#ffd75e','#ffb01f','#fff'])});} // sparks go alarm-red with the ring
   for(let i=S.pops.length-1;i>=0;i--){const q=S.pops[i];q.t-=dt;q.y-=46*dt;
     if(q.t<=0)S.pops.splice(i,1);}
   for(let i=S.caps.length-1;i>=0;i--){const c2=S.caps[i];c2.life-=dt;
@@ -1981,11 +2094,16 @@ function drawJuice(){cx.textAlign='center';
     cx.globalAlpha=.9;cx.fillText('COMBO ×'+S.combo,W/2,86);cx.globalAlpha=1;}
   if(S.taq>0){cx.save();cx.globalCompositeOperation='lighter';
     const p=S.p,ph=S.t*7;
-    for(let i=0;i<3;i++){cx.strokeStyle='rgba(255,'+(176+i*20)+',31,'+(.5-i*.13)+')';
+    // Last 1.5s: the ring flips gold -> alarm red/white and strobes, faster in the final beat, so
+    // the end of invincibility is announced by MOTION and a colour change, not by getting hit
+    // mid-swagger. Red vs white keeps the flash legible in greyscale, per the colourblind audit.
+    const warn=S.taq<TUNING.taqWarn,fOn=Math.sin(S.t*(S.taq<.6?46:24))>0;
+    for(let i=0;i<3;i++){cx.strokeStyle=warn?(fOn?'rgba(255,71,87,'+(.62-i*.14)+')':'rgba(255,255,255,'+(.4-i*.1)+')')
+        :'rgba(255,'+(176+i*20)+',31,'+(.5-i*.13)+')';
       cx.lineWidth=3;cx.beginPath();
       cx.arc(p.x,p.y-24,30+i*10+Math.sin(ph+i)*4,0,7);cx.stroke();}
     cx.restore();
-    cx.font='16px sans-serif';cx.fillText('🌮',S.p.x,S.p.y-64);}
+    if(!warn||fOn){cx.font='16px sans-serif';cx.fillText('🌮',S.p.x,S.p.y-64);}}
   // arcade score, top right under the mute button
   cx.font='800 13px monospace';cx.textAlign='right';
   cx.fillStyle='#ffd75e';cx.fillText(String(G.score).padStart(7,'0'),W-16,74);
@@ -1999,12 +2117,16 @@ function drawSay(){if(!S||!S.say||S.say.t<=0)return;
   cx.globalAlpha=Math.min(1,S.say.t*1.2);cx.textAlign='center';
   cx.font='700 14px sans-serif';cx.fillStyle='#dcd2ff';
   cx.shadowColor='#0a0618';cx.shadowBlur=6;
-  cx.fillText(S.say.txt,W/2,H-118);cx.restore();}
+  const gb=S.st&&S.st.dungeon&&GBV.on&&GBV.w; // on the Game Boy, W/2,H-118 is plastic, not screen
+  cx.fillText(S.say.txt,gb?GBV.x+GBV.w/2:W/2,gb?GBV.y+GBV.h-30:H-118);cx.restore();}
 function drawBanner(){if(S.banner&&S.banner.t>0){cx.save();
   cx.globalAlpha=Math.min(1,S.banner.t*1.5);cx.textAlign='center';
   cx.fillStyle='#fff';cx.font='900 24px sans-serif';
+  const gb=S.st&&S.st.dungeon&&GBV.on&&GBV.w; // on the Game Boy, banners shrink to fit the glass
+  if(gb){const tw=cx.measureText(S.banner.text).width;
+    if(tw>GBV.w-16)cx.font='900 '+Math.max(13,Math.floor(24*(GBV.w-16)/tw))+'px sans-serif';}
   cx.shadowColor='#ff3df0';cx.shadowBlur=18;
-  cx.fillText(S.banner.text,W/2,H*.32);cx.restore();}}
+  cx.fillText(S.banner.text,gb?GBV.x+GBV.w/2:W/2,gb?GBV.y+GBV.h*.32:H*.32);cx.restore();}}
 
 /* ================= ACTION: VS GLAZE (kumite mode) ================= */
 // Glaze must not settle behind the FIRE pad — measure it rather than trusting a literal.
@@ -2445,7 +2567,9 @@ function raceDraw(){const st=S.st,hue=st.hue;
     cx.save();cx.translate(tx,ty);
     cx.rotate((IN.steer||0)*.06+S.curve*.05);
     if(S.taq>0){cx.save();cx.globalCompositeOperation='lighter';
-      cx.fillStyle='rgba(255,215,94,.3)';cx.beginPath();cx.ellipse(0,-40,86,55,0,0,7);cx.fill();cx.restore();}
+      cx.fillStyle=S.taq<TUNING.taqWarn?(Math.sin(S.t*(S.taq<.6?46:24))>0?'rgba(255,71,87,.34)':'rgba(255,255,255,.22)')
+        :'rgba(255,215,94,.3)'; // same expiry strobe as the ring
+      cx.beginPath();cx.ellipse(0,-40,86,55,0,0,7);cx.fill();cx.restore();}
     aBlit(AIMG.truck_rear,-55,-70,110,72,false); // the player's own vehicle should read clearly
     if(S.taq>0){cx.fillStyle='#ff7a1e'; // overdrive flames
       cx.beginPath();cx.ellipse(-43,8,8,14+rr(0,6),0,0,7);cx.ellipse(43,8,8,14+rr(0,6),0,0,7);cx.fill();}
@@ -2964,10 +3088,12 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
   if(!S.stick.on){ix=((KEYS.ArrowRight||KEYS.KeyD)?1:0)-((KEYS.ArrowLeft||KEYS.KeyA)?1:0);
     iy=((KEYS.ArrowDown||KEYS.KeyS)?1:0)-((KEYS.ArrowUp||KEYS.KeyW)?1:0);
     const m=Math.hypot(ix,iy);if(m>1){ix/=m;iy/=m;}}
-  const MAXV=235,k=Math.min(1,dt*10);
+  const MAXV=205,k=Math.min(1,dt*10); // was 235 — the whole board runs a beat slower now
   p.vx+=(ix*MAXV-p.vx)*k;p.vy+=(iy*MAXV-p.vy)*k;
   dgMove(p,13,dt);
-  if(Math.hypot(ix,iy)>.3)S.dir=Math.round(Math.atan2(p.vy,p.vx)/(Math.PI/4))&7;
+  // B (or Z/K) holds the aim: facing freezes so you can strafe past what you're shooting at —
+  // the old card admitted "standing still cannot re-aim"; now moving doesn't have to re-aim either
+  if(!IN.lock&&Math.hypot(ix,iy)>.3)S.dir=Math.round(Math.atan2(p.vy,p.vx)/(Math.PI/4))&7;
   // --- fire in facing direction ---
   const wp=WEAPONS[G.weapon];p.fireT-=dt;
   G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*DF().regen*torqueRegenMul()*dt);
@@ -2986,7 +3112,7 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
     if(sp)dg.goos.push({x:sp.x,y:sp.y,vx:0,vy:0,hp:2,t:Math.random()*6,hitT:0});}
   // --- goos chase ---
   dg.goos.forEach(g2=>{g2.t+=dt;if(g2.hitT>0)g2.hitT-=dt;
-    const d=Math.hypot(p.x-g2.x,p.y-g2.y)||1,sp=105;
+    const d=Math.hypot(p.x-g2.x,p.y-g2.y)||1,sp=90; // was 105
     g2.vx+=((p.x-g2.x)/d*sp-g2.vx)*Math.min(1,dt*4);
     g2.vy+=((p.y-g2.y)/d*sp-g2.vy)*Math.min(1,dt*4);
     dgMove(g2,11,dt);
@@ -2994,8 +3120,8 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
   // --- turrets fire goo orbs ---
   dg.turrets.forEach(t2=>{if(t2.hp<=0)return;t2.t-=dt;if(t2.hitT>0)t2.hitT-=dt;
     const d=Math.hypot(p.x-t2.x,p.y-t2.y);
-    if(t2.t<=0&&d<360){t2.t=2.2;
-      S.shots.push({x:t2.x,y:t2.y-14,vx:(p.x-t2.x)/d*165,vy:(p.y-t2.y)/d*165,r:8});}});
+    if(t2.t<=0&&d<320){t2.t=2.2; // range was 360 — the Game Boy window is small, fewer off-screen snipes
+      S.shots.push({x:t2.x,y:t2.y-14,vx:(p.x-t2.x)/d*145,vy:(p.y-t2.y)/d*145,r:8});}}); // orb was 165
   for(let i=S.shots.length-1;i>=0;i--){const s2=S.shots[i];
     s2.x+=s2.vx*dt;s2.y+=s2.vy*dt;
     if(DWALL((s2.x/DTS)|0,(s2.y/DTS)|0)){boom(s2.x,s2.y,'#7dff3a',4);S.shots.splice(i,1);continue;}
@@ -3037,18 +3163,44 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
     setTimeout(()=>{warp();setTimeout(showConsequence,350);},900);}
   if(G.hp<=0&&!S.done){S.done=true;setTimeout(gameOver,500);}}
 
+/* The handheld itself: plastic over the whole canvas, a bezel slab with the classic swooped corner,
+   badge and battery light. Drawn before the screen clip so the game punches through it. Shape
+   language is 1989; the palette is the game's own, because a grey brick would fight the neon. */
+function gbShell(V){
+  cx.fillStyle='#241646';cx.fillRect(0,0,W,H);
+  const bx=V.x-14,by=V.y-22,bw=V.w+28,bh=V.h+34,rd=12;
+  cx.fillStyle='#120b26';
+  cx.beginPath();cx.moveTo(bx+rd,by);cx.lineTo(bx+bw-rd,by);cx.quadraticCurveTo(bx+bw,by,bx+bw,by+rd);
+  cx.lineTo(bx+bw,by+bh-38);cx.quadraticCurveTo(bx+bw,by+bh,bx+bw-38,by+bh); // the swoop
+  cx.lineTo(bx+rd,by+bh);cx.quadraticCurveTo(bx,by+bh,bx,by+bh-rd);
+  cx.lineTo(bx,by+rd);cx.quadraticCurveTo(bx,by,bx+rd,by);cx.closePath();cx.fill();
+  cx.strokeStyle='#35226b';cx.lineWidth=2;cx.stroke();
+  // label + battery LED live in the bezel band BELOW the glass — the band above it is where the
+  // HUD hearts and the pause/mute buttons already sit, so anything up there just gets covered
+  cx.textAlign='center';cx.font='800 8px sans-serif';cx.fillStyle='#9a8fc7';
+  cx.fillText('DOT MATRIX WITH CUSTARD SOUND',V.x+V.w/2,V.y+V.h+9);
+  cx.fillStyle='#ff4757';cx.beginPath();cx.arc(bx+16,V.y+V.h+6,3,0,7);cx.fill();
+  cx.font='900 italic 13px sans-serif';cx.fillStyle='#9a8fc7';cx.textAlign='right';
+  cx.fillText('PUDD-CO',V.x+V.w/2-8,V.y+V.h+28);
+  cx.fillStyle='#ff3df0';cx.textAlign='left';cx.fillText('SUPPLY BOY™',V.x+V.w/2+8,V.y+V.h+28);
+  cx.textAlign='center';}
+
 function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
   cx.clearRect(0,0,W,H);cx.save();cx.imageSmoothingEnabled=false;
-  cx.fillStyle='#0b0820';cx.fillRect(0,0,W,H);
+  if(!GBV.on||!GBV.w)gbFit(); // first frame can land before any resize/board-start recompute
+  const V=GBV.on&&GBV.w?GBV:{x:0,y:0,w:W,h:H}; // fall back to fullscreen rather than draw nothing
+  gbShell(V);
+  cx.beginPath();cx.rect(V.x,V.y,V.w,V.h);cx.clip(); // everything below stays behind the glass
+  cx.fillStyle='#0b0820';cx.fillRect(V.x,V.y,V.w,V.h);
   if(S.shake>0)cx.translate(rr(-4,4)*S.shake,rr(-3,3)*S.shake);
   const wW=DCOLS*DTS,wH=DROWS*DTS;
-  const camX=wW>W?clamp(p.x-W/2,0,wW-W):-(W-wW)/2;
-  const camY=wH>H?clamp(p.y-H/2,0,wH-H):-(H-wH)/2;
-  cx.translate(-camX,-camY);
+  const camX=wW>V.w?clamp(p.x-V.w/2,0,wW-V.w):-(V.w-wW)/2;
+  const camY=wH>V.h?clamp(p.y-V.h/2,0,wH-V.h):-(V.h-wH)/2;
+  cx.translate(V.x-camX,V.y-camY);
   // wang tiles (corner grid offset half a tile)
   const til=AIMG.dtiles,T32=32;
-  const x0=Math.max(-1,Math.floor(camX/DTS)-1),x1=Math.min(DCOLS-1,Math.ceil((camX+W)/DTS)+1);
-  const y0=Math.max(-1,Math.floor(camY/DTS)-1),y1=Math.min(DROWS-1,Math.ceil((camY+H)/DTS)+1);
+  const x0=Math.max(-1,Math.floor(camX/DTS)-1),x1=Math.min(DCOLS-1,Math.ceil((camX+V.w)/DTS)+1);
+  const y0=Math.max(-1,Math.floor(camY/DTS)-1),y1=Math.min(DROWS-1,Math.ceil((camY+V.h)/DTS)+1);
   for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){
     const idx=(DWALL(tx,ty)?1:0)|(DWALL(tx+1,ty)?2:0)|(DWALL(tx,ty+1)?4:0)|(DWALL(tx+1,ty+1)?8:0);
     const wt=WANG[idx];
@@ -3119,29 +3271,24 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
     cx.fillStyle=q.col;cx.fillText(q.txt,q.x,q.y);}
   cx.globalAlpha=1;
   cx.restore();
-  // screen-space arcade score (matches the other boards)
+  // screen-space arcade score — top-right of the SCREEN, not of the device
   cx.font='800 13px monospace';cx.textAlign='right';
-  cx.fillStyle='#ffd75e';cx.fillText(String(G.score).padStart(7,'0'),W-16,74);
+  cx.fillStyle='#ffd75e';cx.fillText(String(G.score).padStart(7,'0'),V.x+V.w-10,V.y+20);
   cx.textAlign='center';
-  // stick UI (screen space)
-  if(S.stick.on){const s=S.stick;
-    cx.save();cx.globalAlpha=.4;
-    cx.strokeStyle='#7a5acd';cx.lineWidth=2;
-    cx.beginPath();cx.arc(s.ox,s.oy,34,0,7);cx.stroke();
-    cx.fillStyle='#9a8fc7';cx.beginPath();cx.arc(s.ox+s.x*30,s.oy+s.y*30,12,0,7);cx.fill();
-    cx.restore();}
+  // (the old drag-stick ring is gone — the d-pad is DOM now)
   drawSay();drawBanner();
-  // objective line
+  // objective line, pinned to the bottom edge of the glass
   if(!S.done&&S.t>=3){cx.fillStyle='rgba(234,230,255,.8)';cx.font='800 12px sans-serif';
     cx.textAlign='center';
-    cx.fillText(S.dg.plungerGot?'⬆ BACK TO THE HATCH':S.dg.got>=5?'🪠 CLAIM THE PLUNGER':'📦 '+S.dg.got+'/5 TAQUITO CRATES',W/2,66);}
-  // intro card
-  if(S.t<3){cx.fillStyle='rgba(5,2,16,'+(.8*(1-S.t/3))+')';cx.fillRect(0,0,W,H);
+    cx.fillText(S.dg.plungerGot?'⬆ BACK TO THE HATCH':S.dg.got>=5?'🪠 CLAIM THE PLUNGER':'📦 '+S.dg.got+'/5 TAQUITO CRATES',V.x+V.w/2,V.y+V.h-10);}
+  // intro card, inside the glass
+  if(S.t<3){cx.fillStyle='rgba(5,2,16,'+(.8*(1-S.t/3))+')';cx.fillRect(V.x,V.y,V.w,V.h);
     cx.globalAlpha=Math.min(1,(3-S.t)*2);cx.textAlign='center';
-    cx.fillStyle='#eae6ff';cx.font='900 24px sans-serif';cx.fillText(st.name,W/2,H*.36);
-    cx.fillStyle='#9a8fc7';cx.font='700 14px sans-serif';cx.fillText(st.sub,W/2,H*.36+26);
-    cx.fillStyle='#21f0ff';cx.font='800 15px sans-serif';
-    cx.fillText('⊹ drag to move · 🔥 = ZAP · loot 5 🌮 crates, claim the 🪠',W/2,H*.36+56);
+    cx.fillStyle='#eae6ff';cx.font='900 20px sans-serif';cx.fillText(st.name,V.x+V.w/2,V.y+V.h*.36);
+    cx.fillStyle='#9a8fc7';cx.font='700 13px sans-serif';cx.fillText(st.sub,V.x+V.w/2,V.y+V.h*.36+24);
+    cx.fillStyle='#21f0ff';cx.font='800 13px sans-serif';
+    cx.fillText('✚ walk · A = ZAP · B holds your AIM',V.x+V.w/2,V.y+V.h*.36+50);
+    cx.fillText('loot 5 🌮 crates, claim the 🪠',V.x+V.w/2,V.y+V.h*.36+70);
     cx.globalAlpha=1;}}
 
 function bossDraw(){const p=S.p,bs=S.boss;
@@ -3432,10 +3579,15 @@ function loop(ts){requestAnimationFrame(loop);
   const dt=Math.max(0,Math.min(.033,(ts-last)/1000||0));last=ts; // clamp both ends: visibilitychange/syncRot reset last from performance.now(), which can read ahead of ts
   if(MODE==='action'&&S&&!S.paused&&!document.hidden){update(dt);draw();}}
 requestAnimationFrame(loop);
-document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;});
-// portrait gate: #rot overlay covers the game; also pause the sim
+document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;IN.lock=false;});
+// portrait gate: #rot overlay covers the game; also pause the sim. The dungeon (body.gb) is the
+// one board that WANTS portrait, so its wrong-way is landscape-on-a-touch-device (#rotD) — desktops
+// are exempt, since you cannot rotate a monitor and the square layout works either way.
 const PMQ=matchMedia('(orientation: portrait)');
-function syncRot(){if(S)S.paused=PMQ.matches||userPaused;IN.fire=false;last=performance.now();padClear();}
+const CMQ=matchMedia('(pointer: coarse)');
+const HMQ=matchMedia('(any-hover: none)'); // a keyboard-docked tablet hovers — treat it like a desktop
+function wrongWay(){return document.body.classList.contains('gb')?(!PMQ.matches&&CMQ.matches&&HMQ.matches):PMQ.matches;}
+function syncRot(){if(S)S.paused=wrongWay()||userPaused;IN.fire=false;IN.lock=false;last=performance.now();padClear();gbFit();}
 try{PMQ.addEventListener('change',syncRot);}catch(e){PMQ.addListener(syncRot);}
 MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 

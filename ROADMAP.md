@@ -302,15 +302,17 @@ critter enemies. Either create the location or rewrite the references.
 | G — Hub screen | ✅ **Done** (first cut) | Behind `?hub=1`. A NEW screen built on the `renderWar` pattern — DOM buttons at percentage positions with an inset SVG, so there is no canvas backing store to get wrong and no fixed pixel height. All 8 boards reachable, addressed by string id (verified against a fully reversed `STAGES`). Fog hides unreached nodes entirely rather than making them invisible-but-clickable. Launching from the hub returns to the hub on clear; the linear story spine is untouched. |
 | H — New boards | 🟡 **1 of 3** | **Time Warp Zone** shipped — a CH.1 remix on the existing side-scroller with one new mechanic (the board's clock speeds up and slows down). Reachable from the hub, so it needs `?hub=1`. Fixed the music selector first: it was indexed by stage number and any 9th stage crashed on it. **Remaining:** Ventilation Shafts (stealth) and Custard Storage (puzzle) — both are genuinely new mechanics, one commit series each, not started. |
 | Race board rebuild | ⏸ **PARKED** 2026-08-30 | Play-tested and it still isn't fun, so it is out of the story chain and off the hub map — `disabled:true` on the STAGES entry, CH.2 now leads straight to the ACT 3 scene. **No race code was deleted**; `raceUpdate`/`raceDraw`/`buildTrack` are untouched and it still boots at `?board=race` for tuning. Re-enabling is three edits, listed in the comment above the STAGES entry. A save sitting on the race forwards to the next scene rather than stranding. Knobs still listed under **Open knobs** below. |
+| Taquito expiry warning | ✅ **Done** 2026-08-30 | The halo strobes white↔alarm-red for the last `TUNING.taqWarn` (1.5s) of TAQUITO TIME, accelerating in the final 0.6s; the 🌮 blinks with it and the gold sparks turn red. Motion + colour change, so it survives greyscale like every other cue. Applies at the one shared draw site (`drawJuice`) plus the race's extra aura. |
+| Supply Dungeon: Game Boy rebuild | ✅ **Done** 2026-08-30 | The dungeon now plays PORTRAIT inside a handheld shell: square canvas "glass" up top (`GBV`, sized by `gbFit()` off the `#gb` slab), DOM d-pad lower-left, magenta A/B on the classic diagonal (A=ZAP, B=hold to LOCK aim — kills the old "standing still cannot re-aim" flaw), SELECT=mute / START=pause. The landscape gate inverts per-board: `body.gb` hides `#rot`, and `#rotD` asks touch devices to turn upright (desktops exempt via `pointer:coarse`, keyboard-docked tablets via `any-hover`). `wrongWay()` is the single orientation-pause authority; `startStage` now calls `syncRot()` so a board started in the wrong orientation pauses immediately (this also closed a pre-existing hole on every board). Dying in — or clearing — the dungeon keeps the shell so RETRY/CONTINUE need no rotate dance, both gated on `MODE==='action'` because the war room runs with S still holding the previous canvas board. An adversarial review pass caught that stale-S trap plus a rotate-trap on the first-visit card, multi-touch steals on the d-pad/buttons, and portrait HUD collisions — all fixed and regression-tested (43 headless checks). Board slowed: player 235→205, goo 105→90, orb 165→145, turret range 360→320. |
 | Stomp kills (CH.1 / CH.2) | ✅ **Done** 2026-08-30 | Landing on a foe kills it, scores it and bounces, with one air-jump handed back so stomps chain. Fixes the real complaint: ground goo sits *under* the line of fire, so jumping was pure avoidance with no payoff. Opt-in per board via `stomp:true` — on CH.1 and CH.2 only. |
 | Old Phases 7–10 | ✂️ Below cut line | Recorded as ideas, not planned. |
 
 ### Where things stand (last session: 2026-08-30)
 
 Everything through Phase G is shipped; Phase H is 1 of 3. **The race is parked** — the story spine is now
-CH.1 → CH.2 → ACT 3 → CH.3, and the hub map runs CH.2 straight into CH.3. The title still
-reads **v0.9**, which is now stale — it predates F, G, H, the race rebuild and its parking. Worth bumping on
-the next release, since that indicator is how you tell whether Safari served you a cached copy.
+CH.1 → CH.2 → ACT 3 → CH.3, and the hub map runs CH.2 straight into CH.3. The title reads **v0.10**
+(bumped 2026-08-30 with the Game Boy dungeon); keep bumping it each release — that indicator is how you
+tell whether Safari served you a cached copy.
 
 **Test any board in one tap** — this is the thing to reach for first:
 `?board=race&fresh=1` (ids: `ch1 ch2 race ch3 war glaze boss dungeon warp`), or `?hub=1` for the map.
@@ -352,6 +354,11 @@ sizes are compressed, which is what the real cabinets did. Don't "fix" it back.
 - `S.taq` is the TAQUITO TIME timer in seconds, not a count. The wallet is `PROF.taquitos`.
 - `#pads` needs the z-index, not `.pad` — a positioned parent with a z-index makes its own stacking
   context, so a child's z-index only ranks inside it. This made the FIRE pad untappable once already.
+- `body.gb` is the dungeon's whole contract: it swaps `#rot` for `#rotD`, shows `#gb`, and feeds
+  `wrongWay()`. It is set in ONE place (`hudOn`) plus one deliberate exception (`gameOver` keeps it so
+  a portrait death can reach RETRY). Add a second writer and the orientation gates will fight.
+- `gbFit()` reads the `#gb` slab rect, so it only works AFTER `hudOn(true)` has set `body.gb` —
+  `startStage` calls them in that order; keep it.
 - Never bump `SAVE_VER`: `migrate` returns a clean profile for any unrecognised version, which would
   erase every player's taquitos, lore and saved run. Field-by-field merge already tolerates new keys.
 
@@ -434,4 +441,4 @@ and reverted.
 
 ---
 
-*Last updated: 2026-08-30*
+*Last updated: 2026-08-30 (evening: taquito warning, Game Boy dungeon)*
