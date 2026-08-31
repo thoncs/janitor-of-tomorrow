@@ -6,12 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Janitor 2099">
+<meta name="apple-mobile-web-app-title" content="Mop War 2076">
 <meta name="theme-color" content="#0a0618">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>JANITOR OF TOMORROW</title>
+<title>MOP WAR OF 2076</title>
 <style>
 :root{
   --bg:#0a0618; --panel:#150c2e; --ink:#eae6ff; --dim:#9a8fc7;
@@ -353,8 +353,8 @@ body.gb #rot{display:none}
 
 <div class="screen on" id="title">
   <div class="pill">A Time-War Comedy</div>
-  <h1 class="glitch">Janitor of<span>Tomorrow</span></h1>
-  <p class="sub">Mop tonight. Save 2099. Try not to die in a mall.</p>
+  <h1 class="glitch">Mop War<span>of 2076</span></h1>
+  <p class="sub">Mop tonight. Save 2076. Try not to die in a mall.</p>
   <div id="cast"></div>
   <div class="btnrow"><button class="btn" id="bCont" style="display:none">⏱ CONTINUE</button><button class="btn" id="bStart">▶ START MISSION</button><button class="btn ghost" id="bHow">HOW TO PLAY</button><button class="btn ghost" id="bHub" style="display:none">🗺️ MAP</button></div>
   <p class="small dim" id="contline" style="display:none"></p>
@@ -545,7 +545,7 @@ const STAGES=[
   // below, point ch2's `next` back at the commented value above, and uncomment the two race lines in
   // HUB / HUB_NEEDS. Do NOT delete this entry — next:{stage:N} links are positional and every board
   // after it would shift.
-  {id:'race',disabled:true,name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2099 · ARCADE CABINET MODE',race:true,dist:16000,hue:265,
+  {id:'race',disabled:true,name:'CH.2.5 — TAQUITO GRAND PRIX',sub:'Wasteland Highway 2076 · ARCADE CABINET MODE',race:true,dist:16000,hue:265,
    next:{scene:2},
    after:'You parallel-parked at 90 mph. Vex logged it as "a war crime, but efficient." Biocore Tower looms overhead, humming show tunes to itself.'},
   {id:'ch3',name:'CH.3 — CUSTARD ASCENT',sub:'Biocore Vat Shaft · 64-BIT MODE',dur:55,top:true,scroll:220,hue:200,mix:{wasp:[2.4,3.6],sinker:[5,8],pod:[3.6,5.6]},
@@ -571,7 +571,7 @@ const STAGES=[
 // fx keys → hp, timeline, torque, vex, weapon, regen (energy/s bonus), spawnMul
 const STORY=[
 {chap:'ACT 1 — GRAVEYARD SHIFT',stage:0,lines:[
-  ['','Biocore Solutions, 2:14 AM. You are DOUG PICKLES: night janitor, world #1 ranked player of GRIME WAR 2099, owner of one (1) fork.'],
+  ['','Biocore Solutions, 2:14 AM. You are DOUG PICKLES: night janitor, world #1 ranked player of GRIME WAR 2076, owner of one (1) fork.'],
   ['','The supply closet explodes in purple lightning. Two soldiers step out of the smoke.'],
   ['TORQUE','"Chosen One located! He\'s... moist."'],
   ['VEX','"Doug Pickles. In our future, this lab\'s experimental dessert — PROJECT CUSTARD — liquefies civilization. You will help us destroy it."'],
@@ -621,7 +621,7 @@ const ENDINGS={
   bonded:{n:1,title:'THE GOLDEN TAQUITO',body:[
    'You destroy the vat. The timeline snaps back like a clean bedsheet.',
    'The future reboots: gas stations glow gold at sunrise, taquito rollers spin free for everyone, and the radio plays synthwave that sounds like hope with a drum machine.',
-   'Somewhere in 2099, a war un-happens. A janitor did that. A janitor and his two terrifying friends.']},
+   'Somewhere in 2076, a war un-happens. A janitor did that. A janitor and his two terrifying friends.']},
   alone:{n:2,title:'THE QUIET REBOOT',body:[
    'You destroy the vat. The timeline snaps back like a clean bedsheet. It works. It absolutely works.',
    'The future reboots without asking your opinion: gas stations glow gold at sunrise, taquito rollers spin free, and not one person down there knows your name.',
@@ -652,7 +652,7 @@ const ENDINGS={
 const LORE=[
  {id:'ch1',from:'MEMO — BIOCORE FACILITIES',txt:'Effective immediately, Sublevel B is designated a DESSERT-ADJACENT WORKSPACE. Staff may not describe the humming as "singing." Staff may not describe the humming at all. The night janitor has been informed and said, quote, "I mop here."'},
  {id:'ch2',from:'MALL DIRECTORY, PARTIALLY MELTED',txt:'LEVEL 2 — FOOD COURT · ORANGE JULIUS (CLOSED) · SUNGLASS HUT (CLOSED) · PROJECT CUSTARD PILOT KIOSK (THRIVING). A note taped under the glass reads: "it asked me for a manager. I AM the manager. it asked again."'},
- {id:'race',from:'HIGHWAY 2099 SIGNAGE LOG',txt:'Mile 41: LAST GAS BEFORE PUDDING. Mile 44: WE MEAN IT. Mile 51: TURN BACK. Mile 52: OK BUT THE TAQUITOS ARE GENUINELY GOOD. Maintenance notes the final sign was added without authorisation and has declined to remove it.'},
+ {id:'race',from:'HIGHWAY 2076 SIGNAGE LOG',txt:'Mile 41: LAST GAS BEFORE PUDDING. Mile 44: WE MEAN IT. Mile 51: TURN BACK. Mile 52: OK BUT THE TAQUITOS ARE GENUINELY GOOD. Maintenance notes the final sign was added without authorisation and has declined to remove it.'},
  {id:'ch3',from:'VAT SHAFT MAINTENANCE TAG',txt:'Do not ascend the shaft during a bloom. Do not ascend the shaft after a bloom. The shaft has expressed a preference for being ascended and that is precisely the problem. — signed, a previous janitor, no name given'},
  {id:'war',from:'FLOOR PLAN, DRAWN ON A NAPKIN',txt:'Torque has labelled the vat floor in seven colours. THE CORE is circled four times. A smaller circle in the corner reads "snack depot (mine)". Vex has added, in immaculate lettering: "this is not to scale and I have made peace with that."'},
  {id:'warp',from:'INCIDENT REPORT, FILED TWICE',txt:'Both copies are in the same handwriting and neither is dated. The first ends: "the janitor was not present." The second ends: "the janitor was present twice." Stapled behind them is a golden wrapper nobody has managed to throw away, and a note reading — if you are reading this, check the vat BEFORE the dessert.'},
@@ -738,7 +738,7 @@ const LOOT=[
  '🌯 Half a breakfast burrito of unknown era. +1 HP.',
  '🌭 A gas-station taquito, still rolling somehow. +1 HP.'];
 const FLAVOR=[
- '📼 Found a cassette: "SYNTH HITS TO SURVIVE 2099 TO." Inspiring.',
+ '📼 Found a cassette: "SYNTH HITS TO SURVIVE 2076 TO." Inspiring.',
  '🎸 Torque headbangs at a dying jukebox. Morale +∞ (cosmetic).',
  '🍮 A vending-machine pudding cup stares back. You leave it. Wise.',
  '🎹 Somewhere, a dive-bar synth arpeggio. Vex taps one (1) boot.'];
@@ -1330,7 +1330,7 @@ function setPauseTab(t){pauseTab=t;
 
 const BIOS=[
  {id:'doug',  name:'DOUG PICKLES',    img:()=>ART.port_doug, always:true,
-  txt:'Night janitor. World #1 ranked at GRIME WAR 2099, a game nobody else plays. Owns one (1) fork. Did not ask for a time-war and is being extremely normal about it.'},
+  txt:'Night janitor. World #1 ranked at GRIME WAR 2076, a game nobody else plays. Owns one (1) fork. Did not ask for a time-war and is being extremely normal about it.'},
  {id:'torque',name:'TORQUE',          img:()=>ART.port_torq, always:true,
   txt:'Future soldier. Eats things that are not food as a coping mechanism. Believes every problem is a door problem. Trust her and the mop swings truer.'},
  {id:'vex',   name:'VEX',             img:()=>ART.port_vex,  always:true,

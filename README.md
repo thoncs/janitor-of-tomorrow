@@ -1,10 +1,10 @@
-# 🧹 JANITOR OF TOMORROW
+# 🧹 MOP WAR OF 2076
 
-*A time-war comedy.* Mop tonight. Save 2099. Try not to die in a mall.
+*A time-war comedy.* Mop tonight. Save 2076. Try not to die in a mall.
 
 **▶ [PLAY IT](https://thoncs.github.io/janitor-of-tomorrow/)** — landscape phone or desktop, one self-contained HTML file. No build, no server, no dependencies.
 
-Doug Pickles — night janitor, world #1 ranked player of GRIME WAR 2099, owner of one (1) fork — is dragged into a time-war by two dangerous future soldiers and must stop PROJECT CUSTARD before dessert liquefies civilization.
+Doug Pickles — night janitor, world #1 ranked player of GRIME WAR 2076, owner of one (1) fork — is dragged into a time-war by two dangerous future soldiers and must stop PROJECT CUSTARD before dessert liquefies civilization.
 
 ## What's inside
 

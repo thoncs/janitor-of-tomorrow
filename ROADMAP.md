@@ -1,4 +1,4 @@
-# ROADMAP: Janitor of Tomorrow
+# ROADMAP: Mop War of 2076
 
 The game that ships today is **complete**: 8 boards, 3 endings, a tabletop finale, and big dumb fun. Nothing
 below is needed to make it good. The dominant risk to this project is no longer missing features — it is

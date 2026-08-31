@@ -1,7 +1,7 @@
 {
-  "name": "Janitor of Tomorrow",
-  "short_name": "Janitor 2099",
-  "description": "A time-war comedy. Mop tonight. Save 2099. Try not to die in a mall.",
+  "name": "Mop War of 2076",
+  "short_name": "Mop War 2076",
+  "description": "A time-war comedy. Mop tonight. Save 2076. Try not to die in a mall.",
   "start_url": ".",
   "display": "fullscreen",
   "orientation": "landscape",
