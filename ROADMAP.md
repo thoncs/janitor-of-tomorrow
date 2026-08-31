@@ -312,7 +312,7 @@ critter enemies. Either create the location or rewrite the references.
 The owner's call: the game should be **Super Fun and playable by 5–10 year-olds** (and everyone older),
 with a short learning curve — and the whole game should probably move into the portrait Game Boy
 paradigm the dungeon pioneered. This supersedes earlier assumptions. The full phased plan (P0 plumbing →
-P1 shmup → P2 side-scrollers → P3 boss → P4 everything-else + gate flip) lives in the Supply Boy Plan
+P1 shmup → P2 side-scrollers → P3 boss → P4 everything-else + gate flip) lives in the LameBOY Plan
 artifact and is grounded in measured draw-anchor counts. The control law everywhere: **d-pad = move/point,
 A = ATTACK, B = BODY (jump/scoot/focus/cancel)** — taught once, honored on every board.
 
