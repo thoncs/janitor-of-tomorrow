@@ -385,9 +385,10 @@ body.gb #rot{display:none}
   <div class="pill">Field Manual</div>
   <h2>How to Not Die</h2>
   <div id="tgrid">
+  <div class="trow"><b>📱</b><span><b>HOLD YOUR PHONE UPRIGHT.</b> The whole war fits in one hand now.</span></div>
   <div class="trow"><b>👟</b><span><b>DOUG AUTO-RUNS.</b> He's scared. It helps.</span></div>
-  <div class="trow"><b>⬆️</b><span><b>LEFT PAD — JUMP.</b> Tap again mid-air to double-jump.</span></div>
-  <div class="trow"><b>🔥</b><span><b>RIGHT PAD — HOLD TO FIRE.</b> Burns NACHO CELLS ⚡. They recharge. Nacho physics.</span></div>
+  <div class="trow"><b>🅱️</b><span><b>B — JUMP.</b> Tap again mid-air to double-jump. The d-pad's ▲ jumps too.</span></div>
+  <div class="trow"><b>🅰️</b><span><b>A — HOLD TO FIRE.</b> Burns NACHO CELLS ⚡. They recharge. Nacho physics.</span></div>
   <div class="trow"><b>👟</b><span><b>LAND ON THEM.</b> Come down on a goo blob's head and it pops. Bounce, and go again.</span></div>
   <div class="trow"><b>🍮</b><span><b>OTHERWISE, DON'T TOUCH.</b> Walking into goo, drones or turret spit is still death-adjacent.</span></div>
   <div class="trow"><b>🌭</b><span><b>GRAB SNACKS.</b> Snacks are health. This universe is fair like that.</span></div>
@@ -539,9 +540,9 @@ const PATTERNS={
 // APPEND new stages, never insert: the story chain's next:{stage:N} links are numeric, so inserting
 // mid-array silently reroutes them (inserting before dungeon sent the war room to the wrong board).
 const STAGES=[
-  {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:175,hue:265,pixel:true,stomp:true,mix:{blob:[1.6,2.6],turret:[6,9]},
+  {id:'ch1',name:'CH.1 — MOP & DESTROY',sub:'Biocore Sublevel B',dur:35,scroll:150,hue:265,pixel:true,stomp:true,gbmode:true,mix:{blob:[1.6,2.6],turret:[6,9]},
    next:{scene:1}},
-  {id:'ch2',name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:200,hue:315,stomp:true,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
+  {id:'ch2',name:'CH.2 — ESCALATOR TO HELL',sub:'The Dead Mall',dur:44,scroll:170,hue:315,stomp:true,gbmode:true,mix:{blob:[1.5,2.5],drone:[2.0,3.2]},
    next:{scene:2,label:'🏢 BIOCORE TOWER LOOMS →'}}, // race parked: was {stage:2,label:'🏁 TORQUE FOUND THE KEYS →'}
   // ⏸ PARKED 2026-08-30 — the race does not play well enough to ship, so it is out of the story
   // chain and off the hub map. Nothing about the board was deleted: raceUpdate/raceDraw/buildTrack are
@@ -564,7 +565,7 @@ const STAGES=[
   {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,gbmode:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
    after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
-  {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:210,hue:190,pixel:true,
+  {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:180,hue:190,pixel:true,gbmode:true,
    music:'drive',stutter:true,mix:{blob:[1.2,2.0],turret:[5,7],drone:[2.2,3.4]},
    next:{stage:5,label:'🍩 BACK TO THE DOOR →'},
    after:'You mopped the same corridor twice, eleven years apart, in the wrong order. Vex refuses to log it. Torque says it "tasted purple."'}
@@ -694,7 +695,7 @@ const HOWTO={
  warp:{title:'🌀 TIME WARP ZONE',lines:[
   'Sublevel B again — but the clock is wrong.',
   'Time speeds up and slows down on its own. Nothing you press changes it; read it and move with it.',
-  'Same pads as CH.1: jump, double jump, hold to fire. Everything else is denser than you remember.']},
+  'Same buttons as CH.1: B jumps, A fires. Everything else is denser than you remember.']},
  boss:{title:'⚔️ K.E.V.I.N.',lines:[
   'You cannot move here. You can only jump and shoot.',
   'The low custard wave along the floor must be jumped.',
@@ -1926,6 +1927,10 @@ function gbFit(){
 // canvas when it isn't. Repointing a board onto GV() is therefore a no-op until its stage grows
 // gbmode:true — which is the whole conversion trick.
 function GV(){return GBV.on&&GBV.w?GBV:{x:0,y:0,w:W,h:H};}
+// The runners' floor, wherever the board lives. Same formula fit() uses for the global groundY,
+// applied to the glass — the glass side is close to the old landscape height, so jump physics,
+// sprite sizes and the 780px/s stomp keep their meaning at 1:1 pixels.
+function gYv(){const v=GV();return (S&&S.st&&S.st.gbmode)?Math.min(v.h*.82,v.h-64):groundY;}
 addEventListener('resize',gbFit); // fit() registered first, so W/H are fresh when this runs
 gbFit();
 
@@ -2083,6 +2088,9 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
     S.p.x=200;S.p.y=groundY;}
   if(st.dungeon){S.p.x=0;S.p.y=0;S.p.vx=0;S.p.vy=0;S.p.dashT=0;S.p.dashCd=0;
     S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};dungeonInit();}
+  if(st.gbmode&&!st.top&&!st.dungeon){ // runners in the glass: short runway, floor recomputed
+    S.p.x=64;S.p.y=gYv();
+    if(!S.stick)S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};}
   // Resume from a mid-board checkpoint if this is the board we banked one on. Done after all the
   // per-mode setup above, so it overrides those defaults rather than being overwritten by them.
   if(G.cpStage===i&&G.cpValue>0){
@@ -2091,7 +2099,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
     S.banner={text:'◉ RESUMING FROM CHECKPOINT',t:1.6};}
   // whoever you have been kinder to gets the line; ties go to Torque, who talks more
   const bk=BARKS[st.id];if(bk&&!st.boss)say(bk[G.vex>G.torque?'VEX':'TORQUE'],4.2);
-  $('padJ').style.display=(st.top||st.race||st.dungeon)?'none':'';
+  $('padJ').style.display=(st.top||st.race||st.gbmode)?'none':''; // LameBOY boards jump on B
   $('padF').style.display=(st.race||st.gbmode)?'none':''; // race: nothing to shoot · LameBOY boards: A does it
   G.energy=100;
   hudOn(true);showScreen('');updateHearts();
@@ -2103,9 +2111,10 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   syncRot(); // pause immediately if the phone is held the wrong way for THIS board
   $('pbar').classList.toggle('boss',!!st.boss);}
 
-function spawnFoe(type,plain){const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:W+50,t:0,hitT:0};
-  if(type==='drone'){f.baseY=groundY-95-rr(0,70);f.y=f.baseY;f.ph=rr(0,6.3);}
-  else{f.y=groundY;if(type==='turret')f.fireT=rr(.6,1.4);}
+function spawnFoe(type,plain){const gy=gYv(),lead=(S.st&&S.st.gbmode)?110:0; // lead: extra runway so warnings beat arrivals
+  const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:GV().w+50+lead,t:0,hitT:0};
+  if(type==='drone'){f.baseY=gy-95-rr(0,70);f.y=f.baseY;f.ph=rr(0,6.3);}
+  else{f.y=gy;if(type==='turret')f.fireT=rr(.6,1.4);}
   // CHONKY BOY: rare giant blob. He contains multitudes (of blobs).
   // (never in the boss arena — bossDraw doesn't know him, and K.E.V.I.N. hates sharing)
   if(type==='blob'&&!plain&&!S.st.boss&&S.t>9&&Math.random()<.13){f.big=true;f.hp=8;f.w=60;f.h=44;
@@ -2792,7 +2801,7 @@ function topKill(j){const f=S.foes[j];
   S.foes.splice(j,1);}
 
 /* ================= ACTION: per-frame update ================= */
-function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
+function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll,V=GV(),vw=V.w,vh=V.h,gY=gYv();
   tickSay(dt); // above the dispatch, so every mode ages it and hit-stop cannot strand a line
   // TIME WARP ZONE: the board's clock breathes. One multiplier here reaches physics, spawn timers and
   // scroll together. The wave is driven by REAL elapsed time, not the warped clock — phase it on S.t and
@@ -2805,9 +2814,17 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
   if(st.dungeon){dungeonUpdate(dt);return;}
   S.t+=dt;S.scroll+=sp*dt;if(S.shake>0)S.shake-=dt;
   updateJuice(dt);if(S.banner)S.banner.t-=dt;
+  // LameBOY verbs on the runners: B (tap, buffered) = jump · d-pad UP = jump · d-pad DOWN = dive.
+  // Kids mash the pad expecting movement, so mashing does the right thing.
+  if(st.gbmode){
+    if(IN.dashBuf>0){IN.jumpBuf=Math.max(IN.jumpBuf,.12);IN.dashBuf=0;}
+    const sk=S.stick;
+    if(sk){if(sk.on&&sk.y<-.6){if(!S.upHeld){IN.jumpBuf=Math.max(IN.jumpBuf,.12);S.upHeld=true;}}
+      else S.upHeld=false;
+      if(sk.on&&sk.y>.6&&!p.onG)p.vy+=2400*dt;}}
   // one guaranteed golden taquito per board (same height band as other pickups)
   if(!st.boss&&S.t>16&&!S.taqSpawned){S.taqSpawned=true;
-    S.picks.push({x:W+40,y:groundY-46,t:0,kind:'taq'});}
+    S.picks.push({x:vw+40,y:gY-46,t:0,kind:'taq'});}
 
   // --- player physics (auto-run: world scrolls, Doug stays put) ---
   p.vy+=TUNING.gravity*dt;
@@ -2816,7 +2833,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
   // than sampled — at 780px/s the feet cross a 22px blob inside one frame.
   const py0=p.y,falling=p.vy>0;
   p.y+=p.vy*dt;
-  if(p.y>=groundY){p.y=groundY;p.vy=0;p.onG=true;p.jumps=0;}else p.onG=false;
+  if(p.y>=gY){p.y=gY;p.vy=0;p.onG=true;p.jumps=0;}else p.onG=false;
   if(IN.jumpBuf>0){IN.jumpBuf-=dt;
     if(p.onG||p.jumps<2){p.vy=p.jumps===0?TUNING.jumpV:TUNING.djV;p.jumps++;p.onG=false;IN.jumpBuf=0;AU.jump();}}
   if(p.inv>0)p.inv-=dt;
@@ -2836,7 +2853,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
 
   // --- bullets ---
   for(let i=S.bullets.length-1;i>=0;i--){const b=S.bullets[i];b.x+=b.vx*dt;b.y+=b.vy*dt;
-    if(b.x>W+40||b.x<-40||b.y<-40||b.y>H+40){S.bullets.splice(i,1);continue;}
+    if(b.x>vw+40||b.x<-40||b.y<-40||b.y>vh+40){S.bullets.splice(i,1);continue;}
     if(S.boss&&S.bossDying<0){const bs=S.boss;
       if(b.x>bs.x-bs.r&&b.x<bs.x+bs.r&&b.y>bs.y-bs.r&&b.y<bs.y+bs.r){
         bs.hp-=b.dmg;bs.hitT=.12;boom(b.x,b.y,'#7dff3a',5);AU.kill();S.bullets.splice(i,1);
@@ -2854,7 +2871,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
     if(f.type==='blob')f.x-=(sp+(f.big?24:ENEMIES.blob.spd))*dt;
     else if(f.type==='drone'){f.x-=(sp+ENEMIES.drone.spd)*dt;f.y=f.baseY+Math.sin(f.t*4+f.ph)*ENEMIES.drone.amp;}
     else if(f.type==='turret'){f.x-=sp*dt;f.fireT-=dt;
-      if(f.fireT<=0&&f.x<W-20&&f.x>p.x+80&&f.x-p.x<540){f.fireT=ENEMIES.turret.fireEvery;
+      if(f.fireT<=0&&f.x<vw-20&&f.x>p.x+80&&f.x-p.x<(st.gbmode?260:540)){f.fireT=ENEMIES.turret.fireEvery;
         const d=f.x-p.x; // aim the lob at Doug, with wobble
         S.shots.push({x:f.x,y:f.y-24,vx:-clamp(d*rr(.85,1.2)/.8,110,620),vy:-rr(380,500),grav:true,w:12,h:12});}}
     if(f.x<-60){S.foes.splice(i,1);continue;}
@@ -2871,7 +2888,7 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
   // --- enemy shots (goo lobs + boss waves) ---
   for(let i=S.shots.length-1;i>=0;i--){const s=S.shots[i];
     if(s.grav)s.vy+=1300*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
-    if(s.grav&&s.y>=groundY){boom(s.x,groundY,'#7dff3a',4);S.shots.splice(i,1);continue;}
+    if(s.grav&&s.y>=gY){boom(s.x,gY,'#7dff3a',4);S.shots.splice(i,1);continue;}
     if(s.x<-40){S.shots.splice(i,1);continue;}
     if(s.x-s.w/2<p.x+11&&s.x+s.w/2>p.x-11&&s.y>p.y-38&&s.y-s.h<p.y){
       S.shots.splice(i,1);
@@ -2908,8 +2925,8 @@ function update(dt){const st=S.st,p=S.p,sp=st.boss?0:st.scroll;
 function killFoe(j){const f=S.foes[j];boom(f.x,f.y-f.h/2,f.type==='drone'?'#ff3df0':'#7dff3a',f.big?22:10);
   killJuice(f.x,f.y-f.h/2,f.big?250:100);AU.kill();
   const r=Math.random();
-  if(r<.12)S.picks.push({x:f.x,y:groundY-46,t:0,kind:'hp'});
-  else if(r<.3)S.picks.push({x:f.x,y:groundY-46,t:0,kind:'en'});
+  if(r<.12)S.picks.push({x:f.x,y:gYv()-46,t:0,kind:'hp'});
+  else if(r<.3)S.picks.push({x:f.x,y:gYv()-46,t:0,kind:'en'});
   S.foes.splice(j,1);
   if(f.big){ // CHONKY BOY erupts into the blobs he always was
     S.freeze=Math.max(S.freeze,TUNING.juice.hurtFreeze);S.shake=TUNING.juice.killShake;
@@ -3563,16 +3580,19 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
   if(st.top){topDraw();return;}
   if(st.boss){bossDraw();return;}
   if(st.dungeon){dungeonDraw();return;}
+  const V=GV(),vw=V.w,vh=V.h,gY=gYv();
   cx.clearRect(0,0,W,H);cx.save();
   cx.imageSmoothingEnabled=false;
+  if(GBV.on)gbShell(V);                 // the plastic, unshaken
+  cx.translate(V.x,V.y);cx.beginPath();cx.rect(0,0,vw,vh);cx.clip(); // glass-local from here down
   if(S.shake>0)cx.translate(rr(-5,5)*S.shake,rr(-4,4)*S.shake);
 
   // sky
-  const g=cx.createLinearGradient(0,0,0,groundY);
+  const g=cx.createLinearGradient(0,0,0,gY);
   g.addColorStop(0,'hsl('+hue+',65%,6%)');g.addColorStop(1,'hsl('+hue+',70%,16%)');
-  cx.fillStyle=g;cx.fillRect(-8,-8,W+16,groundY+8);
+  cx.fillStyle=g;cx.fillRect(-8,-8,vw+16,gY+8);
   // striped synth sun
-  const sx=W*.74,sy=groundY*.52,sr=54;
+  const sx=vw*.74,sy=gY*.52,sr=54;
   cx.save();cx.beginPath();cx.arc(sx,sy,sr,0,7);cx.clip();
   cx.fillStyle='hsla('+hue+',95%,62%,.9)';cx.fillRect(sx-sr,sy-sr,sr*2,sr*2);
   cx.fillStyle='hsl('+hue+',65%,8%)';
@@ -3581,22 +3601,22 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
   // skyline (parallax)
   cx.fillStyle='hsl('+hue+',55%,10%)';
   for(let i=0;i<14;i++){const bw=40+seed(i)*50,bh=40+seed(i+40)*110,
-    bx=((i*95-S.scroll*.25)%(W+140))-70;cx.fillRect(bx,groundY-bh,bw,bh);}
+    bx=((i*95-S.scroll*.25)%(vw+140))-70;cx.fillRect(bx,gY-bh,bw,bh);}
   // floor + VHS grid
-  cx.fillStyle='hsl('+hue+',45%,7%)';cx.fillRect(-8,groundY,W+16,H-groundY+8);
+  cx.fillStyle='hsl('+hue+',45%,7%)';cx.fillRect(-8,gY,vw+16,vh-gY+8);
   cx.strokeStyle='hsla('+hue+',85%,60%,.3)';cx.lineWidth=1;cx.beginPath();
-  [8,20,38,64,100].forEach(o=>{cx.moveTo(0,groundY+o);cx.lineTo(W,groundY+o);});
-  for(let x=-(S.scroll%44);x<W+44;x+=44){cx.moveTo(x,groundY);cx.lineTo(x,H);}
+  [8,20,38,64,100].forEach(o=>{cx.moveTo(0,gY+o);cx.lineTo(vw,gY+o);});
+  for(let x=-(S.scroll%44);x<vw+44;x+=44){cx.moveTo(x,gY);cx.lineTo(x,vh);}
   cx.stroke();
   cx.strokeStyle='hsla('+hue+',90%,65%,.85)';cx.lineWidth=2;
-  cx.beginPath();cx.moveTo(0,groundY);cx.lineTo(W,groundY);cx.stroke();
+  cx.beginPath();cx.moveTo(0,gY);cx.lineTo(vw,gY);cx.stroke();
 
   // exit door sliding in at stage end
-  if(!st.boss&&S.t>st.dur-2.2){const ex=W-80-((S.t-(st.dur-2.2))/2.2)*60;
-    cx.fillStyle='#0e2b12';cx.fillRect(ex,groundY-86,52,86);
-    cx.strokeStyle='#7dff3a';cx.lineWidth=2;cx.strokeRect(ex,groundY-86,52,86);
+  if(!st.boss&&S.t>st.dur-2.2){const ex=vw-80-((S.t-(st.dur-2.2))/2.2)*60;
+    cx.fillStyle='#0e2b12';cx.fillRect(ex,gY-86,52,86);
+    cx.strokeStyle='#7dff3a';cx.lineWidth=2;cx.strokeRect(ex,gY-86,52,86);
     cx.fillStyle='#7dff3a';cx.font='900 13px sans-serif';cx.textAlign='center';
-    cx.fillText('EXIT',ex+26,groundY-96);}
+    cx.fillText('EXIT',ex+26,gY-96);}
 
   // pickups (emoji; the golden taquito announces itself)
   cx.textAlign='center';
@@ -3609,9 +3629,9 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
 
   // enemy shots
   S.shots.forEach(s=>{cx.fillStyle='#7dff3a';
-    if(s.wave){cx.beginPath();cx.moveTo(s.x-s.w/2,groundY);
-      cx.quadraticCurveTo(s.x,groundY-s.h*2,s.x+s.w/2,groundY);cx.fill();
-      cx.fillStyle='rgba(125,255,58,.35)';cx.fillRect(s.x-s.w/2,groundY-3,s.w,3);}
+    if(s.wave){cx.beginPath();cx.moveTo(s.x-s.w/2,gY);
+      cx.quadraticCurveTo(s.x,gY-s.h*2,s.x+s.w/2,gY);cx.fill();
+      cx.fillStyle='rgba(125,255,58,.35)';cx.fillRect(s.x-s.w/2,gY-3,s.w,3);}
     else{cx.beginPath();cx.arc(s.x,s.y,s.w/2,0,7);cx.fill();
       cx.strokeStyle='rgba(10,6,24,.85)';cx.lineWidth=2;cx.stroke();
       cx.fillStyle='rgba(125,255,58,.4)';cx.beginPath();cx.arc(s.x+3,s.y+4,s.w/3,0,7);cx.fill();}});
@@ -3672,18 +3692,24 @@ function draw(){const st=S.st,p=S.p,hue=st.hue;
   S.rings.forEach(r2=>{cx.strokeStyle='rgba(255,220,120,'+Math.max(0,r2.life)+')';
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
   cx.restore();
-  drawJuice();drawSay();drawBanner();
+  drawJuice();
+  // ⚠ incoming: anything still off the right edge of the glass telegraphs itself
+  if(st.gbmode){cx.textAlign='center';cx.font='900 14px sans-serif';
+    S.foes.forEach(f=>{if(f.x>vw+6){cx.globalAlpha=.55+.45*Math.sin(S.t*10);
+      cx.fillStyle='#ffb01f';cx.fillText('⚠',vw-14,(f.type==='drone'?f.baseY:f.y-18));}});
+    cx.globalAlpha=1;}
 
   // stage intro card
   const introT=st.boss?3:2.2;
-  if(S.t<introT){cx.fillStyle='rgba(5,2,16,'+(.75*(1-S.t/introT))+')';cx.fillRect(0,0,W,H);
+  if(S.t<introT){cx.fillStyle='rgba(5,2,16,'+(.75*(1-S.t/introT))+')';cx.fillRect(0,0,vw,vh);
     cx.globalAlpha=Math.min(1,(introT-S.t)*2);cx.textAlign='center';
-    cx.fillStyle='#eae6ff';cx.font='900 24px sans-serif';cx.fillText(st.name,W/2,H*.4);
-    cx.fillStyle='#9a8fc7';cx.font='700 14px sans-serif';cx.fillText(st.sub,W/2,H*.4+26);
+    cx.fillStyle='#eae6ff';cx.font='900 20px sans-serif';cx.fillText(st.name,vw/2,vh*.4);
+    cx.fillStyle='#9a8fc7';cx.font='700 13px sans-serif';cx.fillText(st.sub,vw/2,vh*.4+24);
     if(st.boss){cx.fillStyle='#7dff3a';cx.font='700 12px sans-serif';
-      cx.fillText('Kinetic Enzyme Vat, Infinitely Networked',W/2,H*.4+48);}
+      cx.fillText('Kinetic Enzyme Vat, Infinitely Networked',vw/2,vh*.4+46);}
     cx.globalAlpha=1;}
-  cx.restore();}
+  cx.restore();
+  drawSay();drawBanner();} // absolute coords — they place themselves on the glass when it's up
 
 /* ================= MAIN LOOP ================= */
 let last=0;
