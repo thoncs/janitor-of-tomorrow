@@ -561,7 +561,7 @@ const STAGES=[
   {id:'glaze',name:'VS GLAZE — THE FORBIDDEN DONUT',sub:'Vat Door Dojo · KUMITE MODE',fight:true,hue:150,
    next:{stage:6,label:'⚔️ FACE K.E.V.I.N. →'},
    after:'MOPTALITY. GLAZE crumbles into six thousand sprinkles. Torque eats the evidence "so forensics can\'t find it." The vat door, deeply unsettled, opens on its own.'},
-  {id:'boss',name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,hue:120,bossHp:64},
+  {id:'boss',name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,gbmode:true,hue:120,bossHp:64},
   {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,gbmode:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
    after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
@@ -697,7 +697,7 @@ const HOWTO={
   'Time speeds up and slows down on its own. Nothing you press changes it; read it and move with it.',
   'Same buttons as CH.1: B jumps, A fires. Everything else is denser than you remember.']},
  boss:{title:'⚔️ K.E.V.I.N.',lines:[
-  'You cannot move here. You can only jump and shoot.',
+  'You cannot walk here. A = FIRE, B = JUMP. That is the whole vocabulary.',
   'The low custard wave along the floor must be jumped.',
   'The three arcing lobs are aimed where you are standing — so do not be standing there.']},
  war:{title:'🗺️ OPERATION: FLOOR PLAN',lines:[
@@ -2957,14 +2957,15 @@ function updateBoss(dt){const bs=S.boss;if(S.bossDying>=0)return;
   for(let i=0;i<KEV_LORE.length;i++)if(kfrac<=KEV_LORE[i].at&&!S.kevSaid[i]){
     S.kevSaid[i]=true;say(KEV_LORE[i].txt,4.6);break;}
   bs.t+=dt;if(bs.hitT>0)bs.hitT-=dt;
-  bs.x=Math.min(W-100,S.p.x+640);bs.y=groundY-92+Math.sin(bs.t*1.3)*20;
+  const bv=GV(),bgy=gYv();
+  bs.x=Math.min(bv.w-92,S.p.x+640);bs.y=bgy-92+Math.sin(bs.t*1.3)*20; // the vat hugs the glass edge
   if(!S.roared&&bs.t>.4){S.roared=true;AU.roar();}
   const rage=bs.hp<bs.max*.5;
   bs.atk-=dt;
   if(bs.atk<=0&&bs.t>2.6){bs.atk=rage?1.45:1.9;
     const r=Math.random(),blobs=S.foes.filter(f=>f.type==='blob').length;
-    if(r<(rage?.42:.3)){ // custard wave — jump it
-      S.shots.push({x:bs.x-70,y:groundY-8,vx:-430,vy:0,grav:false,w:32,h:18,wave:true});
+    if(r<(rage?.42:.3)){ // custard wave — jump it (slower in the glass: the runway is short)
+      S.shots.push({x:bs.x-70,y:bgy-8,vx:S.st.gbmode?-290:-430,vy:0,grav:false,w:32,h:18,wave:true});
     }else if(r<.7){ // triple goo lob — lands short / mid / on Doug
       for(let i=0;i<3;i++)setTimeout(()=>{if(S&&S.boss&&S.bossDying<0){
         const d=S.boss.x-60-S.p.x;
@@ -3420,62 +3421,64 @@ function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
     cx.fillText('follow the arrow · loot 5 🌮 crates',V.x+V.w/2,V.y+V.h*.36+70);
     cx.globalAlpha=1;}}
 
-function bossDraw(){const p=S.p,bs=S.boss;
+function bossDraw(){const p=S.p,bs=S.boss,V=GV(),vw=V.w,vh=V.h,gY=gYv();
   cx.clearRect(0,0,W,H);cx.save();cx.imageSmoothingEnabled=true;
+  if(GBV.on)gbShell(V);                 // the plastic, unshaken
+  cx.translate(V.x,V.y);cx.beginPath();cx.rect(0,0,vw,vh);cx.clip(); // glass-local from here down
   if(S.shake>0)cx.translate(rr(-5,5)*S.shake,rr(-4,4)*S.shake);
   // industrial dark w/ vat ambience
-  let g=cx.createLinearGradient(0,0,0,H);
+  let g=cx.createLinearGradient(0,0,0,vh);
   g.addColorStop(0,'#04140a');g.addColorStop(.6,'#0a2413');g.addColorStop(1,'#0f3319');
-  cx.fillStyle=g;cx.fillRect(-8,-8,W+16,H+16);
-  if(bs){g=cx.createRadialGradient(bs.x,bs.y,60,bs.x,bs.y,W*.75);
+  cx.fillStyle=g;cx.fillRect(-8,-8,vw+16,vh+16);
+  if(bs){g=cx.createRadialGradient(bs.x,bs.y,60,bs.x,bs.y,vw*.75);
     g.addColorStop(0,'rgba(125,255,58,.18)');g.addColorStop(1,'rgba(125,255,58,0)');
-    cx.fillStyle=g;cx.fillRect(0,0,W,H);}
+    cx.fillStyle=g;cx.fillRect(0,0,vw,vh);}
   // machinery silhouettes + blinking lights
   cx.fillStyle='rgba(6,20,12,.85)';
   for(let i=0;i<10;i++){const bw=50+seed(i+7)*70,bh=60+seed(i+31)*130;
-    cx.fillRect((i*97)%W,groundY-bh,bw,bh);}
+    cx.fillRect((i*97)%vw,gY-bh,bw,bh);}
   for(let i=0;i<8;i++){const on=Math.sin(S.t*2+i*2.1)>0;
     cx.fillStyle=on?'rgba(255,71,87,.9)':'rgba(255,71,87,.25)';
-    cx.beginPath();cx.arc((i*131+40)%W,groundY-40-seed(i+3)*120,3,0,7);cx.fill();}
+    cx.beginPath();cx.arc((i*131+40)%vw,gY-40-seed(i+3)*120,3,0,7);cx.fill();}
   // ceiling pipe run
   g=cx.createLinearGradient(0,8,0,26);
   g.addColorStop(0,'#123a20');g.addColorStop(.5,'#2b6f42');g.addColorStop(1,'#0a2413');
-  cx.fillStyle=g;cx.fillRect(0,8,W,14);
-  cx.fillStyle='#0a2413';for(let x=30;x<W;x+=90)cx.fillRect(x,4,10,22);
+  cx.fillStyle=g;cx.fillRect(0,8,vw,14);
+  cx.fillStyle='#0a2413';for(let x=30;x<vw;x+=90)cx.fillRect(x,4,10,22);
   // rising steam
   cx.globalAlpha=.06;cx.fillStyle='#c8ffc0';
-  for(let i=0;i<3;i++){const yy=groundY-((S.t*36+i*130)%320);
-    cx.beginPath();cx.ellipse((i*271+180)%W,yy,70,26,0,0,7);cx.fill();}
+  for(let i=0;i<3;i++){const yy=gY-((S.t*36+i*130)%320);
+    cx.beginPath();cx.ellipse((i*271+180)%vw,yy,70,26,0,0,7);cx.fill();}
   cx.globalAlpha=1;
   // reflective floor + glow pool under the boss
-  g=cx.createLinearGradient(0,groundY,0,H);
+  g=cx.createLinearGradient(0,gY,0,vh);
   g.addColorStop(0,'#123a20');g.addColorStop(.25,'#0a2413');g.addColorStop(1,'#04140a');
-  cx.fillStyle=g;cx.fillRect(-8,groundY,W+16,H-groundY+8);
-  if(bs){g=cx.createRadialGradient(bs.x,groundY+18,10,bs.x,groundY+18,190);
+  cx.fillStyle=g;cx.fillRect(-8,gY,vw+16,vh-gY+8);
+  if(bs){g=cx.createRadialGradient(bs.x,gY+18,10,bs.x,gY+18,190);
     g.addColorStop(0,'rgba(125,255,58,.28)');g.addColorStop(1,'rgba(125,255,58,0)');
-    cx.fillStyle=g;cx.beginPath();cx.ellipse(bs.x,groundY+22,190,28,0,0,7);cx.fill();}
+    cx.fillStyle=g;cx.beginPath();cx.ellipse(bs.x,gY+22,190,28,0,0,7);cx.fill();}
   cx.strokeStyle='rgba(125,255,58,.14)';cx.lineWidth=1;cx.beginPath();
-  for(let i=0;i<W/44+1;i++){cx.moveTo(i*44,groundY);cx.lineTo(i*44,H);}
-  [12,30,56,90].forEach(o=>{cx.moveTo(0,groundY+o);cx.lineTo(W,groundY+o);});
+  for(let i=0;i<vw/44+1;i++){cx.moveTo(i*44,gY);cx.lineTo(i*44,vh);}
+  [12,30,56,90].forEach(o=>{cx.moveTo(0,gY+o);cx.lineTo(vw,gY+o);});
   cx.stroke();
   cx.strokeStyle='rgba(125,255,58,.5)';cx.lineWidth=2;
-  cx.beginPath();cx.moveTo(0,groundY);cx.lineTo(W,groundY);cx.stroke();
+  cx.beginPath();cx.moveTo(0,gY);cx.lineTo(vw,gY);cx.stroke();
   // ---- the vat + K.E.V.I.N. ----
   if(bs){
     g=cx.createLinearGradient(bs.x-70,0,bs.x+94,0);
     g.addColorStop(0,'#1b1830');g.addColorStop(.2,'#3d3860');g.addColorStop(.5,'#57517e');
     g.addColorStop(.8,'#2c2748');g.addColorStop(1,'#141024');
-    cx.fillStyle=g;rrectPath(bs.x-70,groundY-198,164,198,10);cx.fill();
+    cx.fillStyle=g;rrectPath(bs.x-70,gY-198,164,198,10);cx.fill();
     cx.strokeStyle='#0a0618';cx.lineWidth=2;cx.stroke();
-    g=cx.createLinearGradient(0,groundY-186,0,groundY-26);
+    g=cx.createLinearGradient(0,gY-186,0,gY-26);
     g.addColorStop(0,'rgba(125,255,58,.12)');g.addColorStop(1,'rgba(125,255,58,.38)');
-    cx.fillStyle=g;rrectPath(bs.x-56,groundY-186,136,160,8);cx.fill();
+    cx.fillStyle=g;rrectPath(bs.x-56,gY-186,136,160,8);cx.fill();
     cx.fillStyle='#8f8bad';
-    for(let i=0;i<5;i++){cx.beginPath();cx.arc(bs.x-62,groundY-180+i*38,3,0,7);
-      cx.arc(bs.x+86,groundY-180+i*38,3,0,7);cx.fill();}
-    cx.fillStyle='#0a0618';rrectPath(bs.x-20,groundY-198,78,16,4);cx.fill();
+    for(let i=0;i<5;i++){cx.beginPath();cx.arc(bs.x-62,gY-180+i*38,3,0,7);
+      cx.arc(bs.x+86,gY-180+i*38,3,0,7);cx.fill();}
+    cx.fillStyle='#0a0618';rrectPath(bs.x-20,gY-198,78,16,4);cx.fill();
     cx.fillStyle='#eae6ff';cx.font='900 10px sans-serif';cx.textAlign='center';
-    cx.fillText('K.E.V.I.N.',bs.x+19,groundY-186);
+    cx.fillText('K.E.V.I.N.',bs.x+19,gY-186);
     // tentacles (tapered, smooth)
     for(let i=0;i<4;i++){const side=i<2?-1:1;
       for(let sg=0;sg<7;sg++){const wig=Math.sin(bs.t*2.6+i*1.9+sg*.75)*(3+sg*2.4);
@@ -3512,11 +3515,11 @@ function bossDraw(){const p=S.p,bs=S.boss;
   S.shots.forEach(s2=>{
     if(s2.wave){cx.save();cx.globalCompositeOperation='lighter';
       cx.fillStyle='rgba(125,255,58,.25)';cx.beginPath();
-      cx.moveTo(s2.x-30,groundY);cx.quadraticCurveTo(s2.x,groundY-56,s2.x+30,groundY);cx.fill();cx.restore();
-      g=cx.createLinearGradient(0,groundY-38,0,groundY);
+      cx.moveTo(s2.x-30,gY);cx.quadraticCurveTo(s2.x,gY-56,s2.x+30,gY);cx.fill();cx.restore();
+      g=cx.createLinearGradient(0,gY-38,0,gY);
       g.addColorStop(0,'#d8ffb0');g.addColorStop(.5,'#7dff3a');g.addColorStop(1,'#2c7a08');
       cx.fillStyle=g;cx.beginPath();
-      cx.moveTo(s2.x-s2.w/2,groundY);cx.quadraticCurveTo(s2.x,groundY-s2.h*2.2,s2.x+s2.w/2,groundY);cx.fill();}
+      cx.moveTo(s2.x-s2.w/2,gY);cx.quadraticCurveTo(s2.x,gY-s2.h*2.2,s2.x+s2.w/2,gY);cx.fill();}
     else{cx.save();cx.globalCompositeOperation='lighter';
       cx.fillStyle='rgba(125,255,58,.18)';
       cx.beginPath();cx.arc(s2.x-s2.vx*.03,s2.y-s2.vy*.03,12,0,7);cx.fill();
@@ -3553,24 +3556,25 @@ function bossDraw(){const p=S.p,bs=S.boss;
   S.rings.forEach(r2=>{cx.strokeStyle='rgba(255,220,120,'+Math.max(0,r2.life)+')';
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
   cx.restore();
-  drawJuice();drawSay();drawBanner();
+  drawJuice();
   // VS intro card — pay-per-view energy
-  if(S.t<3.6){cx.fillStyle='rgba(4,20,10,'+(.85*(1-S.t/3.6))+')';cx.fillRect(0,0,W,H);
+  if(S.t<3.6){cx.fillStyle='rgba(4,20,10,'+(.85*(1-S.t/3.6))+')';cx.fillRect(0,0,vw,vh);
     cx.globalAlpha=Math.min(1,(3.6-S.t)*2);cx.textAlign='center';
-    cx.fillStyle='#21f0ff';cx.font='900 20px sans-serif';
-    cx.fillText('DOUG "THE MOP" PICKLES',W/2,H*.26);
-    cx.fillStyle='#9a8fc7';cx.font='700 11px sans-serif';
-    cx.fillText('HEIGHT: AVERAGE · WEIGHT: NERVOUS · FINISHER: WET FLOOR',W/2,H*.26+20);
+    cx.fillStyle='#21f0ff';cx.font='900 17px sans-serif';
+    cx.fillText('DOUG "THE MOP" PICKLES',vw/2,vh*.26);
+    cx.fillStyle='#9a8fc7';cx.font='700 10px sans-serif';
+    cx.fillText('HEIGHT: AVERAGE · WEIGHT: NERVOUS · FINISHER: WET FLOOR',vw/2,vh*.26+20);
     const vs=1+Math.max(0,Math.sin(S.t*4))*.25;
-    cx.save();cx.translate(W/2,H*.48);cx.scale(vs,vs);
+    cx.save();cx.translate(vw/2,vh*.48);cx.scale(vs,vs);
     cx.fillStyle='#ffd75e';cx.font='900 44px sans-serif';
     cx.shadowColor='#ff3df0';cx.shadowBlur=24;cx.fillText('VS',0,14);cx.restore();
-    cx.fillStyle='#7dff3a';cx.font='900 24px sans-serif';
-    cx.fillText('K.E.V.I.N.',W/2,H*.72);
-    cx.fillStyle='#9edcb0';cx.font='700 11px sans-serif';
-    cx.fillText('HEIGHT: VAT · WEIGHT: RUDE · FINISHER: DESSERT STORM',W/2,H*.72+20);
+    cx.fillStyle='#7dff3a';cx.font='900 22px sans-serif';
+    cx.fillText('K.E.V.I.N.',vw/2,vh*.72);
+    cx.fillStyle='#9edcb0';cx.font='700 10px sans-serif';
+    cx.fillText('HEIGHT: VAT · WEIGHT: RUDE · FINISHER: DESSERT STORM',vw/2,vh*.72+20);
     cx.globalAlpha=1;}
-  cx.restore();}
+  cx.restore();
+  drawSay();drawBanner();} // absolute — they place themselves on the glass
 
 /* ================= RENDER ================= */
 const seed=i=>{const r=Math.sin(i*127.1)*43758.5453;return r-Math.floor(r);};
