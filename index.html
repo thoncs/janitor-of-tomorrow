@@ -268,6 +268,16 @@ body.shell #bPause,body.shell #mute{display:none}
 .pcard.down{opacity:.35;filter:grayscale(1)}
 .pcard.act{border-color:var(--cyn);box-shadow:0 0 10px rgba(33,240,255,.35)}
 #bmenu{flex:1.15;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* narrow portrait: K.E.V.I.N. above, log squeezed, party 2x2 with the menu below — the Pokémon stack */
+@media (max-width:560px){
+  #bmain{flex-direction:column;align-items:center;gap:6px}
+  #bfoe{flex:0 0 auto}
+  #kevblob{width:104px;height:92px}
+  #blog{max-height:17vh}
+  #bbottom{flex-wrap:wrap}
+  .pcard{flex:1 1 44%}
+  #bmenu{flex:1 1 100%;order:9}
+}
 .bact{font:inherit;font-size:12px;line-height:1.2;font-weight:800;color:var(--ink);background:#241646;border:1px solid #4b357f;border-radius:11px;padding:6px 8px;cursor:pointer;touch-action:manipulation;text-align:left}
 .bact small{display:block;font-weight:700;color:var(--dim);font-size:10px}
 .bact:active{transform:scale(.97)}
@@ -337,11 +347,11 @@ body.shell #bPause,body.shell #mute{display:none}
 #rot b,#rotD b{font-size:52px;animation:rotp 2.2s infinite}
 #rotD b{animation-direction:reverse}
 @keyframes rotp{0%,50%{transform:rotate(0)}65%,100%{transform:rotate(90deg)}}
-@media (orientation:portrait){#rot{display:flex}}
-/* The dungeon inverts the gate: body.gb marks the one board that WANTS portrait. #rot stands down,
-   and #rotD asks touch devices to turn upright instead (desktops are exempt — no touch, no demand). */
-body.gb #rot{display:none}
-@media (orientation:landscape) and (pointer:coarse) and (any-hover:none){body.gb #rotD{display:flex}}
+/* THE FLIP (2026-09-01): portrait is the game's one true orientation. body.gb is set at boot and
+   never leaves; body.lsb marks the rare landscape-special board (the war room, the parked race),
+   which is the only place the old rotate-to-landscape wall still stands. */
+@media (orientation:portrait){body.lsb #rot{display:flex}}
+@media (orientation:landscape) and (pointer:coarse) and (any-hover:none){body.gb:not(.lsb) #rotD{display:flex}}
 </style>
 </head>
 <body>
@@ -363,7 +373,7 @@ body.gb #rot{display:none}
   <p class="small dim" id="contline" style="display:none"></p>
   <p class="small dim" id="diffline">shift difficulty: <button class="btn ghost sm" id="bDiff"><span class="diffLabel">NORMAL</span></button> <span class="dim diffBlurb"></span></p>
   <p class="small dim blink" id="courage">— insert courage to begin —</p>
-  <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab · v0.10<button class="btn ghost xs" id="bErase" style="display:none;margin-left:8px">🧽 erase save</button></p>
+  <p class="small dim">an original parody · contains taquitos · no real timelines harmed<br>art: PUDD-CO Graphics Division · characters generated with PixelLab · v0.12<button class="btn ghost xs" id="bErase" style="display:none;margin-left:8px">🧽 erase save</button></p>
 </div>
 
 <div class="screen" id="story">
@@ -721,11 +731,7 @@ function showHowTo(id,then){const h=HOWTO[id];
   const b=document.createElement('button');b.className='choice';b.textContent='GOT IT →';
   b.addEventListener('click',()=>{AU.ui();if(then)then();});
   ch.appendChild(b);$('stext').scrollTop=0;
-  MODE='story';hudOn(false);
-  // the dungeon's card says TURN YOUR PHONE UPRIGHT — so the landscape-only gate must already be
-  // inverted while the card is up, or obeying the card summons #rot over the GOT IT button
-  document.body.classList.toggle('gb',!!STAGES.find(x=>x.id===id&&x.gbmode)); // the card's rotate advice must match its board's gate
-  showScreen('story');return true;}
+  MODE='story';hudOn(false);showScreen('story');return true;} // body.gb is constant; cards need no gate juggling
 
 // One companion line on entering a board, from whoever you have been kinder to.
 const BARKS={
@@ -986,13 +992,13 @@ function markCheckpoint(kind,value){if(G.cpStage===G.stage)return;
 function clearCheckpoint(){G.cpStage=-1;G.cpKind=null;G.cpValue=0;}
 let MODE='title'; // title | story | conseq | action | over | end
 
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+  document.body.classList.toggle('lsb',id==='war');} // the war room is the one landscape holdout
 function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);if(v)updateTaqHud();
   $('bPause').style.display=v?'':'none';
   $('stick').classList.toggle('on',v&&!!(S&&S.st&&S.st.top&&!S.st.gbmode)); // gbmode boards use the d-pad, not the drag-stick
   const gbm=v&&!!(S&&S.st&&S.st.gbmode);
-  document.body.classList.toggle('gb',gbm);    // the inverted rotate gate
-  document.body.classList.toggle('shell',gbm); // the LameBOY plastic (P4 splits these for good)
+  document.body.classList.toggle('shell',gbm); // the LameBOY plastic; body.gb is a boot constant now
   GBV.on=gbm;
   $('steer').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));
   $('gas').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));}
@@ -1248,15 +1254,17 @@ $('bDiff').addEventListener('click',cycleDiff);
    numeric stageIndex, so any reorder of STAGES silently rerouted the map to the wrong board. */
 const HUB_ON=(()=>{try{return new URLSearchParams(location.search).has('hub')}catch(e){return false}})();
 const HUB=[
- {id:'ch1',    n:'CH.1',      sub:'MOP & DESTROY',  x:9, y:72,adj:['ch2']},
- {id:'ch2',    n:'CH.2',      sub:'ESCALATOR',      x:25,y:34,adj:['ch1','ch3']},              // race parked: was ['ch1','race']
+ // Coordinates re-authored TALL for the portrait facility (2026-09-01): the climb reads bottom-up,
+ // like the tower it is. Race slot stays parked.
+ {id:'ch1',    n:'CH.1',      sub:'MOP & DESTROY',  x:28,y:90,adj:['ch2']},
+ {id:'ch2',    n:'CH.2',      sub:'ESCALATOR',      x:70,y:79,adj:['ch1','ch3']},
 //{id:'race',  n:'CH.2.5',    sub:'GRAND PRIX',     x:41,y:74,adj:['ch2','ch3']},              // ⏸ PARKED — restore with the STAGES entry
- {id:'ch3',    n:'CH.3',      sub:'CUSTARD ASCENT', x:55,y:32,adj:['ch2','war','dungeon']},    // race parked: was ['race','war','dungeon']
- {id:'dungeon',n:'BONUS',     sub:'SUPPLY DUNGEON', x:66,y:12,adj:['ch3','glaze']},
- {id:'war',    n:'FLOOR PLAN',sub:'WAR ROOM',       x:70,y:70,adj:['ch3','glaze']},
- {id:'glaze',  n:'VS GLAZE',  sub:'KUMITE',         x:85,y:40,adj:['war','dungeon','boss']},
- {id:'warp',   n:'TIME WARP', sub:'CH.1 REMIX',     x:47,y:8, adj:['ch3']},
- {id:'boss',   n:'FINAL',     sub:'K.E.V.I.N.',     x:91,y:76,adj:['glaze']}];
+ {id:'ch3',    n:'CH.3',      sub:'CUSTARD ASCENT', x:30,y:64,adj:['ch2','war','dungeon']},
+ {id:'dungeon',n:'BONUS',     sub:'SUPPLY DUNGEON', x:24,y:40,adj:['ch3','glaze']},
+ {id:'war',    n:'FLOOR PLAN',sub:'WAR ROOM',       x:72,y:52,adj:['ch3','glaze']},
+ {id:'glaze',  n:'VS GLAZE',  sub:'KUMITE',         x:64,y:28,adj:['war','dungeon','boss']},
+ {id:'warp',   n:'TIME WARP', sub:'CH.1 REMIX',     x:75,y:9, adj:['ch3']},
+ {id:'boss',   n:'FINAL',     sub:'K.E.V.I.N.',     x:30,y:12,adj:['glaze']}];
 // Prerequisites are things the player can actually EARN. The reverted attempt gated all three of its new
 // boards behind the item each board itself awarded — unreachable by construction.
 // race parked: was {... race:'ch2', ch3:'race' ...} — CH.3 now waits on CH.2 directly.
@@ -1445,13 +1453,7 @@ $('bCont').addEventListener('click',()=>{AU.ui();
   else{G.scene=r.idx;openScene(G.scene);}});
 
 /* ================= CONSEQUENCE / GAMEOVER / ENDING ================= */
-function showConsequence(){
-  // clearing the dungeon keeps body.gb too — same deal as gameOver: the reward screen fits portrait,
-  // and the rotate demand can wait until the player taps onward. Same MODE guard, same stale-S reason.
-  const gbWin=MODE==='action'&&!!(S&&S.st&&S.st.gbmode);
-  MODE='conseq';hudOn(false);
-  if(gbWin)document.body.classList.add('gb'); // gate only — the reward screen needs no plastic
-  MUS.play('title');renderMeters();
+function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
   // board cleared: bank the stats and a personal best, keyed by the stage's stable id
@@ -1483,14 +1485,8 @@ function showConsequence(){
   ch.appendChild(b);$('stext').scrollTop=0;showScreen('story');}
 
 function gameOver(){
-  // dying ON the dungeon board keeps body.gb: the over screen fits portrait fine, and without this
-  // the player would be told to rotate to landscape just to tap RETRY, then rotate straight back.
-  // MODE wins over S.st (same rule the pause menu uses): the war room and tabletop run with S still
-  // holding the PREVIOUS canvas board, so S.st.dungeon alone would give a war defeat the shell.
-  const inGb=MODE==='action'&&!!(S&&S.st&&S.st.gbmode);
   if(MODE==='action')G.deathsHere=(G.deathsHere||0)+1; // canvas boards only — a war-room rout is not this ledger's business
-  MODE='over';hudOn(false);
-  if(inGb){document.body.classList.add('gb');document.body.classList.add('shell');}MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
+  MODE='over';hudOn(false); // portrait screens are simply legal now; no shell carve-out neededMUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
   const rcost=DF().id==='rookie'?0:TUNING.retryTimelineCost; // rookies retry free
   G.timeline=clamp(G.timeline-rcost,0,100);
   $('overline').textContent=pick(DEATHLINES);
@@ -1933,6 +1929,7 @@ function GV(){return GBV.on&&GBV.w?GBV:{x:0,y:0,w:W,h:H};}
 function gYv(){const v=GV();return (S&&S.st&&S.st.gbmode)?Math.min(v.h*.82,v.h-64):groundY;}
 addEventListener('resize',gbFit); // fit() registered first, so W/H are fresh when this runs
 gbFit();
+document.body.classList.add('gb'); // portrait-first, everywhere; .lsb boards opt back out
 
 const IN={fire:false,jumpBuf:0,steer:0,gas:0,dashBuf:0,bHeld:false}; // dashBuf: buffered B tap (SCOOT/jump) · bHeld: B held (FOCUS)
 function bindPad(el,down,up){
@@ -2108,6 +2105,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   // the printed verbs follow the board — one law (A=ATTACK, B=BODY), per-board words
   if(st.gbmode){$('gbA').innerHTML='A<small>'+(st.dungeon?'ZAP':st.fight?'MOP':'FIRE')+'</small>';
     $('gbB').innerHTML='B<small>'+(st.dungeon?'SCOOT':st.top?'FOCUS':st.fight?'HOP':'JUMP')+'</small>';}
+  if(st.race)document.body.classList.add('lsb'); // the parked racer is landscape-tuned; honor that under ?board=race
   syncRot(); // pause immediately if the phone is held the wrong way for THIS board
   $('pbar').classList.toggle('boss',!!st.boss);}
 
@@ -3735,7 +3733,7 @@ document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire
 const PMQ=matchMedia('(orientation: portrait)');
 const CMQ=matchMedia('(pointer: coarse)');
 const HMQ=matchMedia('(any-hover: none)'); // a keyboard-docked tablet hovers — treat it like a desktop
-function wrongWay(){return document.body.classList.contains('gb')?(!PMQ.matches&&CMQ.matches&&HMQ.matches):PMQ.matches;}
+function wrongWay(){return document.body.classList.contains('lsb')?PMQ.matches:(!PMQ.matches&&CMQ.matches&&HMQ.matches);}
 function syncRot(){if(S)S.paused=wrongWay()||userPaused;IN.fire=false;IN.dashBuf=0;IN.bHeld=false;last=performance.now();padClear();gbFit();}
 try{PMQ.addEventListener('change',syncRot);}catch(e){PMQ.addListener(syncRot);}
 MUS.want='title'; // queue menu theme; first tap (AU.init) starts it

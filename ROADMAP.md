@@ -307,6 +307,25 @@ critter enemies. Either create the location or rewrite the references.
 | Stomp kills (CH.1 / CH.2) | ✅ **Done** 2026-08-30 | Landing on a foe kills it, scores it and bounces, with one air-jump handed back so stomps chain. Fixes the real complaint: ground goo sits *under* the line of fire, so jumping was pure avoidance with no payoff. Opt-in per board via `stomp:true` — on CH.1 and CH.2 only. |
 | Old Phases 7–10 | ✂️ Below cut line | Recorded as ideas, not planned. |
 
+### THE CONVERSION SHIPPED (2026-09-01): the whole game lives in the LameBOY
+
+All four phases landed in one session, one verified commit each: **P0** plumbing (gbmode flag, pure
+gbFit, GV()/gYv() helpers, gb/shell class split), **P1** shmup, **P2** the three runners (scroll −15%,
+110px spawn lead, ⚠ edge warnings, B/▲=jump ▼=dive), **P3** the boss (standoff clamped to the glass,
+wave slowed), **P4** kumite (arena re-anchored, d-pad footwork) + tabletop portrait restack + tall hub
+re-author + THE GATE FLIP: `body.gb` is a boot constant, portrait is the game's one orientation, and
+`body.lsb` (set by showScreen for the war room, by startStage for the parked race) marks the only
+landscape holdouts — `wrongWay()` reads lsb, `#rot` shows only under `body.lsb`, `#rotD` everywhere
+else. The old gameOver/consequence/howto shell carve-outs are deleted (portrait screens are simply
+legal). ROOKIE is the fresh-install default. Title reads **v0.12**. 72 headless checks.
+
+**Conversion invariants (do not regress):**
+- Every canvas board draws through `GV()`/`gYv()` glass-local with translate+clip; `drawJuice` is
+  viewport-LOCAL (callers translate), `drawSay`/`drawBanner` are ABSOLUTE (call after restore).
+- A board joins the shell by adding `gbmode:true` to its STAGES entry — nothing else.
+- The A/B labels are set per-board in startStage; keep the verbs honest (A=ATTACK, B=BODY).
+- `#stick`/`#padJ`/`#padF`/`#steer`/`#gas` are legacy: only the parked race would ever show them.
+
 ### DIRECTION CHANGE (2026-08-30): kid-first, and the whole game goes handheld
 
 The owner's call: the game should be **Super Fun and playable by 5–10 year-olds** (and everyone older),
