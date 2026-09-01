@@ -194,11 +194,11 @@ input[type=range].vol::-moz-range-thumb{width:22px;height:22px;background:var(--
    pointer-events:none per the z-order contract above; only the controls themselves take touches. */
 #gb{position:absolute;left:0;right:0;bottom:0;z-index:49;display:none;flex-direction:column;justify-content:flex-end;gap:8px;
   padding:0 12px calc(10px + var(--sab)) 12px;height:calc(216px * var(--padScale,1) + var(--sab));pointer-events:none}
-body.gb #gb{display:flex}
+body.shell #gb{display:flex}
 /* portrait chrome: the hud spans the shell instead of 56vw-of-a-narrow-phone, and the top-right
    mute/pause buttons hide — SELECT and START on the shell are those two buttons */
-body.gb #hud{width:calc(100% - 28px - var(--sal) - var(--sar))}
-body.gb #bPause,body.gb #mute{display:none}
+body.shell #hud{width:calc(100% - 28px - var(--sal) - var(--sar))}
+body.shell #bPause,body.shell #mute{display:none}
 #gbrow{flex:1;display:flex;align-items:flex-end;justify-content:space-between} /* fills the band so the d-pad catcher is real */
 /* the HIT zone is the whole lower-left of the slab — a 40px miss below the cross still walks.
    Direction is computed off the visible cross's centre, so the plastic stays honest. */
@@ -561,7 +561,7 @@ const STAGES=[
    next:{stage:6,label:'⚔️ FACE K.E.V.I.N. →'},
    after:'MOPTALITY. GLAZE crumbles into six thousand sprinkles. Torque eats the evidence "so forensics can\'t find it." The vat door, deeply unsettled, opens on its own.'},
   {id:'boss',name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,hue:120,bossHp:64},
-  {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,hue:265,
+  {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,gbmode:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
    after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
   {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:210,hue:190,pixel:true,
@@ -723,7 +723,7 @@ function showHowTo(id,then){const h=HOWTO[id];
   MODE='story';hudOn(false);
   // the dungeon's card says TURN YOUR PHONE UPRIGHT — so the landscape-only gate must already be
   // inverted while the card is up, or obeying the card summons #rot over the GOT IT button
-  document.body.classList.toggle('gb',id==='dungeon');
+  document.body.classList.toggle('gb',!!STAGES.find(x=>x.id===id&&x.gbmode)); // the card's rotate advice must match its board's gate
   showScreen('story');return true;}
 
 // One companion line on entering a board, from whoever you have been kinder to.
@@ -988,8 +988,11 @@ let MODE='title'; // title | story | conseq | action | over | end
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
 function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);if(v)updateTaqHud();
   $('bPause').style.display=v?'':'none';
-  $('stick').classList.toggle('on',v&&!!(S&&S.st&&S.st.top)); // dungeon moved off the drag-stick to the d-pad
-  document.body.classList.toggle('gb',v&&!!(S&&S.st&&S.st.dungeon)); // the Game Boy shell + inverted rotate gate
+  $('stick').classList.toggle('on',v&&!!(S&&S.st&&S.st.top&&!S.st.gbmode)); // gbmode boards use the d-pad, not the drag-stick
+  const gbm=v&&!!(S&&S.st&&S.st.gbmode);
+  document.body.classList.toggle('gb',gbm);    // the inverted rotate gate
+  document.body.classList.toggle('shell',gbm); // the LameBOY plastic (P4 splits these for good)
+  GBV.on=gbm;
   $('steer').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));
   $('gas').classList.toggle('on',v&&!!(S&&S.st&&S.st.race));}
 function warp(){const f=$('flash');f.style.transition='none';f.style.opacity=.85;
@@ -1444,9 +1447,9 @@ $('bCont').addEventListener('click',()=>{AU.ui();
 function showConsequence(){
   // clearing the dungeon keeps body.gb too — same deal as gameOver: the reward screen fits portrait,
   // and the rotate demand can wait until the player taps onward. Same MODE guard, same stale-S reason.
-  const gbWin=MODE==='action'&&!!(S&&S.st&&S.st.dungeon);
+  const gbWin=MODE==='action'&&!!(S&&S.st&&S.st.gbmode);
   MODE='conseq';hudOn(false);
-  if(gbWin)document.body.classList.add('gb');
+  if(gbWin)document.body.classList.add('gb'); // gate only — the reward screen needs no plastic
   MUS.play('title');renderMeters();
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
@@ -1483,10 +1486,10 @@ function gameOver(){
   // the player would be told to rotate to landscape just to tap RETRY, then rotate straight back.
   // MODE wins over S.st (same rule the pause menu uses): the war room and tabletop run with S still
   // holding the PREVIOUS canvas board, so S.st.dungeon alone would give a war defeat the shell.
-  const inDungeon=MODE==='action'&&!!(S&&S.st&&S.st.dungeon);
+  const inGb=MODE==='action'&&!!(S&&S.st&&S.st.gbmode);
   if(MODE==='action')G.deathsHere=(G.deathsHere||0)+1; // canvas boards only — a war-room rout is not this ledger's business
   MODE='over';hudOn(false);
-  if(inDungeon)document.body.classList.add('gb');MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
+  if(inGb){document.body.classList.add('gb');document.body.classList.add('shell');}MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
   const rcost=DF().id==='rookie'?0:TUNING.retryTimelineCost; // rookies retry free
   G.timeline=clamp(G.timeline-rcost,0,100);
   $('overline').textContent=pick(DEATHLINES);
@@ -1907,14 +1910,24 @@ addEventListener('resize',fit);fit();
    controls pins the bottom; the screen takes the biggest near-square that fits above it, centred.
    Recomputed on resize, UI-scale changes and board start — one rect read, never per-frame. */
 const GBV={x:0,y:0,w:0,h:0,on:false};
-function gbFit(){GBV.on=document.body.classList.contains('gb');
-  if(!GBV.on)return;
-  const slab=$('gb').getBoundingClientRect();
-  const sat=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||0;
+// Pure geometry from constants — the old version read the #gb slab's rect, which is garbage while
+// the slab is display:none. The slab's CSS height (216px * padScale + safe area) is mirrored here;
+// change one, change both. GBV.on is STATE, owned by startStage/hudOn, never derived in here.
+function gbFit(){
+  const ps=(PROF&&PROF.ui&&PROF.ui.padScale)||1;
+  const css=getComputedStyle(document.documentElement);
+  const sab=parseFloat(css.getPropertyValue('--sab'))||0;
+  const sat=parseFloat(css.getPropertyValue('--sat'))||0;
+  const slabTop=H-(216*ps+sab);
   const top=sat+24; // the hud rows end ~sat+46; the glass starts below them, not under them
-  const side=Math.max(120,Math.min(W-36,slab.top-top-30)); // 30 = bezel label strip above the glass
+  const side=Math.max(120,Math.min(W-36,slabTop-top-30)); // 30 = bezel label strip above the glass
   GBV.w=GBV.h=side;GBV.x=(W-side)/2;GBV.y=top+24;}
+// Every draw path asks GV() for its window: the LameBOY glass when the shell is up, the full
+// canvas when it isn't. Repointing a board onto GV() is therefore a no-op until its stage grows
+// gbmode:true — which is the whole conversion trick.
+function GV(){return GBV.on&&GBV.w?GBV:{x:0,y:0,w:W,h:H};}
 addEventListener('resize',gbFit); // fit() registered first, so W/H are fresh when this runs
+gbFit();
 
 const IN={fire:false,jumpBuf:0,steer:0,gas:0,dashBuf:0}; // dashBuf: dungeon B — a buffered SCOOT, same idiom as jumpBuf
 function bindPad(el,down,up){
@@ -2048,6 +2061,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   snapshotRun('stage',i); // checkpoint at board start — placed above the war early-return so it covers every board
   if(st.war){openWar();return;}
   MODE='action';
+  GBV.on=!!st.gbmode;gbFit(); // armed BEFORE S init: spawn positions may read the glass
   MUS.play(st.music||(st.boss?'boss':st.top?'drive':st.race?'race':st.fight?'fight':st.dungeon?'dnd':['chip','punk'][i]||'chip'));
   S={st,stIdx:i,t:0,scroll:0,shake:0,done:false,paused:false,
      p:{x:210,y:groundY,vy:0,onG:true,jumps:0,inv:1.4,fireT:0},
@@ -2083,8 +2097,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   hudOn(true);showScreen('');updateHearts();
   // device safe-areas (notch) and the pad-size setting both shift the JUMP pad — keep Doug clear
   padClear();
-  gbFit();   // hudOn just set body.gb (or cleared it) — size the Game Boy screen off the fresh slab
-  syncRot(); // and pause immediately if the phone is held the wrong way for THIS board
+  syncRot(); // pause immediately if the phone is held the wrong way for THIS board
   $('pbar').classList.toggle('boss',!!st.boss);}
 
 function spawnFoe(type,plain){const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:W+50,t:0,hitT:0};
@@ -2131,7 +2144,7 @@ function drawJuice(){cx.textAlign='center';
     cx.fillStyle='#cc7d0a';cx.fillRect(-14,-2,10,4);cx.restore();}
   if(S.combo>=3&&MODE==='action'){cx.font='900 '+Math.min(15+S.combo,30)+'px sans-serif';
     cx.fillStyle=S.combo>=10?'#ff3df0':S.combo>=5?'#ffd75e':'#21f0ff';
-    cx.globalAlpha=.9;cx.fillText('COMBO ×'+S.combo,W/2,86);cx.globalAlpha=1;}
+    const cv2=GV();cx.globalAlpha=.9;cx.fillText('COMBO ×'+S.combo,cv2.x+cv2.w/2,cv2.y+86);cx.globalAlpha=1;}
   if(S.taq>0){cx.save();cx.globalCompositeOperation='lighter';
     const p=S.p,ph=S.t*7;
     // Last 1.5s: the ring flips gold -> alarm red/white and strobes, faster in the final beat, so
@@ -2146,7 +2159,7 @@ function drawJuice(){cx.textAlign='center';
     if(!warn||fOn){cx.font='16px sans-serif';cx.fillText('🌮',S.p.x,S.p.y-64);}}
   // arcade score, top right under the mute button
   cx.font='800 13px monospace';cx.textAlign='right';
-  cx.fillStyle='#ffd75e';cx.fillText(String(G.score).padStart(7,'0'),W-16,74);
+  {const v2=GV();cx.fillStyle='#ffd75e';cx.fillText(String(G.score).padStart(7,'0'),v2.x+v2.w-16,v2.y+74);}
   cx.textAlign='center';}
 // quieter than drawBanner: companion barks and K.E.V.I.N.'s leaks sit low on screen so a combo
 // milestone banner can fire over the top of them without the two overlapping.
@@ -2157,12 +2170,12 @@ function drawSay(){if(!S||!S.say||S.say.t<=0)return;
   cx.globalAlpha=Math.min(1,S.say.t*1.2);cx.textAlign='center';
   cx.font='700 14px sans-serif';cx.fillStyle='#dcd2ff';
   cx.shadowColor='#0a0618';cx.shadowBlur=6;
-  const gb=S.st&&S.st.dungeon&&GBV.on&&GBV.w; // on the Game Boy, W/2,H-118 is plastic, not screen
+  const gb=GBV.on&&GBV.w; // on the LameBOY, W/2,H-118 is plastic, not screen
   cx.fillText(S.say.txt,gb?GBV.x+GBV.w/2:W/2,gb?GBV.y+GBV.h-30:H-118);cx.restore();}
 function drawBanner(){if(S.banner&&S.banner.t>0){cx.save();
   cx.globalAlpha=Math.min(1,S.banner.t*1.5);cx.textAlign='center';
   cx.fillStyle='#fff';cx.font='900 24px sans-serif';
-  const gb=S.st&&S.st.dungeon&&GBV.on&&GBV.w; // on the Game Boy, banners shrink to fit the glass
+  const gb=GBV.on&&GBV.w; // on the LameBOY, banners shrink to fit the glass
   if(gb){const tw=cx.measureText(S.banner.text).width;
     if(tw>GBV.w-16)cx.font='900 '+Math.max(13,Math.floor(24*(GBV.w-16)/tw))+'px sans-serif';}
   cx.shadowColor='#ff3df0';cx.shadowBlur=18;
@@ -3263,8 +3276,7 @@ function gbShell(V){
 
 function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
   cx.clearRect(0,0,W,H);cx.save();cx.imageSmoothingEnabled=false;
-  if(!GBV.on||!GBV.w)gbFit(); // first frame can land before any resize/board-start recompute
-  const V=GBV.on&&GBV.w?GBV:{x:0,y:0,w:W,h:H}; // fall back to fullscreen rather than draw nothing
+  const V=GV();
   gbShell(V);
   cx.beginPath();cx.rect(V.x,V.y,V.w,V.h);cx.clip(); // everything below stays behind the glass
   cx.fillStyle='#0b0820';cx.fillRect(V.x,V.y,V.w,V.h);
