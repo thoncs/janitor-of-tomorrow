@@ -558,7 +558,7 @@ const STAGES=[
   {id:'war',name:'OPERATION: FLOOR PLAN',sub:'The Vat Floor · TURN-BASED TERRITORY MODE',war:true,
    next:{stage:7,label:'🪠 A HATCH OPENS UNDER THE CORE →'},
    after:'THE CORE is yours. The pudding garrisons surrendered their tiny flags. Vex folds the map with the reverence of a national funeral.'},
-  {id:'glaze',name:'VS GLAZE — THE FORBIDDEN DONUT',sub:'Vat Door Dojo · KUMITE MODE',fight:true,hue:150,
+  {id:'glaze',name:'VS GLAZE — THE FORBIDDEN DONUT',sub:'Vat Door Dojo · KUMITE MODE',fight:true,gbmode:true,hue:150,
    next:{stage:6,label:'⚔️ FACE K.E.V.I.N. →'},
    after:'MOPTALITY. GLAZE crumbles into six thousand sprinkles. Torque eats the evidence "so forensics can\'t find it." The vat door, deeply unsettled, opens on its own.'},
   {id:'boss',name:'FINAL — K.E.V.I.N. AWAKENS',sub:'The Pudding Vat · 64-BIT FINALE',boss:true,gbmode:true,hue:120,bossHp:64},
@@ -683,7 +683,7 @@ const HOWTO={
   'D-PAD flies the taco truck. A = FIRE. Hold B to FOCUS: half speed, for threading the needle.',
   '📼 cassettes change your fire pattern. The higher you climb, the busier it gets.']},
  glaze:{title:'🍩 VS GLAZE — KUMITE',lines:[
-  'TAP the fire pad — do not hold it. Three taps chain into a wide third swing.',
+  'TAP A — do not hold it. Three taps chain into a wide third swing. B hops. The d-pad shuffles your feet.',
   'One hop only here, no double jump.',
   'Mop in mid-air: it hits hardest, and both of Glaze\'s melee attacks only land on a grounded janitor.',
   'When a cyan GUARD ring goes up, hold off — hitting it just wastes your swing.']},
@@ -2082,10 +2082,10 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   if(st.race){S.dist=0;S.speed=120;S.px=0;S.curve=0;S.robs=[];S.nextOb=260;S.crash=0;S.chonked=false;
     S.track=buildTrack(st.dist);
     S.p.x=W/2;S.p.y=H-34;} // juice anchors (taquito aura wraps the truck)
-  if(st.fight){S.fx={phase:'intro',t:0,timer:60,fireHeld:false,
-    doug:{x:200,atk:0,atkT:0,chain:0,range:118},
-    glz:{x:W-230,hp:130,max:130,state:'idle',sT:1.6,vx:0,roll:0,dizzy:0}};
-    S.p.x=200;S.p.y=groundY;}
+  if(st.fight){const fv=GV();S.fx={phase:'intro',t:0,timer:60,fireHeld:false,
+    doug:{x:st.gbmode?60:200,atk:0,atkT:0,chain:0,range:118},
+    glz:{x:st.gbmode?fv.w-90:W-230,hp:130,max:130,state:'idle',sT:1.6,vx:0,roll:0,dizzy:0}};
+    S.p.x=S.fx.doug.x;S.p.y=gYv();}
   if(st.dungeon){S.p.x=0;S.p.y=0;S.p.vx=0;S.p.vy=0;S.p.dashT=0;S.p.dashCd=0;
     S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};dungeonInit();}
   if(st.gbmode&&!st.top&&!st.dungeon){ // runners in the glass: short runway, floor recomputed
@@ -2106,7 +2106,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   // device safe-areas (notch) and the pad-size setting both shift the JUMP pad — keep Doug clear
   padClear();
   // the printed verbs follow the board — one law (A=ATTACK, B=BODY), per-board words
-  if(st.gbmode){$('gbA').innerHTML='A<small>'+(st.dungeon?'ZAP':'FIRE')+'</small>';
+  if(st.gbmode){$('gbA').innerHTML='A<small>'+(st.dungeon?'ZAP':st.fight?'MOP':'FIRE')+'</small>';
     $('gbB').innerHTML='B<small>'+(st.dungeon?'SCOOT':st.top?'FOCUS':st.fight?'HOP':'JUMP')+'</small>';}
   syncRot(); // pause immediately if the phone is held the wrong way for THIS board
   $('pbar').classList.toggle('boss',!!st.boss);}
@@ -2195,19 +2195,22 @@ function drawBanner(){if(S.banner&&S.banner.t>0){cx.save();
 
 /* ================= ACTION: VS GLAZE (kumite mode) ================= */
 // Glaze must not settle behind the FIRE pad — measure it rather than trusting a literal.
-function glazeMaxX(){const pf=$('padF').getBoundingClientRect();
-  return pf.width>0?Math.min(W-150,pf.left-40):W-150;}
-function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
+function glazeMaxX(){const v=GV(),pf=$('padF').getBoundingClientRect();
+  return pf.width>0?Math.min(v.w-150,pf.left-40):v.w-110;} // no pad in the shell — the glass edge rules
+function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p,fV=GV(),vw=fV.w,gY=gYv();
   S.t+=dt;updateJuice(dt);if(S.banner)S.banner.t-=dt;
   if(S.shake>0)S.shake-=dt;if(p.inv>0)p.inv-=dt;
+  // LameBOY verbs (this board returns before the runner block): B = hop, d-pad nudges the footwork
+  if(S.st.gbmode){if(IN.dashBuf>0){IN.jumpBuf=Math.max(IN.jumpBuf,.12);IN.dashBuf=0;}
+    if(S.stick&&S.stick.on)dg.x+=S.stick.x*140*dt;}
   if(fx.phase==='intro'){fx.t+=dt;
     if(fx.t>2.4){fx.phase='fight';S.banner={text:'FIGHT!',t:.9};AU.roar();}
     IN.jumpBuf=0;IN.fire=false;return;}
   if(fx.phase==='moptality'){fx.t+=dt;
     gz.x+=90*dt; // the donut recoils from destiny
     if(fx.t>.5&&!fx.boomed){fx.boomed=true;S.shake=TUNING.juice.boomShake;
-      boom(gz.x,groundY-70,'#ff9ecb',40);boom(gz.x,groundY-70,'#f4f4ff',30);
-      S.rings.push({x:gz.x,y:groundY-70,r:20,life:.8},{x:gz.x,y:groundY-70,r:50,life:.6});
+      boom(gz.x,gY-70,'#ff9ecb',40);boom(gz.x,gY-70,'#f4f4ff',30);
+      S.rings.push({x:gz.x,y:gY-70,r:20,life:.8},{x:gz.x,y:gY-70,r:50,life:.6});
       S.banner={text:'M O P T A L I T Y',t:2.4};G.score+=1500;AU.roar();AU.boom();}
     if(fx.t>2.4&&!S.done){S.done=true;
       G.pendingAfter=S.st.after;G.lastDeltas=[{txt:'+1500 MOPTALITY',neg:false}];
@@ -2223,7 +2226,7 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
       if(!S.done){S.done=true;setTimeout(gameOver,900);}return;}}
   // ---- Doug ----
   p.vy+=TUNING.gravity*dt;p.y+=p.vy*dt;
-  if(p.y>=groundY){p.y=groundY;p.vy=0;p.onG=true;}else p.onG=false;
+  if(p.y>=gY){p.y=gY;p.vy=0;p.onG=true;}else p.onG=false;
   if(IN.jumpBuf>0){IN.jumpBuf=0;
     if(p.onG){p.vy=TUNING.jumpV;p.onG=false;AU.jump();}}
   const dist=gz.x-dg.x;
@@ -2239,23 +2242,23 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
     if(active&&!dg.landed){
       const range=dg.atk===3?150:120,dmg=!p.onG?15:dg.atk===3?12:8;
       if(dist<range&&gz.roll<=0){dg.landed=true;
-        if(gz.state==='block'){S.pops.push({x:gz.x,y:groundY-120,t:.9,txt:'GLAZED! (blocked)',col:'#21f0ff'});AU.ui();}
+        if(gz.state==='block'){S.pops.push({x:gz.x,y:gY-120,t:.9,txt:'GLAZED! (blocked)',col:'#21f0ff'});AU.ui();}
         else{gz.hp-=dmg;gz.state='stagger';gz.sT=.32;
-          killJuice(gz.x-20,groundY-90,dmg*10);
+          killJuice(gz.x-20,gY-90,dmg*10);
           gz.x=Math.min(glazeMaxX()+70,gz.x+(dg.atk===3?46:14));
           if(gz.hp<=0&&fx.phase==='fight'){fx.phase='finish';gz.dizzy=1;
             S.banner={text:'FINISH HIM (WITH THE MOP)',t:5};AU.roar();}}}}
     if(dg.atkT<=0){dg.landed=false;if(dg.chain===3)dg.chain=0;}}
   // spacing: Doug drifts back slightly, Glaze controls the dance
   if(dist<64){dg.x-=90*dt;}
-  const dgMin=S.padMinX||70; // respect the measured pad edge, not a literal
-  dg.x=clamp(dg.x,dgMin,Math.max(dgMin+40,W-260));p.x=dg.x;
+  const dgMin=S.st.gbmode?24:(S.padMinX||70); // no pad in the shell
+  dg.x=clamp(dg.x,dgMin,Math.max(dgMin+40,vw-160));p.x=dg.x;
   // ---- GLAZE AI ----
   if(fx.phase==='fight'){gz.sT-=dt;
     if(gz.roll>0){ // mid donut-roll
       gz.x+=gz.vx*dt;gz.roll-=dt;
       if(gz.x<90){gz.vx=Math.abs(gz.vx);}
-      if(gz.roll<=0){gz.state='idle';gz.sT=rr(.6,1.1);gz.x=clamp(gz.x,W-320,glazeMaxX());}
+      if(gz.roll<=0){gz.state='idle';gz.sT=rr(.6,1.1);gz.x=clamp(gz.x,S.st.gbmode?vw-300:W-320,glazeMaxX());}
       else if(p.onG&&p.inv<=0&&Math.abs(gz.x-dg.x)<74){hurt();dg.x-=54;}}
     else if(gz.state==='stagger'){if(gz.sT<=0){gz.state='idle';gz.sT=rr(.35,.8);}}
     else if(gz.state==='block'){if(gz.sT<=0){gz.state='idle';gz.sT=rr(.3,.7);}}
@@ -2264,11 +2267,11 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
       if(gz.sT>.08&&Math.abs(gz.x-dg.x)<150&&p.inv<=0&&p.onG){hurt();dg.x-=48;}
       if(gz.sT<=0){gz.state='idle';gz.sT=rr(.5,1);}}
     else if(gz.state==='spraytel'){if(gz.sT<=0){gz.state='idle';gz.sT=rr(.7,1.2);
-      for(let i=0;i<3;i++)S.shots.push({x:gz.x-30,y:groundY-150,
+      for(let i=0;i<3;i++)S.shots.push({x:gz.x-30,y:gY-150,
         vx:-rr(180,320)-i*60,vy:-rr(240,420),grav:true,w:10,h:10});AU.t(200,.2,'square',.4,300);}}
     else{ // idle: waddle + decide
       gz.x+=(dist>210?-70:dist<130?55:0)*dt;
-      gz.x=clamp(gz.x,W-460,W-110);
+      gz.x=clamp(gz.x,S.st.gbmode?110:W-460,S.st.gbmode?vw-70:W-110);
       if(gz.sT<=0){const r=Math.random();
         if(dist<170&&r<.45){gz.state='jabtel';gz.sT=.38;}
         else if(r<.6){gz.state='roll';gz.roll=1.5;gz.vx=-430;
@@ -2279,7 +2282,7 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   // sprinkle shots
   for(let i=S.shots.length-1;i>=0;i--){const s2=S.shots[i];
     s2.vy+=1300*dt;s2.x+=s2.vx*dt;s2.y+=s2.vy*dt;
-    if(s2.y>=groundY){boom(s2.x,groundY,'#ff9ecb',4);S.shots.splice(i,1);continue;}
+    if(s2.y>=gY){boom(s2.x,gY,'#ff9ecb',4);S.shots.splice(i,1);continue;}
     if(s2.x<-30){S.shots.splice(i,1);continue;}
     if(s2.x-5<p.x+11&&s2.x+5>p.x-11&&s2.y>p.y-38&&s2.y<p.y){
       S.shots.splice(i,1);if(p.inv<=0)hurt();}}
@@ -2291,7 +2294,7 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   $('ebar').style.width=Math.max(0,gz.hp/gz.max*100)+'%';
   $('pbar').style.width=Math.max(0,fx.timer/60*100)+'%';}
 
-function drawGlaze(gz,t){cx.save();cx.translate(gz.x,groundY);
+function drawGlaze(gz,t){cx.save();cx.translate(gz.x,gYv());
   const rollin=gz.roll>0;
   if(rollin)cx.rotate(t*14);
   else{const wob=Math.sin(t*3.2)*.04;cx.scale(1+wob,1-wob);}
@@ -2319,46 +2322,48 @@ function drawGlaze(gz,t){cx.save();cx.translate(gz.x,groundY);
       cx.fillText('✨',-40,oy-64);cx.fillText('✨',-60,oy-40);}}
   cx.restore();}
 
-function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
+function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p,V=GV(),vw=V.w,vh=V.h,gY=gYv();
   cx.clearRect(0,0,W,H);cx.save();cx.imageSmoothingEnabled=true;
+  if(GBV.on)gbShell(V);                 // the plastic, unshaken
+  cx.translate(V.x,V.y);cx.beginPath();cx.rect(0,0,vw,vh);cx.clip(); // glass-local from here down
   if(S.shake>0)cx.translate(rr(-5,5)*S.shake,rr(-4,4)*S.shake);
   // dojo: dark industrial + green torchlight
-  let g=cx.createLinearGradient(0,0,0,H);
+  let g=cx.createLinearGradient(0,0,0,vh);
   g.addColorStop(0,'#060d08');g.addColorStop(.65,'#0c1e12');g.addColorStop(1,'#12301b');
-  cx.fillStyle=g;cx.fillRect(-8,-8,W+16,H+16);
+  cx.fillStyle=g;cx.fillRect(-8,-8,vw+16,vh+16);
   // vat door looms center-back
-  g=cx.createRadialGradient(W/2,groundY-90,20,W/2,groundY-90,160);
+  g=cx.createRadialGradient(vw/2,gY-90,20,vw/2,gY-90,160);
   g.addColorStop(0,'#2c2748');g.addColorStop(1,'#141024');
-  cx.fillStyle=g;cx.beginPath();cx.arc(W/2,groundY-90,150,0,7);cx.fill();
+  cx.fillStyle=g;cx.beginPath();cx.arc(vw/2,gY-90,150,0,7);cx.fill();
   cx.strokeStyle='#4b357f';cx.lineWidth=5;cx.stroke();
   cx.strokeStyle='#35226b';cx.lineWidth=3;
-  cx.beginPath();cx.arc(W/2,groundY-90,110,0,7);cx.stroke();
+  cx.beginPath();cx.arc(vw/2,gY-90,110,0,7);cx.stroke();
   cx.fillStyle='#7a5acd';
   for(let i=0;i<8;i++){const a=i/8*Math.PI*2;
-    cx.beginPath();cx.arc(W/2+Math.cos(a)*130,groundY-90+Math.sin(a)*130,5,0,7);cx.fill();}
+    cx.beginPath();cx.arc(vw/2+Math.cos(a)*130,gY-90+Math.sin(a)*130,5,0,7);cx.fill();}
   // torches
-  [[70],[W-70]].forEach(([txx])=>{
-    cx.fillStyle='#2c2748';cx.fillRect(txx-5,groundY-150,10,150);
+  [[42],[vw-42]].forEach(([txx])=>{
+    cx.fillStyle='#2c2748';cx.fillRect(txx-5,gY-150,10,150);
     const fl=Math.sin(S.t*11+txx)*.25+1;
     cx.save();cx.globalCompositeOperation='lighter';
     cx.fillStyle='rgba(125,255,58,.5)';
-    cx.beginPath();cx.ellipse(txx,groundY-160,9,20*fl,0,0,7);cx.fill();
+    cx.beginPath();cx.ellipse(txx,gY-160,9,20*fl,0,0,7);cx.fill();
     cx.fillStyle='rgba(234,255,216,.8)';
-    cx.beginPath();cx.ellipse(txx,groundY-155,4,10*fl,0,0,7);cx.fill();cx.restore();});
+    cx.beginPath();cx.ellipse(txx,gY-155,4,10*fl,0,0,7);cx.fill();cx.restore();});
   // goo crowd on back bleachers
-  cx.fillStyle='#141024';cx.fillRect(0,groundY-58,W,14);
-  for(let i=0;i<9;i++){const bx=60+i*(W-120)/8,hop=Math.abs(Math.sin(S.t*5+i*1.3))*10;
-    g=cx.createRadialGradient(bx-4,groundY-72-hop,3,bx,groundY-68-hop,13);
+  cx.fillStyle='#141024';cx.fillRect(0,gY-58,vw,14);
+  for(let i=0;i<9;i++){const bx=40+i*(vw-80)/8,hop=Math.abs(Math.sin(S.t*5+i*1.3))*10;
+    g=cx.createRadialGradient(bx-4,gY-72-hop,3,bx,gY-68-hop,13);
     g.addColorStop(0,'#d8ffb0');g.addColorStop(1,'#3fa50f');
-    cx.fillStyle=g;cx.beginPath();cx.arc(bx,groundY-68-hop,12,0,7);cx.fill();
+    cx.fillStyle=g;cx.beginPath();cx.arc(bx,gY-68-hop,12,0,7);cx.fill();
     cx.fillStyle='#1a1030';cx.beginPath();
-    cx.arc(bx-4,groundY-70-hop,1.8,0,7);cx.arc(bx+4,groundY-70-hop,1.8,0,7);cx.fill();}
+    cx.arc(bx-4,gY-70-hop,1.8,0,7);cx.arc(bx+4,gY-70-hop,1.8,0,7);cx.fill();}
   // floor
-  g=cx.createLinearGradient(0,groundY,0,H);
+  g=cx.createLinearGradient(0,gY,0,vh);
   g.addColorStop(0,'#1c3a24');g.addColorStop(1,'#0a1a0e');
-  cx.fillStyle=g;cx.fillRect(-8,groundY,W+16,H-groundY+8);
+  cx.fillStyle=g;cx.fillRect(-8,gY,vw+16,vh-gY+8);
   cx.strokeStyle='rgba(125,255,58,.4)';cx.lineWidth=2;
-  cx.beginPath();cx.moveTo(0,groundY);cx.lineTo(W,groundY);cx.stroke();
+  cx.beginPath();cx.moveTo(0,gY);cx.lineTo(vw,gY);cx.stroke();
   // sprinkle shots
   S.shots.forEach(s2=>{cx.save();cx.translate(s2.x,s2.y);
     cx.rotate(s2.vx*.01);cx.fillStyle=pick(['#21f0ff','#ffd75e','#ff9ecb']);
@@ -2367,7 +2372,7 @@ function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
   drawGlaze(gz,S.t);
   // Doug with the mop, 64-bit style, scaled up
   if(!(p.inv>0&&Math.sin(S.t*40)>0)){
-    cx.save();cx.translate(dg.x,groundY);cx.scale(1.35,1.35);
+    cx.save();cx.translate(dg.x,gY);cx.scale(1.35,1.35);
     const atk=dg.atkT>0?dg.atk:0;
     aBlit(AIMG.doug_fight,-25,-60,44,62,false);
     // THE MOP: pose by attack state
@@ -2393,30 +2398,32 @@ function fightDraw(){const st=S.st,fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p;
     cx.lineWidth=3;cx.beginPath();cx.arc(r2.x,r2.y,r2.r,0,7);cx.stroke();});
   cx.restore();
   // SF-style GLAZE health bar + round timer
-  cx.fillStyle='rgba(10,6,24,.75)';rrectPath(W-330,14,300,26,7);cx.fill();
+  const bw2=Math.min(300,vw-54);
+  cx.fillStyle='rgba(10,6,24,.75)';rrectPath(vw-30-bw2,14,bw2,26,7);cx.fill();
   cx.strokeStyle='#7a2a52';cx.lineWidth=2;cx.stroke();
-  g=cx.createLinearGradient(W-326,0,W-34,0);
+  g=cx.createLinearGradient(vw-26-bw2,0,vw-34,0);
   g.addColorStop(0,'#c2497f');g.addColorStop(1,'#ff9ecb');
   cx.fillStyle=g;
-  const hpw=292*Math.max(0,gz.hp/gz.max);
-  cx.fillRect(W-34-hpw,18,hpw,18);
-  cx.fillStyle='#ffd3e8';cx.font='900 11px sans-serif';cx.textAlign='right';
-  cx.fillText('GLAZE · THE FORBIDDEN DONUT',W-38,58);
+  const hpw=(bw2-8)*Math.max(0,gz.hp/gz.max);
+  cx.fillRect(vw-34-hpw,18,hpw,18);
+  cx.fillStyle='#ffd3e8';cx.font='900 10px sans-serif';cx.textAlign='right';
+  cx.fillText('GLAZE · THE FORBIDDEN DONUT',vw-38,58);
   cx.fillStyle=fx.timer<10?'#ff4757':'#eae6ff';
   cx.font='900 26px monospace';cx.textAlign='center';
-  cx.fillText(String(Math.max(0,Math.ceil(fx.timer))).padStart(2,'0'),W/2,40);
-  drawJuice();drawSay();drawBanner();
+  cx.fillText(String(Math.max(0,Math.ceil(fx.timer))).padStart(2,'0'),vw/2,86);
+  drawJuice();
   // intro card
-  if(fx.phase==='intro'){cx.fillStyle='rgba(6,13,8,'+(.8*(1-fx.t/2.4))+')';cx.fillRect(0,0,W,H);
+  if(fx.phase==='intro'){cx.fillStyle='rgba(6,13,8,'+(.8*(1-fx.t/2.4))+')';cx.fillRect(0,0,vw,vh);
     cx.globalAlpha=Math.min(1,(2.4-fx.t)*2);cx.textAlign='center';
-    cx.fillStyle='#eae6ff';cx.font='900 24px sans-serif';cx.fillText(st.name,W/2,H*.3);
-    cx.fillStyle='#9a8fc7';cx.font='700 13px sans-serif';cx.fillText(st.sub,W/2,H*.3+24);
+    cx.fillStyle='#eae6ff';cx.font='900 20px sans-serif';cx.fillText(st.name,vw/2,vh*.3);
+    cx.fillStyle='#9a8fc7';cx.font='700 12px sans-serif';cx.fillText(st.sub,vw/2,vh*.3+24);
     cx.fillStyle='#ff9ecb';cx.font='900 34px sans-serif';
-    cx.fillText(fx.t<1.4?'ROUND 1':'',W/2,H*.58);
-    cx.fillStyle='#7dff3a';cx.font='800 14px sans-serif';
-    cx.fillText('🔥 = MOP (3rd hit sweeps) · ⬆ = HOP THE ROLL',W/2,H*.76);
+    cx.fillText(fx.t<1.4?'ROUND 1':'',vw/2,vh*.58);
+    cx.fillStyle='#7dff3a';cx.font='800 13px sans-serif';
+    cx.fillText('A = MOP (3rd hit sweeps) · B = HOP THE ROLL',vw/2,vh*.76);
     cx.globalAlpha=1;}
-  cx.restore();}
+  cx.restore();
+  drawSay();drawBanner();} // absolute — they place themselves on the glass
 
 /* ================= ACTION: TAQUITO GRAND PRIX (pseudo-3D racer) ================= */
 /* ================= RACE: pseudo-3D road =================
