@@ -860,8 +860,8 @@ const LS={
 const SFX_TRIM=.15; // the long-standing SFX bus trim; the sfx slider scales this
 function defaultAudio(){return{master:1,music:.5,ambient:1,sfx:1};} // == the pre-Phase-D mix
 function defaultUI(){return{padScale:1,padLift:0};}
-// fresh installs start on CHILL — one tap up for veterans, one tap down for rookies
-function defaultProfile(){return{ver:SAVE_VER,diff:'chill',audio:defaultAudio(),ui:defaultUI(),fx:{flicker:true},
+// fresh installs start on ROOKIE — the 5-10 crowd is the front door; veterans tap up
+function defaultProfile(){return{ver:SAVE_VER,diff:'rookie',audio:defaultAudio(),ui:defaultUI(),fx:{flicker:true},
   taquitos:0,items:[],notes:[],seen:[],stats:{},best:{},run:null};}
 const clamp01=v=>Number.isFinite(v)?(v<0?0:v>1?1:v):null;
 // A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
