@@ -202,7 +202,7 @@ body.shell #bPause,body.shell #mute{display:none}
 #gbrow{flex:1;display:flex;align-items:flex-end;justify-content:space-between} /* fills the band so the d-pad catcher is real */
 /* the HIT zone is the whole lower-left of the slab — a 40px miss below the cross still walks.
    Direction is computed off the visible cross's centre, so the plastic stays honest. */
-#dpad{position:relative;width:48%;align-self:stretch;perspective:260px;touch-action:none;pointer-events:auto}
+#dpad{position:relative;z-index:2;width:48%;align-self:stretch;perspective:260px;touch-action:none;pointer-events:auto} /* outranks the slabs, like .gbb */
 #dpad::after{content:'';position:absolute;left:0;right:0;top:0;bottom:-34px} /* the catcher reaches under the slab row: a low miss walks */
 #dcross{position:absolute;left:4px;bottom:2px;width:calc(156px * var(--padScale,1));height:calc(156px * var(--padScale,1));transition:transform .06s}
 #dcross i{position:absolute;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f,0 3px 0 rgba(0,0,0,.45)}
@@ -218,6 +218,7 @@ body.shell #bPause,body.shell #mute{display:none}
   touch-action:none;pointer-events:auto}
 .gbb small{font:800 8px/1 sans-serif;letter-spacing:.06em;opacity:.85}
 .gbb.hot{transform:translateY(3px);box-shadow:0 1px 0 #5c1157,0 0 22px rgba(255,61,240,.6)}
+#gbB::after{content:'';position:absolute;left:-8px;right:-8px;top:0;bottom:-34px} /* a low mash on B stays a jump, never a pause */
 #gbsl{display:flex;gap:12px;justify-content:flex-end;padding-right:64px} /* in the gap between d-pad and B: no thumb's flight path */
 .gbslab{position:relative;width:74px;height:20px;border-radius:10px;border:0;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f;
   color:var(--dim);font:800 8px/1 sans-serif;letter-spacing:.08em;transform:rotate(-24deg);
@@ -411,8 +412,9 @@ body.shell #bPause,body.shell #mute{display:none}
   <h2>64-Bit Ascent Mode</h2>
   <div id="tgrid2">
   <div class="trow"><b>🌮</b><span><b>THE TRUCK FLIES NOW.</b> Six rockets. Zero permits. Legally, it's a spaceship.</span></div>
-  <div class="trow"><b>🕹️</b><span><b>LEFT THUMB — touch &amp; drag anywhere on the left to FLY.</b> Full 2D. Doug screams internally.</span></div>
-  <div class="trow"><b>🔥</b><span><b>RIGHT PAD — HOLD TO FIRE.</b> Shots lean into your movement. Physics!</span></div>
+  <div class="trow"><b>✚</b><span><b>D-PAD — FLY.</b> Full 2D. Doug screams internally.</span></div>
+  <div class="trow"><b>🅰️</b><span><b>A — HOLD TO FIRE.</b> Shots lean into your movement. Physics!</span></div>
+  <div class="trow"><b>🅱️</b><span><b>B — FOCUS.</b> Half speed for threading the needle. It fires too.</span></div>
   <div class="trow"><b>📼</b><span><b>GRAB CASSETTES</b> for directional weapons. Hair metal solves everything.</span></div>
   <div class="trow"><b>🖥️</b><span><b>VEX INSTALLED A 64-BIT GRAPHICS CARD.</b> Gaze upon the future. It has gradients.</span></div>
   </div>
@@ -507,8 +509,8 @@ body.shell #bPause,body.shell #mute{display:none}
   </div>
   <div id="gbsl"><button class="gbslab" id="gbSel">SOUND</button><button class="gbslab" id="gbSta">PAUSE</button></div>
 </div>
-<div id="rot"><b>📱</b><h2>Rotate your phone</h2><p class="sub">This time-war is landscape-only. Doug needs the legroom.</p></div>
-<div id="rotD"><b>📱</b><h2>Turn your phone upright</h2><p class="sub">The Supply Dungeon plays TALL. Very 1989 down here.</p></div>
+<div id="rot"><b>📱</b><h2>Rotate your phone</h2><p class="sub">This board goes WIDE. Doug needs the legroom.</p></div>
+<div id="rotD"><b>📱</b><h2>Turn your phone upright</h2><p class="sub">The LameBOY plays TALL. Very 1989 in here.</p></div>
 </div>
 <script>
 'use strict';
@@ -575,7 +577,7 @@ const STAGES=[
   {id:'dungeon',name:'BONUS — SUPPLY DUNGEON',sub:'Sublevel C · TOP-DOWN MODE',dungeon:true,gbmode:true,hue:265,
    next:{stage:5,label:'🍩 THE DOOR HAS A BOUNCER →'},
    after:'The GOLDEN PLUNGER hums with ancient custodial power. Vex logs it as "an artifact." Torque calls it "yoink." Doug feels one full heart more confident.'},
-  {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:180,hue:190,pixel:true,gbmode:true,
+  {id:'warp',name:'TIME WARP ZONE',sub:'CH.1, Remembered Wrong · UNSTABLE',dur:40,scroll:180,hue:190,pixel:true,gbmode:true,stomp:true,
    music:'drive',stutter:true,mix:{blob:[1.2,2.0],turret:[5,7],drone:[2.2,3.4]},
    next:{stage:5,label:'🍩 BACK TO THE DOOR →'},
    after:'You mopped the same corridor twice, eleven years apart, in the wrong order. Vex refuses to log it. Torque says it "tasted purple."'}
@@ -993,7 +995,7 @@ function clearCheckpoint(){G.cpStage=-1;G.cpKind=null;G.cpValue=0;}
 let MODE='title'; // title | story | conseq | action | over | end
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
-  document.body.classList.toggle('lsb',id==='war');} // the war room is the one landscape holdout
+  document.body.classList.toggle('lsb',id==='war'||!!(MODE==='action'&&S&&S.st&&S.st.race&&!S.done));} // war room + the live parked race hold landscape
 function hudOn(v){$('hud').classList.toggle('on',v);$('pads').classList.toggle('on',v);if(v)updateTaqHud();
   $('bPause').style.display=v?'':'none';
   $('stick').classList.toggle('on',v&&!!(S&&S.st&&S.st.top&&!S.st.gbmode)); // gbmode boards use the d-pad, not the drag-stick
@@ -1453,7 +1455,9 @@ $('bCont').addEventListener('click',()=>{AU.ui();
   else{G.scene=r.idx;openScene(G.scene);}});
 
 /* ================= CONSEQUENCE / GAMEOVER / ENDING ================= */
-function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
+function showConsequence(){
+  const keepLsb=document.body.classList.contains('lsb'); // a war victory reads as held, too
+  MODE='conseq';hudOn(false);MUS.play('title');renderMeters();
   const st=STAGES[G.stage],nx=st.next||{},preBoss=(nx.stage===6);
   $('chap').textContent='✅ '+st.name+' — CLEAR';
   // board cleared: bank the stats and a personal best, keyed by the stage's stable id
@@ -1482,17 +1486,19 @@ function showConsequence(){MODE='conseq';hudOn(false);MUS.play('title');renderMe
     if(viaHub){G.fromHub=false;openHub();return;} // hub launches route back to the hub
     if(nx.scene!=null){G.scene=nx.scene;openScene(G.scene);}
     else{G.stage=nx.stage;warp();startStage(nx.stage);}});
-  ch.appendChild(b);$('stext').scrollTop=0;showScreen('story');}
+  ch.appendChild(b);$('stext').scrollTop=0;showScreen('story');
+  if(keepLsb)document.body.classList.add('lsb');}
 
 function gameOver(){
+  const keepLsb=document.body.classList.contains('lsb'); // a war/race defeat fits the phone as held — no rotate wall before RETRY
   if(MODE==='action')G.deathsHere=(G.deathsHere||0)+1; // canvas boards only — a war-room rout is not this ledger's business
-  MODE='over';hudOn(false); // portrait screens are simply legal now; no shell carve-out neededMUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
+  MODE='over';hudOn(false);MUS.stop();AU.die();G.deaths++;bumpStat('deaths');SAVE.write();
   const rcost=DF().id==='rookie'?0:TUNING.retryTimelineCost; // rookies retry free
   G.timeline=clamp(G.timeline-rcost,0,100);
   $('overline').textContent=pick(DEATHLINES);
   $('overstats').textContent=rcost?'-'+rcost+' TIMELINE · rewinds annoy time itself'
     :'FREE REWIND · rookie janitors have warranty coverage';
-  showScreen('over');}
+  showScreen('over');if(keepLsb)document.body.classList.add('lsb');}
 $('bRetry').addEventListener('click',()=>{AU.ui();
   G.hp=Math.max(G.hp,DF().id==='rookie'?G.maxHp:TUNING.retryHp);G.energy=100;
   warp();if(G.inBattle)openBattle();else startStage(G.stage);});
@@ -1911,14 +1917,19 @@ const GBV={x:0,y:0,w:0,h:0,on:false};
 // the slab is display:none. The slab's CSS height (216px * padScale + safe area) is mirrored here;
 // change one, change both. GBV.on is STATE, owned by startStage/hudOn, never derived in here.
 function gbFit(){
+  const g0=(S&&S.st&&S.st.gbmode&&GBV.on&&GBV.w)?gYv():0; // ground before, so live actors can re-glue
   const ps=(PROF&&PROF.ui&&PROF.ui.padScale)||1;
   const css=getComputedStyle(document.documentElement);
   const sab=parseFloat(css.getPropertyValue('--sab'))||0;
   const sat=parseFloat(css.getPropertyValue('--sat'))||0;
   const slabTop=H-(216*ps+sab);
   const top=sat+24; // the hud rows end ~sat+46; the glass starts below them, not under them
-  const side=Math.max(120,Math.min(W-36,slabTop-top-30)); // 30 = bezel label strip above the glass
-  GBV.w=GBV.h=side;GBV.x=(W-side)/2;GBV.y=top+24;}
+  const side=Math.round(Math.max(120,Math.min(W-36,slabTop-top-30))); // whole pixels: no shimmer on the pixel-art boards
+  GBV.w=GBV.h=side;GBV.x=Math.round((W-side)/2);GBV.y=top+24;
+  if(g0){const g1=gYv();if(g1!==g0){const d=g1-g0; // pad-size slider or resize mid-board: the floor moved, so does everything on it
+    for(const f of S.foes||[]){f.y+=d;if(f.baseY!=null)f.baseY+=d;}
+    for(const k of S.picks||[])k.y+=d;
+    if(S.p)S.p.y+=d;}}}
 // Every draw path asks GV() for its window: the LameBOY glass when the shell is up, the full
 // canvas when it isn't. Repointing a board onto GV() is therefore a no-op until its stage grows
 // gbmode:true — which is the whole conversion trick.
@@ -1928,7 +1939,7 @@ function GV(){return GBV.on&&GBV.w?GBV:{x:0,y:0,w:W,h:H};}
 // sprite sizes and the 780px/s stomp keep their meaning at 1:1 pixels.
 function gYv(){const v=GV();return (S&&S.st&&S.st.gbmode)?Math.min(v.h*.82,v.h-64):groundY;}
 addEventListener('resize',gbFit); // fit() registered first, so W/H are fresh when this runs
-gbFit();
+// (no boot-time gbFit: it now reads S, declared later — startStage always runs it before first use)
 document.body.classList.add('gb'); // portrait-first, everywhere; .lsb boards opt back out
 
 const IN={fire:false,jumpBuf:0,steer:0,gas:0,dashBuf:0,bHeld:false}; // dashBuf: buffered B tap (SCOOT/jump) · bHeld: B held (FOCUS)
@@ -2071,7 +2082,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
      pops:[],caps:[],combo:0,comboT:0,freeze:0,taq:0,banner:null,say:null,taqSpawned:false,
      boss:null,bossDying:-1,roared:false};
   stickPts.clear();dpadPts.clear(); // fingers from the previous board are nobody's owner now
-  for(const k in (st.mix||{}))S.timers[k]=rr(st.mix[k][0],st.mix[k][1])*.5;
+  for(const k in (st.mix||{}))S.timers[k]=rr(st.mix[k][0],st.mix[k][1])*.5*G.spawnMul*DF().spawn; // ROOKIE's first blob is as polite as the rest
   if(st.boss)S.boss={hp:st.bossHp,max:st.bossHp,x:0,y:0,t:0,atk:2.6,r:74};
   if(st.top){const tv=GV();S.p.x=tv.w/2;S.p.y=tv.h-72;S.p.vx=0;S.p.vy=0;G.pattern='single';
     S.stick={on:false,id:-1,ox:0,oy:0,x:0,y:0};S.banner=null;
@@ -2109,7 +2120,7 @@ function startStage(i,skipCard){const st=STAGES[i];G.stage=i;G.inBattle=false;
   syncRot(); // pause immediately if the phone is held the wrong way for THIS board
   $('pbar').classList.toggle('boss',!!st.boss);}
 
-function spawnFoe(type,plain){const gy=gYv(),lead=(S.st&&S.st.gbmode)?110:0; // lead: extra runway so warnings beat arrivals
+function spawnFoe(type,plain){const gy=gYv(),lead=(S.st&&S.st.gbmode)?(S.st.stutter?240:110):0; // extra runway; the warp's fast phase needs more
   const d=ENEMIES[type],f={type,hp:d.hp,w:d.w,h:d.h,x:GV().w+50+lead,t:0,hitT:0};
   if(type==='drone'){f.baseY=gy-95-rr(0,70);f.y=f.baseY;f.ph=rr(0,6.3);}
   else{f.y=gy;if(type==='turret')f.fireT=rr(.6,1.4);}
@@ -2154,7 +2165,7 @@ function drawJuice(){cx.textAlign='center';
     cx.fillStyle='#cc7d0a';cx.fillRect(-14,-2,10,4);cx.restore();}
   if(S.combo>=3&&MODE==='action'){cx.font='900 '+Math.min(15+S.combo,30)+'px sans-serif';
     cx.fillStyle=S.combo>=10?'#ff3df0':S.combo>=5?'#ffd75e':'#21f0ff';
-    const cv2=GV();cx.globalAlpha=.9;cx.fillText('COMBO ×'+S.combo,cv2.w/2,86);cx.globalAlpha=1;} // local: gb callers translate
+    const cv2=GV();cx.globalAlpha=.9;cx.fillText('COMBO ×'+S.combo,cv2.w/2,S.st.fight?114:86);cx.globalAlpha=1;} // local: gb callers translate · kumite: clear of the round timer
   if(S.taq>0){cx.save();cx.globalCompositeOperation='lighter';
     const p=S.p,ph=S.t*7;
     // Last 1.5s: the ring flips gold -> alarm red/white and strobes, faster in the final beat, so
@@ -2200,7 +2211,8 @@ function fightUpdate(dt){const fx=S.fx,dg=fx.doug,gz=fx.glz,p=S.p,fV=GV(),vw=fV.
   if(S.shake>0)S.shake-=dt;if(p.inv>0)p.inv-=dt;
   // LameBOY verbs (this board returns before the runner block): B = hop, d-pad nudges the footwork
   if(S.st.gbmode){if(IN.dashBuf>0){IN.jumpBuf=Math.max(IN.jumpBuf,.12);IN.dashBuf=0;}
-    if(S.stick&&S.stick.on)dg.x+=S.stick.x*140*dt;}
+    if(S.stick&&S.stick.on&&(fx.phase==='fight'||fx.phase==='finish'))
+      dg.x=clamp(dg.x+S.stick.x*140*dt,24,Math.max(64,vw-160));}
   if(fx.phase==='intro'){fx.t+=dt;
     if(fx.t>2.4){fx.phase='fight';S.banner={text:'FIGHT!',t:.9};AU.roar();}
     IN.jumpBuf=0;IN.fire=false;return;}
@@ -2712,7 +2724,7 @@ function topUpdate(dt){const st=S.st,p=S.p,V=GV(),vw=V.w,vh=V.h; // all coords a
   const wp=WEAPONS[G.weapon],pat=PATTERNS[G.pattern];p.fireT-=dt;
   G.energy=Math.min(100,G.energy+(TUNING.baseRegen+G.regen)*DF().regen*torqueRegenMul()*dt);
   const cost=wp.cost*pat.costMul;
-  if(IN.fire&&p.fireT<=0&&G.energy>=cost){G.energy-=cost;p.fireT=wp.rate;
+  if((IN.fire||focus)&&p.fireT<=0&&G.energy>=cost){G.energy-=cost;p.fireT=wp.rate; // FOCUS fires too: precision must never cost the gun
     pat.angles.forEach(a=>{const sa=Math.sin(a),ca=Math.cos(a);
       S.bullets.push({x:p.x+sa*26,y:p.y-26*ca,vx:sa*wp.speed+p.vx*.25,vy:-ca*wp.speed,
         pierce:wp.pierce,dmg:wp.dmg,sz:wp.size,col:wp.col});});
@@ -2967,14 +2979,14 @@ function updateBoss(dt){const bs=S.boss;if(S.bossDying>=0)return;
   if(!S.roared&&bs.t>.4){S.roared=true;AU.roar();}
   const rage=bs.hp<bs.max*.5;
   bs.atk-=dt;
-  if(bs.atk<=0&&bs.t>2.6){bs.atk=rage?1.45:1.9;
+  if(bs.atk<=0&&bs.t>3.8){bs.atk=rage?1.45:1.9; // first swing waits for the VS card (same gate as the 3.7s bark)
     const r=Math.random(),blobs=S.foes.filter(f=>f.type==='blob').length;
     if(r<(rage?.42:.3)){ // custard wave — jump it (slower in the glass: the runway is short)
-      S.shots.push({x:bs.x-70,y:bgy-8,vx:S.st.gbmode?-290:-430,vy:0,grav:false,w:32,h:18,wave:true});
+      S.shots.push({x:bs.x-70,y:bgy-8,vx:S.st.gbmode?-170:-430,vy:0,grav:false,w:32,h:18,wave:true}); // glass transit ~0.6s, like the old room
     }else if(r<.7){ // triple goo lob — lands short / mid / on Doug
       for(let i=0;i<3;i++)setTimeout(()=>{if(S&&S.boss&&S.bossDying<0){
         const d=S.boss.x-60-S.p.x;
-        S.shots.push({x:S.boss.x-40,y:S.boss.y,vx:-clamp(d*(.5+i*.28+rr(0,.18))/.85,120,720),vy:-rr(360,520),grav:true,w:13,h:13});}},i*130);
+        S.shots.push({x:S.boss.x-40,y:S.boss.y,vx:-clamp(d*(.5+i*.28+rr(0,.18))/.85,S.st.gbmode?40:120,720),vy:-rr(360,520),grav:true,w:13,h:13});}},i*130);
     }else if(blobs<4){spawnFoe('blob');S.foes[S.foes.length-1].x=bs.x-60;}}}
 function killBoss(){S.bossDying=0;S.shots.length=0;AU.roar();S.shake=TUNING.juice.bossDieShake;
   S.freeze=TUNING.juice.bossDieFreeze;G.score+=2000;
@@ -3726,7 +3738,7 @@ function loop(ts){requestAnimationFrame(loop);
   const dt=Math.max(0,Math.min(.033,(ts-last)/1000||0));last=ts; // clamp both ends: visibilitychange/syncRot reset last from performance.now(), which can read ahead of ts
   if(MODE==='action'&&S&&!S.paused&&!document.hidden){update(dt);draw();}}
 requestAnimationFrame(loop);
-document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;IN.dashBuf=0;});
+document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;IN.dashBuf=0;IN.bHeld=false;});
 // portrait gate: #rot overlay covers the game; also pause the sim. The dungeon (body.gb) is the
 // one board that WANTS portrait, so its wrong-way is landscape-on-a-touch-device (#rotD) — desktops
 // are exempt, since you cannot rotate a monitor and the square layout works either way.
