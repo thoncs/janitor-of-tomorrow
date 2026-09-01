@@ -319,6 +319,13 @@ landscape holdouts — `wrongWay()` reads lsb, `#rot` shows only under `body.lsb
 else. The old gameOver/consequence/howto shell carve-outs are deleted (portrait screens are simply
 legal). ROOKIE is the fresh-install default. Title reads **v0.12**. 72 headless checks.
 
+**Shell facelift (2026-09-01, post-flip):** whisper bezel — the glass takes nearly the whole width
+(`W-16`) with a 4px ring and a single LameBOY™ badge (DOT MATRIX line, LED and PUDD-CO deleted from
+`gbShell`); the d-pad is one clip-path plus in a recessed circular well (the `.edge`/`.face` pair
+fakes an outline on the union); A/B sit up and inboard; SOUND/PAUSE are straight stacked pills in the
+gap column. Hit probes (`hitprobe.mjs`) guard the layout: below-cross walks, pill plastic clicks,
+20px left of B's circle never hits a pill.
+
 **Conversion invariants (do not regress):**
 - Every canvas board draws through `GV()`/`gYv()` glass-local with translate+clip; `drawJuice` is
   viewport-LOCAL (callers translate), `drawSay`/`drawBanner` are ABSOLUTE (call after restore).

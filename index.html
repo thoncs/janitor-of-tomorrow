@@ -202,15 +202,22 @@ body.shell #bPause,body.shell #mute{display:none}
 #gbrow{flex:1;display:flex;align-items:flex-end;justify-content:space-between} /* fills the band so the d-pad catcher is real */
 /* the HIT zone is the whole lower-left of the slab — a 40px miss below the cross still walks.
    Direction is computed off the visible cross's centre, so the plastic stays honest. */
-#dpad{position:relative;z-index:2;width:48%;align-self:stretch;perspective:260px;touch-action:none;pointer-events:auto} /* outranks the slabs, like .gbb */
+#dpad{position:relative;z-index:2;width:44%;align-self:stretch;perspective:260px;touch-action:none;pointer-events:auto} /* outranks the slabs, like .gbb */
 #dpad::after{content:'';position:absolute;left:0;right:0;top:0;bottom:-34px} /* the catcher reaches under the slab row: a low miss walks */
-#dcross{position:absolute;left:4px;bottom:2px;width:calc(156px * var(--padScale,1));height:calc(156px * var(--padScale,1));transition:transform .06s}
-#dcross i{position:absolute;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f,0 3px 0 rgba(0,0,0,.45)}
-#dcross .v{left:34.5%;top:0;width:31%;height:100%;border-radius:7px}
-#dcross .h{top:34.5%;left:0;height:31%;width:100%;border-radius:7px}
-#dcross b{position:absolute;color:#4b357f;font-size:10px;line-height:1;pointer-events:none}
+#dcross{position:absolute;left:8px;bottom:6px;width:calc(150px * var(--padScale,1));height:calc(150px * var(--padScale,1));transition:transform .06s}
+/* the recessed well the pad sits in — this is what makes it read as ONE control */
+#dcross::before{content:'';position:absolute;inset:-14px;border-radius:50%;
+  background:radial-gradient(circle at 50% 42%,#1a1038,#0d0820 70%);
+  box-shadow:inset 0 4px 10px rgba(0,0,0,.6),inset 0 -2px 4px rgba(122,90,205,.25)}
+/* the plus is one clipped shape; .edge is the same shape scaled up — a faked outline on the UNION */
+#dcross s{position:absolute;inset:0;clip-path:polygon(34.5% 0,65.5% 0,65.5% 34.5%,100% 34.5%,100% 65.5%,65.5% 65.5%,65.5% 100%,34.5% 100%,34.5% 65.5%,0 65.5%,0 34.5%,34.5% 34.5%)}
+#dcross s.edge{background:#4b357f;transform:scale(1.045)}
+#dcross s.face{background:linear-gradient(180deg,#2a1b4e,#1a1038)}
+#dcross u{position:absolute;left:41%;top:41%;width:18%;height:18%;border-radius:50%;
+  background:radial-gradient(circle at 45% 40%,#150c2e,#0d0820)}
+#dcross b{position:absolute;color:#7a5acd;font-size:10px;line-height:1;pointer-events:none}
 /* A/B on the classic diagonal: the whole pair leans, letters and all, like the printed shell did */
-#gbab{display:flex;gap:16px;align-items:center;transform:rotate(-24deg);margin-right:6px}
+#gbab{display:flex;gap:16px;align-items:center;transform:rotate(-24deg);position:relative;right:14px;bottom:30px}
 .gbb{position:relative;z-index:2;width:calc(72px * var(--padScale,1));height:calc(72px * var(--padScale,1));border-radius:50%;border:0; /* buttons win any overlap — mashing B must never pause */
   background:radial-gradient(circle at 34% 30%,#ff62f4,var(--mag) 55%,#8f1f8a);
   box-shadow:0 4px 0 #5c1157,0 0 14px rgba(255,61,240,.35);color:#fff;font:900 20px/1 sans-serif;
@@ -218,10 +225,11 @@ body.shell #bPause,body.shell #mute{display:none}
   touch-action:none;pointer-events:auto}
 .gbb small{font:800 8px/1 sans-serif;letter-spacing:.06em;opacity:.85}
 .gbb.hot{transform:translateY(3px);box-shadow:0 1px 0 #5c1157,0 0 22px rgba(255,61,240,.6)}
-#gbB::after{content:'';position:absolute;left:-8px;right:-8px;top:0;bottom:-34px} /* a low mash on B stays a jump, never a pause */
-#gbsl{display:flex;gap:12px;justify-content:flex-end;padding-right:64px} /* in the gap between d-pad and B: no thumb's flight path */
-.gbslab{position:relative;width:74px;height:20px;border-radius:10px;border:0;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f;
-  color:var(--dim);font:800 8px/1 sans-serif;letter-spacing:.08em;transform:rotate(-24deg);
+#gbB::after{content:'';position:absolute;left:-8px;right:-8px;top:0;bottom:-64px} /* a low mash on B stays a jump, never a pause — covers the vacated corner too */
+#gbsl{position:absolute;left:calc(44% + 6px);bottom:calc(16px + var(--sab));
+  display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:0;pointer-events:none} /* in the dead gap: right of the pad's catch column, left of B's */
+.gbslab{position:relative;width:58px;height:20px;border-radius:10px;border:0;background:#0d0820;box-shadow:inset 0 0 0 2px #4b357f;
+  color:var(--dim);font:800 8px/1 sans-serif;letter-spacing:.08em;
   touch-action:manipulation;pointer-events:auto}
 .gbslab::after{content:'';position:absolute;inset:-2px -8px -12px} /* hugs the plastic — misses fall through to the d-pad catcher below it */
 .gbslab:active{background:#241646}
@@ -502,7 +510,7 @@ body.shell #bPause,body.shell #mute{display:none}
 </div>
 <div id="gb">
   <div id="gbrow">
-    <div id="dpad"><div id="dcross"><i class="v"></i><i class="h"></i>
+    <div id="dpad"><div id="dcross"><s class="edge"></s><s class="face"></s><u></u>
       <b style="left:45%;top:8%">▲</b><b style="left:45%;bottom:8%">▼</b><b style="left:9%;top:46%">◀</b><b style="right:9%;top:46%">▶</b>
     </div></div>
     <div id="gbab"><button class="gbb" id="gbB">B<small>SCOOT</small></button><button class="gbb" id="gbA">A<small>ZAP</small></button></div>
@@ -1923,9 +1931,9 @@ function gbFit(){
   const sab=parseFloat(css.getPropertyValue('--sab'))||0;
   const sat=parseFloat(css.getPropertyValue('--sat'))||0;
   const slabTop=H-(216*ps+sab);
-  const top=sat+24; // the hud rows end ~sat+46; the glass starts below them, not under them
-  const side=Math.round(Math.max(120,Math.min(W-36,slabTop-top-30))); // whole pixels: no shimmer on the pixel-art boards
-  GBV.w=GBV.h=side;GBV.x=Math.round((W-side)/2);GBV.y=top+24;
+  const top=sat+40; // the hud rows end ~sat+46; the glass starts just below them
+  const side=Math.round(Math.max(120,Math.min(W-16,slabTop-top-12))); // whisper bezel: the glass takes nearly everything
+  GBV.w=GBV.h=side;GBV.x=Math.round((W-side)/2);GBV.y=top+6;
   if(g0){const g1=gYv();if(g1!==g0){const d=g1-g0; // pad-size slider or resize mid-board: the floor moved, so does everything on it
     for(const f of S.foes||[]){f.y+=d;if(f.baseY!=null)f.baseY+=d;}
     for(const k of S.picks||[])k.y+=d;
@@ -3295,23 +3303,12 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
    badge and battery light. Drawn before the screen clip so the game punches through it. Shape
    language is 1989; the palette is the game's own, because a grey brick would fight the neon. */
 function gbShell(V){
+  // Whisper bezel (2026-09-01): plastic, a 4px ring hugging the glass, one small badge. Nothing else.
   cx.fillStyle='#241646';cx.fillRect(0,0,W,H);
-  const bx=V.x-14,by=V.y-22,bw=V.w+28,bh=V.h+34,rd=12;
-  cx.fillStyle='#120b26';
-  cx.beginPath();cx.moveTo(bx+rd,by);cx.lineTo(bx+bw-rd,by);cx.quadraticCurveTo(bx+bw,by,bx+bw,by+rd);
-  cx.lineTo(bx+bw,by+bh-38);cx.quadraticCurveTo(bx+bw,by+bh,bx+bw-38,by+bh); // the swoop
-  cx.lineTo(bx+rd,by+bh);cx.quadraticCurveTo(bx,by+bh,bx,by+bh-rd);
-  cx.lineTo(bx,by+rd);cx.quadraticCurveTo(bx,by,bx+rd,by);cx.closePath();cx.fill();
-  cx.strokeStyle='#35226b';cx.lineWidth=2;cx.stroke();
-  // label + battery LED live in the bezel band BELOW the glass — the band above it is where the
-  // HUD hearts and the pause/mute buttons already sit, so anything up there just gets covered
-  cx.textAlign='center';cx.font='800 8px sans-serif';cx.fillStyle='#9a8fc7';
-  cx.fillText('DOT MATRIX WITH CUSTARD SOUND',V.x+V.w/2,V.y+V.h+9);
-  cx.fillStyle='#ff4757';cx.beginPath();cx.arc(bx+16,V.y+V.h+6,3,0,7);cx.fill();
-  cx.font='900 italic 13px sans-serif';cx.fillStyle='#9a8fc7';cx.textAlign='right';
-  cx.fillText('PUDD-CO',V.x+V.w/2-8,V.y+V.h+28);
-  cx.fillStyle='#ff3df0';cx.textAlign='left';cx.fillText('LameBOY™',V.x+V.w/2+8,V.y+V.h+28);
-  cx.textAlign='center';}
+  cx.strokeStyle='#35226b';cx.lineWidth=4;
+  rrectPath(V.x-6,V.y-6,V.w+12,V.h+12,10);cx.stroke();
+  cx.textAlign='center';cx.font='900 italic 11px sans-serif';cx.fillStyle='#ff3df0';
+  cx.fillText('LameBOY™',V.x+V.w/2,V.y+V.h+16);}
 
 function dungeonDraw(){const st=S.st,p=S.p,dg=S.dg;
   cx.clearRect(0,0,W,H);cx.save();cx.imageSmoothingEnabled=false;
