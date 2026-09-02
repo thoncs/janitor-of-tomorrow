@@ -326,6 +326,17 @@ fakes an outline on the union); A/B sit up and inboard; SOUND/PAUSE are straight
 gap column. Hit probes (`hitprobe.mjs`) guard the layout: below-cross walks, pill plastic clicks,
 20px left of B's circle never hits a pill.
 
+**Haptics (2026-09-01):** `HAP` sits beside `AU` with the same shape. Two paths, feature-detected at
+first gesture: `navigator.vibrate` where it exists, else the iOS switch trick. **iOS Safari has never
+shipped `navigator.vibrate`**, and Apple patched the *scripted* `<input type="checkbox" switch>` toggle
+in **iOS 26.5** — only a real tap on the switch still fires the Taptic Engine. Hence `hapArm()`, which
+parks an invisible `.hapsw` inside each control so the player's tap lands on it and bubbles on to the
+game handler; `HAP.press()` is a deliberate no-op on that path so older iOS does not double-buzz.
+Scoped to moves and jumps (d-pad direction changes, A, B, the dungeon SCOOT). Persisted as
+`PROF.fx.haptics`; OPTIONS carries a TEST BUZZ button because **no headless test can prove a buzz** —
+only a phone can. If in-game presses stay silent while TEST BUZZ works, suspect the `e.preventDefault()`
+in `bindPad`/`#dpad` pointerdown suppressing the switch activation.
+
 **Conversion invariants (do not regress):**
 - Every canvas board draws through `GV()`/`gYv()` glass-local with translate+clip; `drawJuice` is
   viewport-LOCAL (callers translate), `drawSay`/`drawBanner` are ABSOLUTE (call after restore).

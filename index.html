@@ -235,6 +235,10 @@ body.shell #bPause,body.shell #mute{display:none}
   touch-action:manipulation;pointer-events:auto}
 .gbslab::after{content:'';position:absolute;inset:-6px} /* round hit halo — misses still fall to the neighbors' catchers */
 .gbslab:active{background:#241646}
+/* haptics: an invisible switch parked inside a control so iOS fires the Taptic Engine on a real
+   tap. Fills its parent so the tap always lands on it; the event bubbles on to the game handler. */
+.hapsw{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;appearance:none;-webkit-appearance:none}
+body>.hapsw{position:fixed;left:-9999px;top:0;width:1px;height:1px} /* the scripted one, offscreen */
 
 /* ---------- tabletop battle ---------- */
 #battle{justify-content:flex-start;gap:8px;background:radial-gradient(140% 100% at 50% 0%,#101c3a 0%,#0a0f24 62%)}
@@ -880,7 +884,7 @@ const SFX_TRIM=.15; // the long-standing SFX bus trim; the sfx slider scales thi
 function defaultAudio(){return{master:1,music:.5,ambient:1,sfx:1};} // == the pre-Phase-D mix
 function defaultUI(){return{padScale:1,padLift:0};}
 // fresh installs start on ROOKIE — the 5-10 crowd is the front door; veterans tap up
-function defaultProfile(){return{ver:SAVE_VER,diff:'rookie',audio:defaultAudio(),ui:defaultUI(),fx:{flicker:true},
+function defaultProfile(){return{ver:SAVE_VER,diff:'rookie',audio:defaultAudio(),ui:defaultUI(),fx:{flicker:true,haptics:true},
   taquitos:0,items:[],notes:[],seen:[],stats:{},best:{},run:null};}
 const clamp01=v=>Number.isFinite(v)?(v<0?0:v>1?1:v):null;
 // A run is only resumable if it points at a board/scene that actually exists. Without this an edited or
@@ -916,7 +920,8 @@ const SAVE={
      audio:(()=>{const a=defaultAudio();if(o.audio&&typeof o.audio==='object')
        for(const k in a){const v=clamp01(o.audio[k]);if(v!==null)a[k]=v;}
        return a;})(),
-     fx:{flicker:o.fx&&typeof o.fx==='object'?o.fx.flicker!==false:true},
+     fx:{flicker:o.fx&&typeof o.fx==='object'?o.fx.flicker!==false:true,
+         haptics:o.fx&&typeof o.fx==='object'?o.fx.haptics!==false:true},
      ui:(()=>{const u=defaultUI();if(o.ui&&typeof o.ui==='object'){
        const sc=+o.ui.padScale;if(Number.isFinite(sc))u.padScale=Math.max(.8,Math.min(1.5,sc));
        const lf=+o.ui.padLift;if(Number.isFinite(lf))u.padLift=Math.max(0,Math.min(60,Math.round(lf)));}
@@ -1041,6 +1046,43 @@ const AU={c:null,on:true,
  pickup(){this.t(660,.07,'sine',.5,220);setTimeout(()=>this.t(990,.09,'sine',.4,0),70)},
  ui(){this.t(520,.06,'square',.3,80)},die(){this.t(220,.55,'sawtooth',.8,-185);this.n(.4,.5)},
  warp(){this.t(90,.5,'sawtooth',.55,700);this.n(.3,.3)},roar(){this.t(70,.7,'sawtooth',.8,-30);this.n(.6,.5)}};
+
+/* ================= HAPTICS =================
+   Two paths, because the web has no single one:
+   · Android/Chromium — navigator.vibrate, a real API, fires on anything.
+   · iOS — Safari has NEVER shipped navigator.vibrate. The known trick is an
+     <input type="checkbox" switch> (Safari 17.4+), whose toggle runs the Taptic Engine.
+     Apple patched the SCRIPTED toggle in iOS 26.5: only a REAL TAP on the switch still
+     fires. So we do both — an invisible switch parked inside each control catches the
+     player's actual tap (survives the patch), and the scripted toggle stays as the path
+     for older iOS. On 26.5+ the scripted call simply does nothing, which is fine.
+   Same shape as AU above: named verbs, one primitive holding the on-guard. */
+const HAP={on:true,mode:'none',sw:null,
+  init(){if(this.mode!=='none')return;
+    this.on=!(PROF&&PROF.fx)||PROF.fx.haptics!==false;
+    if(navigator.vibrate){this.mode='vibrate';return;}
+    // iOS path: one hidden switch for the scripted attempt, plus armed controls (hapArm)
+    try{const s=document.createElement('input');s.type='checkbox';s.setAttribute('switch','');
+      s.className='hapsw';s.setAttribute('aria-hidden','true');s.tabIndex=-1;
+      document.body.appendChild(s);this.sw=s;this.mode='ios';
+      ['dpad','gbA','gbB','gbSel','gbSta'].forEach(id=>hapArm($(id)));
+    }catch(e){this.mode='none';}},
+  // fire: a moment with NO physical tap behind it (a slide to a new direction, a dash).
+  fire(ms){if(!this.on)return;
+    if(this.mode==='vibrate'){try{navigator.vibrate(ms)}catch(e){}}
+    else if(this.mode==='ios'&&this.sw){try{this.sw.click()}catch(e){}}},
+  // press: an armed control was PHYSICALLY tapped. On iOS the browser already buzzed via
+  // the armed switch, so firing again would double up on older iOS — no-op there.
+  press(ms){if(this.mode==='ios')return;this.fire(ms);},
+  tap(){this.press(8)},move(){this.fire(8)},jump(){this.press(16)},dash(){this.fire(22)}};
+// Park an invisible switch inside a control so the player's tap lands on IT (the browser then
+// runs the haptic itself). The event still bubbles to the control's own handler, so input is
+// unchanged. iOS only — Android/desktop DOM stays byte-identical.
+function hapArm(el){if(!el||el.querySelector('.hapsw'))return;
+  const s=document.createElement('input');s.type='checkbox';s.setAttribute('switch','');
+  s.className='hapsw';s.setAttribute('aria-hidden','true');s.tabIndex=-1;
+  el.appendChild(s);}
+
 /* ================= MUSIC & AMBIENCE: pattern sequencer ================= */
 const NOTE=n=>440*Math.pow(2,(n-69)/12);
 const P=(o,len)=>{const a=new Array(len).fill(null);for(const k in o)a[+k]=o[k];return a;};
@@ -1189,7 +1231,7 @@ const MUS={want:null,cur:null,timer:null,step:0,t0:0,g:null,ag:null,amb:[],vol:.
    const s2=c2.createBufferSource(),g=c2.createGain();g.gain.value=.05;
    s2.buffer=b;s2.connect(g);g.connect(this.ag);s2.start(t);}};
 
-document.addEventListener('pointerdown',()=>{AU.init();MUS.kick();},{once:false});
+document.addEventListener('pointerdown',()=>{AU.init();HAP.init();MUS.kick();},{once:false});
 $('mute').addEventListener('click',()=>{AU.on=!AU.on;applyAudio();
   $('mute').textContent=AU.on?'🔊':'🔇';});
 
@@ -1417,7 +1459,9 @@ function renderPausePanel(){const p=$('pausePanel');
       '<div class="prow"><b>Sound</b><span><button class="btn ghost xs" id="bSnd">'+(AU.on?'🔊 ON':'🔇 OFF')+'</button></span></div>'+
       '<div class="prow"><b>Timeline flicker</b><span><button class="btn ghost xs" id="bFlick">'+
         (PROF.fx.flicker?'ON':'OFF')+'</button></span></div>'+
-      '<div class="phint">Sliders take effect as you drag. Flicker follows timeline decay; turn it off if the pulsing bothers you.</div>';
+      '<div class="prow"><b>Rumble</b><span><button class="btn ghost xs" id="bHap">'+
+        (PROF.fx.haptics!==false?'ON':'OFF')+'</button> <button class="btn ghost xs" id="bHapTest">TEST BUZZ</button></span></div>'+
+      '<div class="phint">Sliders take effect as you drag. Flicker follows timeline decay; turn it off if the pulsing bothers you. Rumble needs a phone that has a motor and a browser that will use it — TEST BUZZ tells you the truth.</div>';
     $('bDiff2').addEventListener('click',cycleDiff);
     // live-drag the mix, then persist once the gesture ends rather than on every step
     // pad sliders live-apply too, so you can size them against your actual thumb mid-board
@@ -1440,6 +1484,13 @@ function renderPausePanel(){const p=$('pausePanel');
       $('mute').textContent=AU.on?'🔊':'🔇';$('bSnd').textContent=AU.on?'🔊 ON':'🔇 OFF';AU.ui();});
     $('bFlick').addEventListener('click',()=>{PROF.fx.flicker=!PROF.fx.flicker;
       $('bFlick').textContent=PROF.fx.flicker?'ON':'OFF';applyInstability();SAVE.write();AU.ui();});
+    $('bHap').addEventListener('click',()=>{PROF.fx.haptics=PROF.fx.haptics===false;
+      HAP.on=PROF.fx.haptics;$('bHap').textContent=PROF.fx.haptics?'ON':'OFF';
+      if(PROF.fx.haptics)HAP.fire(16); // switching it ON is its own confirmation
+      SAVE.write();AU.ui();});
+    // The buzz is the one thing no headless test can prove — this button is how a real phone answers.
+    $('bHapTest').addEventListener('click',()=>{HAP.fire(16);AU.ui();});
+    if(HAP.mode==='ios'){hapArm($('bHap'));hapArm($('bHapTest'));} // armed, or they are dead on iOS 26.5+
     renderDiff();}}
 
 document.querySelectorAll('.ptab').forEach(b=>
@@ -2004,11 +2055,11 @@ stickEl.addEventListener('pointerup',stickUp);stickEl.addEventListener('pointerc
 // already reads S.stick, so no new input path. Sliding the thumb re-aims without lifting.
 const dpadEl=$('dpad'),dcrossEl=$('dcross');
 const dpadPts=new Map(); // same ownership model as the flight stick: newest finger drives
-let dpadCx=0,dpadCy=0; // cross centre, cached while untilted — a live rect wobbles with the press tilt
+let dpadCx=0,dpadCy=0,dpadOct=-1; // cross centre (cached while untilted) + last octant, for the move buzz
 function dpadCenter(){const r=dcrossEl.getBoundingClientRect();dpadCx=r.left+r.width/2;dpadCy=r.top+r.height/2;}
 function dpadSet(cxp,cyp){const s=S&&S.stick;if(!s)return;
   const dx=cxp-dpadCx,dy=cyp-dpadCy;
-  if(Math.hypot(dx,dy)<14){s.x=0;s.y=0;dcrossEl.style.transform='';return;} // dead centre stays small
+  if(Math.hypot(dx,dy)<14){s.x=0;s.y=0;dpadOct=-1;dcrossEl.style.transform='';return;} // dead centre stays small
   // Cardinal-biased 8-way: small thumbs mean "up" far more often than "up-right", and this maze is
   // corridors. Cardinals get 52-degree sectors, diagonals keep the 38 degrees between them.
   let deg=Math.atan2(dy,dx)*180/Math.PI;if(deg<0)deg+=360;
@@ -2016,12 +2067,15 @@ function dpadSet(cxp,cyp){const s=S&&S.stick;if(!s)return;
   if(mod<=26)oct=(Math.round(deg/90)*2)&7;
   else if(mod>=64)oct=(Math.round((deg+26)/90)*2)&7;
   else oct=(Math.floor(deg/90)*2+1)&7;
+  if(oct!==dpadOct){dpadOct=oct;HAP.move();} // one tick per NEW direction, not per frame of the drag
   const a=oct*(Math.PI/4);
   s.x=Math.cos(a);s.y=Math.sin(a);
   dcrossEl.style.transform='rotate3d('+(-s.y).toFixed(2)+','+s.x.toFixed(2)+',0,10deg)';} // presses toward the thumb
 dpadEl.addEventListener('pointerdown',e=>{e.preventDefault();AU.init();
   const s=S&&S.stick;if(!s)return;
   if(!dpadPts.size)dpadCenter(); // first finger of the gesture measures the resting cross
+  // no buzz here: dpadSet fires one as the octant goes from none (-1) to a real direction,
+  // so the press and every later direction change go through exactly one code path
   dpadPts.set(e.pointerId,{cx:e.clientX,cy:e.clientY});
   s.on=true;s.id=e.pointerId;dpadSet(e.clientX,e.clientY);
   try{dpadEl.setPointerCapture(e.pointerId)}catch(_){}});
@@ -2032,10 +2086,10 @@ const dpadUp=e=>{const s=S&&S.stick;dpadPts.delete(e.pointerId);
   if(!s||e.pointerId!==s.id)return;
   const last=[...dpadPts.entries()].pop(); // hand the pad to the newest finger still down
   if(last){s.id=last[0];dpadSet(last[1].cx,last[1].cy);}
-  else{s.on=false;s.x=0;s.y=0;dcrossEl.style.transform='';}};
+  else{s.on=false;s.x=0;s.y=0;dpadOct=-1;dcrossEl.style.transform='';}};
 dpadEl.addEventListener('pointerup',dpadUp);dpadEl.addEventListener('pointercancel',dpadUp);
-bindPad($('gbA'),()=>{IN.fire=true;},()=>{IN.fire=false;});   // A = ZAP
-bindPad($('gbB'),()=>{IN.dashBuf=.15;IN.bHeld=true;},()=>{IN.bHeld=false;}); // B: tap buffered, hold tracked
+bindPad($('gbA'),()=>{IN.fire=true;HAP.tap();},()=>{IN.fire=false;});   // A = ZAP
+bindPad($('gbB'),()=>{IN.dashBuf=.15;IN.bHeld=true;HAP.jump();},()=>{IN.bHeld=false;}); // B: tap buffered, hold tracked
 $('gbSel').addEventListener('click',()=>{$('mute').click();});
 $('gbSta').addEventListener('click',()=>{AU.ui();openPause();});
 // --- race: throttle pedal (left half) ---
@@ -3210,7 +3264,7 @@ function dungeonUpdate(dt){const st=S.st,p=S.p,dg=S.dg;
       const da=m>.3?Math.atan2(iy,ix):S.dir*(Math.PI/4); // idle scoot goes where Doug faces
       p.dashX=Math.cos(da);p.dashY=Math.sin(da);
       p.dashT=.22;p.dashCd=.55;p.inv=Math.max(p.inv,.4);IN.dashBuf=0;
-      AU.jump();boom(p.x,p.y-10,'#21f0ff',6);}}
+      AU.jump();HAP.dash();boom(p.x,p.y-10,'#21f0ff',6);}}
   if(p.dashT>0)p.dashT-=dt;
   // --- fire in facing direction ---
   const wp=WEAPONS[G.weapon];p.fireT-=dt;
@@ -3739,7 +3793,8 @@ function loop(ts){requestAnimationFrame(loop);
   const dt=Math.max(0,Math.min(.033,(ts-last)/1000||0));last=ts; // clamp both ends: visibilitychange/syncRot reset last from performance.now(), which can read ahead of ts
   if(MODE==='action'&&S&&!S.paused&&!document.hidden){update(dt);draw();}}
 requestAnimationFrame(loop);
-document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;IN.dashBuf=0;IN.bHeld=false;});
+document.addEventListener('visibilitychange',()=>{last=performance.now();IN.fire=false;IN.dashBuf=0;IN.bHeld=false;
+  if(navigator.vibrate)try{navigator.vibrate(0)}catch(e){}});
 // portrait gate: #rot overlay covers the game; also pause the sim. The dungeon (body.gb) is the
 // one board that WANTS portrait, so its wrong-way is landscape-on-a-touch-device (#rotD) — desktops
 // are exempt, since you cannot rotate a monitor and the square layout works either way.
@@ -3747,7 +3802,9 @@ const PMQ=matchMedia('(orientation: portrait)');
 const CMQ=matchMedia('(pointer: coarse)');
 const HMQ=matchMedia('(any-hover: none)'); // a keyboard-docked tablet hovers — treat it like a desktop
 function wrongWay(){return document.body.classList.contains('lsb')?PMQ.matches:(!PMQ.matches&&CMQ.matches&&HMQ.matches);}
-function syncRot(){if(S)S.paused=wrongWay()||userPaused;IN.fire=false;IN.dashBuf=0;IN.bHeld=false;last=performance.now();padClear();gbFit();}
+function syncRot(){if(S)S.paused=wrongWay()||userPaused;IN.fire=false;IN.dashBuf=0;IN.bHeld=false;
+  if(navigator.vibrate)try{navigator.vibrate(0)}catch(e){}
+  last=performance.now();padClear();gbFit();}
 try{PMQ.addEventListener('change',syncRot);}catch(e){PMQ.addListener(syncRot);}
 MUS.want='title'; // queue menu theme; first tap (AU.init) starts it
 
