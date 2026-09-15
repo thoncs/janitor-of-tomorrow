@@ -533,7 +533,28 @@ mcp__pixellab__animate_character {
 Action only — no environment words; v3 rejects scene detail. The mop is NOT in this sprite: blit
 `AIMG.mop` rotated -1.57 above his hands, as fightDraw already does at 2460.
 
-### Row 8 — DOODLE DOUG (the notebook rig)
+### Row 8 — DOODLE DOUG — ⚠️ ATTEMPTED 2026-09-15. Rig built, premise disproved.
+
+> **The rig cost 1 generation, not 6** — v3-from-reference at 56px is far cheaper than the
+> from-scratch character the row priced. Eight rotations came back and the style genuinely held:
+> thick outline, orange cap, grumpy face, stick legs intact. As a rotation job it worked.
+>
+> **But the row bought the wrong thing, twice over.**
+>
+> 1. **CH.2 never rotates.** It draws ONE sprite with no flip (3838), tilting it with `cx.rotate`.
+>    Eight directions have no call site, now or plausibly.
+> 2. **Template animations destroy the character.** `jumping-2` off this rig returned a featureless
+>    yellow capsule — face gone, silhouette squashed to a pill. A humanoid skeleton has nothing to
+>    grip on a legless blob, so the model reinterprets it rather than posing it. Deleted off the rig.
+>
+> **And img2img cannot substitute.** Two rolls, strength 190 and 115: the style survives both
+> beautifully, and the pose does not move at either. That is not a tuning failure — the character is
+> an oval with two 4px stick legs. There is no limb structure to re-pose. **The notebook tier has no
+> pose space to buy.**
+>
+> Cost of finding out: 4 generations. The rig (`562a1df7`) is kept — good art, no call site.
+
+### Row 8 — DOODLE DOUG (original spec)
 
 ```json
 mcp__pixellab__create_character {
@@ -551,7 +572,18 @@ mcp__pixellab__create_character {
 `"reference_image_url": "<the existing ART.scr_doug data URI>"` so identity and doodle-ness are
 copied rather than described.** This 6-generation buy is what makes rows 9-12 cost 1-2 each.
 
-### Row 9 — DOODLE DOUG, AIRBORNE
+### Rows 9-12 — DOODLE DOUG poses — ❌ CLOSED as not buyable 2026-09-15
+
+> All four (airborne, ow, stomping, victorious) depend on row 8's rig producing poses. It cannot —
+> see row 8. **Do not spend generations here.**
+>
+> **The free alternative is better anyway.** CH.2 already fakes airborne with `cx.rotate(.16)`, and
+> that is the correct technique for this character: a doodle that squashes, stretches and tilts is
+> funnier than a doodle that is redrawn. Hurt = tilt plus flash. Stomp = vertical squash. Victory =
+> a hop with rotation. Zero generations, no style risk, and it suits a tier whose whole joke is that
+> someone drew it in a margin.
+
+### Row 9 — DOODLE DOUG, AIRBORNE (original spec)
 
 ```json
 mcp__pixellab__animate_character {

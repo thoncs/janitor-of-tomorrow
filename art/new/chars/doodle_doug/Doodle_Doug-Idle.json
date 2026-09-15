@@ -1,0 +1,53 @@
+{
+  "character": {
+    "id": "562a1df7-c549-4388-80ab-ff87a0ce5447",
+    "name": "Idle",
+    "prompt": "yellow oval blob character with orange cap, thick black marker outline, grumpy doodle face, two stick legs, crude hand-drawn notebook doodle",
+    "size": {
+      "width": 56,
+      "height": 56
+    },
+    "directions": 8,
+    "view": "side"
+  },
+  "spritesheet": {
+    "path": "Doodle_Doug-Idle.png",
+    "cell_size": {
+      "width": 56,
+      "height": 56
+    },
+    "sheet_size": {
+      "width": 448,
+      "height": 112
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "scr_jump",
+        "animation_group_id": "229b1789-721d-4a2b-adac-18ef85388dc0",
+        "direction": "east"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-15T15:45:04.099686+00:00"
+}

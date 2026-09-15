@@ -122,3 +122,30 @@ swapping the atlas.
   colours along with the shape. Recolour in code instead.
 - The concurrent job cap is **8**. An 8-direction animation reserves all 8, so animations run one at
   a time and cannot overlap with image jobs.
+- **Template animations follow the skeleton rigidly.** A template whose motion is subtle comes back
+  nearly static — `two-footed-jump` returned seven standing poses. Pick templates by how violent the
+  pose is, not by what the name suggests: `flying-kick` gave a clean airborne frame first try.
+
+## Passing a reference image to PixelLab
+
+Reference and img2img inputs are **inline base64, and MCP clients truncate long tool arguments** —
+the failure is silent up to the point where the API rejects it as "incomplete". A 64×64 RGBA PNG is
+about 8,000 base64 characters and gets cut; the practical ceiling looked to be around 3,000.
+
+Flat marker art only *looks* like it has few colours — the shipped `scr_doug` carries **3,675**,
+nearly all of it anti-aliasing on the edges. So quantise and write an indexed PNG:
+
+```bash
+# 112×112 RGBA (21,204 b64 chars, truncated)  ->  56×56 indexed, 10 colours (916 chars, fine)
+node --input-type=module -e '
+import {readFileSync,writeFileSync} from "node:fs";
+import {decodePNG,quantize,encodePNGIndexed,shrink} from "./tools/png.mjs";
+const src = decodePNG(readFileSync("art/new/scr_doug_ref.png"));
+writeFileSync("art/new/doodle_ref.png", encodePNGIndexed(quantize(shrink(src,2), 10)));'
+```
+
+`quantize` buckets each channel into 16 levels **before** ranking by frequency. Ranking raw colours
+does not work here: a thin black outline is spread across dozens of near-black shades, none common
+enough to make the cut, so the outline vanishes and the sprite comes back washed out. `shrink` is
+nearest-neighbour only — any interpolating resize (e.g. `sips -z`) re-introduces the anti-aliasing
+you just removed and puts the colour count straight back up.
