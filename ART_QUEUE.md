@@ -367,8 +367,11 @@ means pasting the ART value straight in — no upload step.
 >   `cass_spread` are blitted for the `shred`/`spread` pickups. A guitar would be a *new* weapon
 >   tier, i.e. new systems work.
 >
-> Also still an emoji: the `📦` crate the taquito sits on. There is no crate on the shelf, so the
-> dungeon now pairs a pixel-art taquito with a system-emoji box. One generation would fix it.
+> **Follow-up, +1 generation:** landing the taquito left it bobbing over a `📦` system emoji, so the
+> crate was generated too — `ART.crate`, 2 candidates, 1 kept. **The dungeon now draws no emoji
+> props at all.** The rejected candidate stencilled "SUPPLIE" on a wooden crate, which is section
+> 6's baked-text failure mode arriving exactly on schedule; the cardboard box carries no text and
+> reads at 30px.
 
 ```bash
 # Nothing to generate. 24 finished PNGs + 3 paid character sheets are already in art/new/.

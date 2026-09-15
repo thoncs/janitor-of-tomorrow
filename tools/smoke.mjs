@@ -88,7 +88,7 @@ try {
   //    temporal dead zone and a bare `typeof ART` would throw, aborting the run instead of failing here.
   //    The exact count is asserted rather than ">0" so that silently losing a sprite also fails here.
   //    Bump ART_SPRITES when you land new art — that is the only maintenance this check needs.
-  const ART_SPRITES = 57;
+  const ART_SPRITES = 58;
   const artKeys = await ev(
     '(()=>{try{return typeof ART==="object"?Object.keys(ART).length:"ART undefined"}' +
     'catch(e){return "ART unreachable ("+e.name+") — boot threw before ART was initialised"}})()'
