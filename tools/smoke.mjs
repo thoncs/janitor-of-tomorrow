@@ -83,14 +83,18 @@ try {
   await send('Runtime.enable');
   await sleep(1500);
 
-  // 1. The inline script actually executed. ART is built at module scope from the 52 base64 sprites.
+  // 1. The inline script actually executed. ART is built at module scope from the base64 sprites.
   //    Probed inside a try/catch in the page: if boot threw partway, `const ART` is stranded in the
   //    temporal dead zone and a bare `typeof ART` would throw, aborting the run instead of failing here.
+  //    The exact count is asserted rather than ">0" so that silently losing a sprite also fails here.
+  //    Bump ART_SPRITES when you land new art — that is the only maintenance this check needs.
+  const ART_SPRITES = 54;
   const artKeys = await ev(
     '(()=>{try{return typeof ART==="object"?Object.keys(ART).length:"ART undefined"}' +
     'catch(e){return "ART unreachable ("+e.name+") — boot threw before ART was initialised"}})()'
   );
-  check(artKeys === 52, 'inline script executed (ART has 52 sprites)', 'keys=' + artKeys);
+  check(artKeys === ART_SPRITES, `inline script executed (ART has ${ART_SPRITES} sprites)`,
+    'keys=' + artKeys);
 
   // 2. Nothing threw during boot. Catches the class the syntax gate cannot see.
   check(pageErrors.length === 0, 'no uncaught page errors', pageErrors.slice(0, 2).join(' | ') || 'none');
