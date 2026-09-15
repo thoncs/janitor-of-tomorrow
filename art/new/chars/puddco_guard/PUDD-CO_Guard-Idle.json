@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "ac13ebc7-e5a9-4c71-920b-ac8d3b0c3ab0",
+    "name": "Idle",
+    "prompt": "PUDD-CO security guard, navy uniform, cap, angry, holding baton",
+    "size": {
+      "width": 64,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "PUDD-CO_Guard-Idle.png",
+    "cell_size": {
+      "width": 64,
+      "height": 64
+    },
+    "sheet_size": {
+      "width": 512,
+      "height": 576
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "guard_walk",
+        "animation_group_id": "6ab6fa73-1c8a-4ba7-a580-8b91aec327af",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-15T02:30:21.778867+00:00"
+}

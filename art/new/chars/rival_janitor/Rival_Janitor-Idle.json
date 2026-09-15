@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "9f0ba5ec-79fc-4f52-b958-815a40f0c295",
+    "name": "Idle",
+    "prompt": "rival janitor, grey coveralls, sunglasses, smug, holding a push broom",
+    "size": {
+      "width": 64,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Rival_Janitor-Idle.png",
+    "cell_size": {
+      "width": 64,
+      "height": 64
+    },
+    "sheet_size": {
+      "width": 512,
+      "height": 576
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "rival_walk",
+        "animation_group_id": "4a9d4e01-af02-4fac-beae-da7372590b71",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-15T02:37:13.991428+00:00"
+}

@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "ba43c5bd-e750-487d-8988-3252dabf9a76",
+    "name": "Idle",
+    "prompt": "custard cultist in yellow hooded robe, dripping custard, creepy",
+    "size": {
+      "width": 64,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Custard_Cultist-Idle.png",
+    "cell_size": {
+      "width": 64,
+      "height": 64
+    },
+    "sheet_size": {
+      "width": 512,
+      "height": 576
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "cultist_walk",
+        "animation_group_id": "ec48f096-4939-42e6-9174-fc46aa766933",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-15T02:33:15.050500+00:00"
+}
