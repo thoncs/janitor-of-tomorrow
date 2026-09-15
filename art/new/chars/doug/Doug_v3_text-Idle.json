@@ -18,7 +18,7 @@
     },
     "sheet_size": {
       "width": 512,
-      "height": 832
+      "height": 960
     },
     "columns": 8,
     "pivot": "cell-center",
@@ -65,26 +65,26 @@
       {
         "row": 4,
         "type": "animation",
+        "frame_count": 7,
+        "animation": "h_stomp",
+        "animation_group_id": "ad8ad7dd-724f-4861-adc9-a8023ed69d6f",
+        "direction": "east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
         "frame_count": 6,
         "animation": "animating_2",
         "animation_group_id": "b09dbc35-b472-4137-b19a-a7d59094a8d7",
         "direction": "east"
       },
       {
-        "row": 5,
-        "type": "animation",
-        "frame_count": 4,
-        "animation": "animating_3",
-        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
-        "direction": "south"
-      },
-      {
         "row": 6,
         "type": "animation",
-        "frame_count": 4,
-        "animation": "animating_3",
-        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
-        "direction": "south-east"
+        "frame_count": 6,
+        "animation": "h_stomp2",
+        "animation_group_id": "ec0d1dfe-5bff-4845-8078-8f77b508ddb5",
+        "direction": "east"
       },
       {
         "row": 7,
@@ -92,7 +92,7 @@
         "frame_count": 4,
         "animation": "animating_3",
         "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
-        "direction": "east"
+        "direction": "south"
       },
       {
         "row": 8,
@@ -100,7 +100,7 @@
         "frame_count": 4,
         "animation": "animating_3",
         "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
-        "direction": "north-east"
+        "direction": "south-east"
       },
       {
         "row": 9,
@@ -108,7 +108,7 @@
         "frame_count": 4,
         "animation": "animating_3",
         "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
-        "direction": "north"
+        "direction": "east"
       },
       {
         "row": 10,
@@ -116,7 +116,7 @@
         "frame_count": 4,
         "animation": "animating_3",
         "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
-        "direction": "north-west"
+        "direction": "north-east"
       },
       {
         "row": 11,
@@ -124,10 +124,26 @@
         "frame_count": 4,
         "animation": "animating_3",
         "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
-        "direction": "west"
+        "direction": "north"
       },
       {
         "row": 12,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "north-west"
+      },
+      {
+        "row": 13,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "west"
+      },
+      {
+        "row": 14,
         "type": "animation",
         "frame_count": 4,
         "animation": "animating_3",
@@ -137,5 +153,5 @@
     ]
   },
   "export_version": "1.0",
-  "export_date": "2026-09-15T03:45:52.545126+00:00"
+  "export_date": "2026-09-15T03:55:05.585120+00:00"
 }

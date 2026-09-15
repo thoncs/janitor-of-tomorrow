@@ -481,7 +481,18 @@ mcp__pixellab__animate_character {
 }
 ```
 
-### Row 6 — THE STOMP
+### Row 6 — THE STOMP — ✅ DONE 2026-09-14 (2 generations, not 1)
+
+> `ART.h_stomp`. Airborne now splits: rising and apex keep `h_jump`, falling gets the dive. The
+> mechanic at 2987 already reads `falling` to decide a kill; this just draws what it was deciding.
+>
+> **Cost the row twice what it says, and the reason generalises:** template mode follows the
+> skeleton rigidly, so a template whose motion is subtle produces near-static frames.
+> `two-footed-jump` came back as seven standing poses and was deleted off the rig. `flying-kick`
+> — extreme motion — gave a clean airborne frame on the first try. **Pick templates by how violent
+> the pose is, not by what the name suggests.** Rows 9-12 should budget for one miss each.
+
+### Row 6 — THE STOMP (original spec)
 
 ```json
 mcp__pixellab__animate_character {
@@ -495,7 +506,18 @@ mcp__pixellab__animate_character {
 
 Harvest the descending frame only.
 
-### Row 7 — SHIFT COMPLETE
+### Row 7 — SHIFT COMPLETE — ⏭️ SKIPPED 2026-09-14, and worth re-costing
+
+> The 350ms window is real — `warp()` is only a white flash overlay, it does not switch screens,
+> so the board stays visible and `showConsequence()` takes over 350ms later. But the flash is what
+> fills that window: opacity .85 fading to 0 over .55s, so at 350ms it is still washing out roughly
+> a third of the frame, and the player is looking at a white-out, not at Doug.
+>
+> A victory pose here buys a partly-obscured sprite in a moment nobody is reading. **Not worth a
+> generation until the flash timing changes** — and if it is wanted, the cheaper fix is to shorten
+> the flash or lengthen the gap first, which costs zero generations.
+
+### Row 7 — SHIFT COMPLETE (original spec)
 
 ```json
 mcp__pixellab__animate_character {
