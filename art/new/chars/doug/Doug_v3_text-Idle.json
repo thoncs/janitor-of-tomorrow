@@ -1,0 +1,141 @@
+{
+  "character": {
+    "id": "91a30672-697d-48ad-81ab-8dbcec87f600",
+    "name": "Idle",
+    "prompt": "night janitor hero, Milwaukee Brewers baseball cap, teal jumpsuit with small yellow chest patch, tan skin, holding a wooden mop, determined everyman, NES-inspired palette",
+    "size": {
+      "width": 64,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "side"
+  },
+  "spritesheet": {
+    "path": "Doug_v3_text-Idle.png",
+    "cell_size": {
+      "width": 64,
+      "height": 64
+    },
+    "sheet_size": {
+      "width": 512,
+      "height": 832
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "h_hurt",
+        "animation_group_id": "4855e8a0-0a43-4bb4-b1e8-764aacb388f9",
+        "direction": "east"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 7,
+        "animation": "h_die",
+        "animation_group_id": "5df2a35f-17ca-48a1-aa04-8d2fd536c601",
+        "direction": "east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "animating",
+        "animation_group_id": "8589b361-6f6f-49e1-81ef-09c76ac4ffb4",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "animating_2",
+        "animation_group_id": "b09dbc35-b472-4137-b19a-a7d59094a8d7",
+        "direction": "east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "south"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "south-east"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "east"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "north-east"
+      },
+      {
+        "row": 9,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "north"
+      },
+      {
+        "row": 10,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "north-west"
+      },
+      {
+        "row": 11,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "west"
+      },
+      {
+        "row": 12,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "animating_3",
+        "animation_group_id": "fe7529cb-2a44-42c8-b1b4-504a53c64c6c",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-15T03:45:52.545126+00:00"
+}

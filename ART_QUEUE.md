@@ -439,7 +439,15 @@ mcp__pixellab__animate_character {
 }
 ```
 
-### Row 4 — DOUG, STRUCK
+### Row 4 — DOUG, STRUCK — ✅ DONE 2026-09-14
+
+> `ART.h_hurt`, 1 generation: template `taking-punch` on the existing Doug character, east only
+> (the pixel Doug never flips). Honest note: on a character holding a mop, `taking-punch` mostly
+> animates the mop coming *up*, so frame 1 — a stagger with the mop lowered — is the only frame that
+> reads as hurt. It is a stagger, not a dramatic recoil. Paired with the blink the game already does,
+> it reads fine; it is not the frame a hand animator would have drawn.
+
+### Row 4 — DOUG, STRUCK (original spec)
 
 ```json
 mcp__pixellab__animate_character {
@@ -451,7 +459,17 @@ mcp__pixellab__animate_character {
 }
 ```
 
-### Row 5 — TIMELINE SEVERED
+### Row 5 — TIMELINE SEVERED — ✅ DONE 2026-09-14
+
+> `ART.h_die`, 1 generation: template `falling-back-death`, kept as a **7-frame strip** rather than
+> a single pose, because the 500ms gap the row identified is long enough to actually play a fall.
+> `S.dieAt` is stamped where `gameOver()` is scheduled; the draw indexes the strip off it and holds
+> the last frame. Death also bypasses the i-frame blink — a corpse that flickers reads as a bug.
+> Verified: frames 0→1→3→5→6 across the window, then held.
+>
+> **Pixel tier only.** CH.2 scribble Doug still has no death pose; that is rows 8-12.
+
+### Row 5 — TIMELINE SEVERED (original spec)
 
 ```json
 mcp__pixellab__animate_character {
