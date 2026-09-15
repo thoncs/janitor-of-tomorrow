@@ -37,9 +37,12 @@ gameplay scale is obvious before it reaches the game.
 Generated at 64px, 8 directions, `low top-down`, which is the Supply Dungeon's camera. Each sheet is
 **512×576**: row 0 is the 8 rotations, rows 1–8 are a 4-frame walk per direction.
 
-This matches the existing dungeon rig exactly — `gd_idle` is 512×64 (8 rotations) and `gd_walk` is
+This matches the existing dungeon rig exactly — `dd_idle` is 512×64 (8 rotations) and `dd_walk` is
 256×512 (4 frames × 8 directions). Slicing row 0 and rows 1–8 out of these sheets yields those two
 shapes with no resampling.
+
+(The goo rig is the same two shapes but only ever uses the walk sheet — `gd_idle` was deleted as
+dead weight once nothing was found to read it.)
 
 `slice-character.mjs` does this repack and asserts the direction order rather than trusting it:
 

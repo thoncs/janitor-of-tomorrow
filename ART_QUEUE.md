@@ -361,7 +361,10 @@ node tools/check.mjs index.html && node tools/smoke.mjs "$PWD/index.html"
 node tools/sync-assets.mjs --fix
 ```
 
-### Row 2 — DELETE gd_idle (no PixelLab call)
+### Row 2 — DELETE gd_idle (no PixelLab call) — ✅ DONE 2026-09-14
+
+> Landed. 16,083 chars out of `index.html`, catalog card removed, `ART_SPRITES` in `smoke.mjs`
+> dropped to 53. Verified the goos still draw: 240 frames with a full spawn, no errors.
 
 ```bash
 # gd_idle has exactly ONE occurrence in index.html: its own ART entry. drawGoo always uses gd_walk.
