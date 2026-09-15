@@ -1,7 +1,10 @@
 # New art — PixelLab batch, 2026-09-14
 
-Raw generated art, staged here **deliberately unintegrated**. Nothing in this folder is referenced by
-`index.html` yet.
+Raw generated art, staged here **deliberately unintegrated**, and drawn down one sprite at a time as
+the code that uses it gets written.
+
+**Landed so far:** `chars/puddco_guard/` → `ART.pg_idle` + `ART.pg_walk`, the Supply Dungeon's
+security guard. Everything else in this folder is still staged.
 
 ## Why this is staged and not merged
 
@@ -38,9 +41,17 @@ This matches the existing dungeon rig exactly — `gd_idle` is 512×64 (8 rotati
 256×512 (4 frames × 8 directions). Slicing row 0 and rows 1–8 out of these sheets yields those two
 shapes with no resampling.
 
+`slice-character.mjs` does this repack and asserts the direction order rather than trusting it:
+
+```bash
+node tools/slice-character.mjs art/new/chars/puddco_guard guard
+cwebp -lossless -z 9 -alpha_filter best guard_walk.png -o guard_walk.webp
+node tools/import-sprite.mjs --after dd_idle pg_walk=art/new/chars/puddco_guard/guard_walk.webp
+```
+
 | Sheet | Who | Intended use |
 |---|---|---|
-| `puddco_guard/` | PUDD-CO security guard, navy uniform, baton | Dungeon / side-scroller enemy |
+| `puddco_guard/` | PUDD-CO security guard, navy uniform, baton | **Landed** — dungeon enemy, `ART.pg_*` |
 | `custard_cultist/` | Hooded cultist, yellow robe | Dungeon enemy, Project Custard faction |
 | `rival_janitor/` | Grey coveralls, sunglasses, push broom | NPC or rival encounter |
 
