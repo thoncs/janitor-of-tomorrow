@@ -400,7 +400,21 @@ node tools/check.mjs index.html && node tools/smoke.mjs "$PWD/index.html"
 node tools/sync-assets.mjs
 ```
 
-### Row 3 — SUGAR GNAT (2 calls)
+### Row 3 — SUGAR GNAT (2 calls) — ✅ DONE 2026-09-14, but not as specified
+
+> **Fixed the bug, skipped the character rig.** The row asked for a v3 character plus a v3
+> animation (4 gens) to get an animated NES-tier flyer. Shipped instead: `ART.px_drone`, a single
+> static 64×64 sprite (2 gens — 2 candidates, 1 kept), because the draw site at the old 3771
+> already animates what it is given — `cx.rotate(Math.sin(f.t*3)*.12)` — so a static sprite reads
+> as hovering, and an 8-direction rig would have been thrown away by a call site that explicitly
+> does not flip ("symmetric, no flip").
+>
+> Verified both directions, which is the part that matters for a *tier* bug: the tier-1 boards
+> (`ch1`, `warp`) now blit `px_drone` and never `ufo`; CH.3 still blits `ufo` and never `px_drone`.
+>
+> **Row 124 is the other half of this** and is still open: CH.3's own `'pod'` foe is the second
+> misuse of `AIMG.ufo`. That one is not a tier violation — the UFO is tier-correct there — so it is
+> a lower priority than this was.
 
 ```json
 mcp__pixellab__create_character {
