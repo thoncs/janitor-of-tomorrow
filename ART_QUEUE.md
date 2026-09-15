@@ -345,7 +345,30 @@ already generated, is `9f0ba5ec-79fc-4f52-b958-815a40f0c295`.
 `create_image_pixflux` accepts a `data:` URL in `init_image_url`, so img2img over a shipped sprite
 means pasting the ART value straight in — no upload step.
 
-### Row 1 — THE PRE-PAID PROP SHELF (no PixelLab call)
+### Row 1 — THE PRE-PAID PROP SHELF (no PixelLab call) — ✅ DONE 2026-09-14
+
+> **Landed 4, skipped 3.** Every sprite went in with the draw code that uses it, one commit each.
+>
+> | Sprite | Replaced | Where |
+> |---|---|---|
+> | `ART.plunger` | `🪠` | dungeon pedestal |
+> | `ART.taquito` | `🌮` ×4 | wallet, crates, pickups, race |
+> | `ART.nachos` | `🌭` | the `hp` heal pickup |
+> | `ART.energy` | `⚡` | the `en` energy pickup |
+>
+> **Skipped, with reasons — these three have no call site and the queue was wrong to imply one:**
+> - **`die_d20`** — "beside the existing die" does not exist. `ART.die` is already a purpose-built
+>   d20 face used as the CSS background of the DOM `#die`, with the number live on top of it
+>   (index.html:1770). The generated sprite is a 3/4 polyhedron with its own pips — strictly worse
+>   for that job. Nothing to add it *beside*.
+> - **`mop_bucket`** — no call site anywhere. Landing it means inventing dungeon set dressing, which
+>   is new game code, not a prop swap.
+> - **`guitar` + `amp`** — the hair-metal weapon system already ships sprites: `cass_shred` and
+>   `cass_spread` are blitted for the `shred`/`spread` pickups. A guitar would be a *new* weapon
+>   tier, i.e. new systems work.
+>
+> Also still an emoji: the `📦` crate the taquito sits on. There is no crate on the shelf, so the
+> dungeon now pairs a pixel-art taquito with a system-emoji box. One generation would fix it.
 
 ```bash
 # Nothing to generate. 24 finished PNGs + 3 paid character sheets are already in art/new/.
