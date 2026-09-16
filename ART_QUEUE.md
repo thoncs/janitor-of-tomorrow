@@ -634,7 +634,23 @@ mcp__pixellab__animate_character {
 
 112px x 8 frames / 65536 = 1.53, so this rounds to 2 generations for the one direction.
 
-### Row 13 — MUCUS TURRET, FIRING (3 calls, +1 reroll budgeted)
+### Row 13 — MUCUS TURRET, FIRING — ✅ DONE 2026-09-15 (1 generation, not 4)
+
+> **The bug was the timing, not the frame count.** Both draw sites blinked `t_idle1`/`t_idle2` on a
+> sine with no relation to firing, so the turret told you nothing. `f.fireT` (side-scroller, reset
+> to `ENEMIES.turret.fireEvery` = 2.3) and `t2.t` (dungeon, reset 2.2) are the real countdowns —
+> the muzzle now lights on their last 0.45s. That half is **free**.
+>
+> One `t_fire` frame was bought instead of the row's three: the wind-up window is 0.45s, so three
+> stages would blur past, and the existing pair already reads as bright-eye/dim-eye breathing which
+> is worth keeping underneath.
+>
+> A turret whose timer sits negative (out of range, waiting) stays lit. That is honest — it is
+> loaded and fires the instant you step in.
+>
+> Verified: fireT 2.0 → idle, 1.0 → idle, 0.40 → t_fire, −0.9 → t_fire.
+
+### Row 13 — MUCUS TURRET, FIRING (original spec)
 
 ```json
 mcp__pixellab__create_image_pixflux {
@@ -656,7 +672,15 @@ Then the same call twice more, changing only these two fields:
 **Demand "barrel moves, base does not" and check the base pixels across all three, or the turret
 appears to slide on its mount.**
 
-### Row 14 — STRIPED SYNTH SUN
+### Row 14 — STRIPED SYNTH SUN — ⏭️ SKIPPED 2026-09-15
+
+> The row notes the sun is hue-tinted live and treats that as a reason to buy a second asset. It is
+> actually the reason to buy **neither**. CH.1 reads purple and the warp reads teal off one
+> `hsl(hue,...)` sun; a baked sprite is frozen at one colour and would clash with the sky gradient
+> and skyline drawn around it, which stay procedural. The shipped sun is a clip path plus five
+> `fillRect`s and it already looks right. Nothing to buy.
+
+### Row 14 — STRIPED SYNTH SUN (original spec)
 
 ```json
 mcp__pixellab__create_image_pixflux {
@@ -669,7 +693,20 @@ mcp__pixellab__create_image_pixflux {
 Blit at `(vw*.74-54, gY*.52-54, 108, 108)`. **The current sun is tinted live by the per-board hue, so
 a baked sun cannot recolour — which is exactly why row 15 is a separate asset and not a tint.**
 
-### Row 15 — TWO SUNS, ONE SQUARE
+### Row 15 — TWO SUNS, ONE SQUARE — ✅ DONE 2026-09-15 in code, 0 generations
+
+> **Not buyable, and it never needed to be.** Two attempts at a square sun both came back round —
+> exactly the failure the row predicted, and re-rolling did not fix it; the model corrects the shape.
+> 2 generations spent proving that.
+>
+> Then the obvious: the only difference between a round sun and a square one is the **clip path**.
+> The shipped routine was already `arc` + clip + five bands, so `synthSun(x,y,r,square)` takes a
+> flag, and the warp gets a second smaller square one. Free, and both suns keep the per-board hue
+> tint that a sprite would have thrown away.
+>
+> Verified: warp sky draws one arc and two clip rects, CH.1 one arc and one.
+
+### Row 15 — TWO SUNS, ONE SQUARE (original spec)
 
 ```json
 mcp__pixellab__create_image_pixflux {
